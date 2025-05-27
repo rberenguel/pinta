@@ -613,6 +613,31 @@ function setupRootDraggable(handle, childLine) {
   });
 }
 
+function getLineDepth(lineId) {
+  if (!linesStore[lineId]) {
+    // console.warn(`Line with ID ${lineId} not found in linesStore.`);
+    return -1; // Indicates line not found or invalid ID
+  }
+
+  let depth = 0;
+  let currentLine = linesStore[lineId];
+
+  // Traverse up the parent chain
+  while (currentLine && currentLine.parentId !== null) {
+    const parent = linesStore[currentLine.parentId];
+    if (!parent) {
+      // This case implies a broken parent chain in linesStore,
+      // which shouldn't happen with the current logic.
+      // We'll stop and return the depth found so far.
+      // console.warn(`Parent line with ID ${currentLine.parentId} not found for line ${currentLine.id}.`);
+      break;
+    }
+    depth++;
+    currentLine = parent;
+  }
+  return depth + 1;
+}
+
 function addNewChildLine(parentId, clickOffsetRatioOnParent) {
   const parentLine = linesStore[parentId];
   if (!parentLine) return;
@@ -622,8 +647,17 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
     parentLine.startX + offsetAlongParentAxis * Math.cos(parentAngleRad);
   const childStartY =
     parentLine.startY + offsetAlongParentAxis * Math.sin(parentAngleRad);
-  const childAngle = parentLine.angle - 90;
-  const childLength = 60;
+  const depth = getLineDepth(parentId);
+  let sign = -1;
+  if (depth >= 2) {
+    // This seems to be in general what I like, at least for low depths
+    sign = 1;
+  }
+
+  // Tried to tweak it but it's not obvious what I want from a formula tbf
+  const childAngle = parentLine.angle + sign * 90;
+  const lengthMultiplier = 1.0 - 0.75 / depth;
+  const childLength = parentLine.length * lengthMultiplier;
   const childTextPerpOffset = -15;
   const childLine = createLineObject({
     parentId: parentId,
@@ -924,6 +958,9 @@ editorContainer.addEventListener("click", (ev) => {
   }
 });
 interact(editorContainer).on("hold", function (event) {
+  if (event.button != 0) {
+    return;
+  }
   if (event.target === editorContainer) {
     const editorRect = editorContainer.getBoundingClientRect();
     const xPercent = ((event.pageX - editorRect.left) / editorRect.width) * 100;
@@ -931,10 +968,7 @@ interact(editorContainer).on("hold", function (event) {
     createPostIt({
       xPercent: xPercent,
       yPercent: yPercent,
-      color:
-        POSTIT_VALID_COLORS[
-          Math.floor(Math.random() * POSTIT_VALID_COLORS.length)
-        ],
+      color: POSTIT_DEFAULT_COLOR,
     });
   }
 });
@@ -1541,8 +1575,10 @@ document.addEventListener("mouseup", (event) => {
     }
 
     activeDrawingShape = null;
-    // currentDrawingTool = null; // Keep tool active for multiple drawings
-    // drawingCanvas.classList.remove('active-drawing'); // Keep if tool selected
+    currentDrawingTool = null; // Keep tool active for multiple drawings
+    drawingCanvas.classList.remove("active-drawing"); // Keep if tool selected
+    drawingCanvas.style.pointerEvents = "none";
+    drawingCanvas.style.cursor = "default";
   }
   if (selectedDrawingElement && event.button === 0) {
     selectedDrawingElement.dragOff();

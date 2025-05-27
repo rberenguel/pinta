@@ -37,6 +37,10 @@ body {
   align-items: center;
   min-height: 100vh;
   color: var(--base1);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 #editor-container {
