@@ -1,0 +1,416 @@
+/* Solarized-inspired Dark Theme Variables */
+:root {
+  --base03: #002b36; /* Background */
+  --base02: #073642; /* Editor Background, Modal BG */
+  --base01: #586e75; /* UI Borders, secondary text, Modal Cancel BG */
+  --base00: #657b83; /* UI elements, Modal Cancel Hover BG */
+  --base0: #839496; /* Modal Text */
+  --base1: #93a1a1; /* Primary Text on Dark BG, Modal Title */
+
+  --yellow: #b58900; /* Drawing Yellow */
+  --orange: #cb4b16; /* Schema Lines, Drawing Orange */
+  --red: #dc322f; /* Root Drag, Delete, Confirm Button, Drawing Red */
+  --magenta: #d33682; /* Drawing Magenta */
+  --violet: #6c71c4; /* Drawing Violet */
+  --blue: #268bd2; /* Resize, Drawing Blue */
+  --cyan: #2aa198; /* Schema Text, Drawing Cyan */
+  --green: #859900; /* Drawing Green */
+  --postit-white-bg: #fdf6e3;
+  --postit-white-text: #586e75;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  background-color: var(--base03);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  color: var(--base1);
+}
+
+#editor-container {
+  aspect-ratio: 4 / 3;
+  width: 98vw; /* Base size on viewport width */
+  max-height: 98vh; /* Constrain height; width will adjust to maintain aspect ratio if this limit is hit */
+  margin: auto; /* Ensure centering within the flex body */
+  background-color: var(--base02);
+  border: 1px solid var(--base01);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+#drawingCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: none;
+}
+/* .active-drawing or .tool-selected will set pointer-events: auto via JS */
+
+#drawingCanvas > * {
+  /* Make individual SVG shapes clickable */
+  pointer-events: all;
+}
+
+.line-element-group {
+  position: absolute;
+  transform-origin: 0 0;
+  z-index: 10;
+}
+.line-visual {
+  width: 100%;
+  background-color: var(--orange);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: crosshair;
+  border-radius: 2px;
+}
+.line-text {
+  position: absolute;
+  white-space: nowrap;
+  color: var(--cyan);
+  font-size: 16px;
+  padding: 1px 2px;
+  background-color: transparent;
+  border: none;
+  user-select: none;
+  cursor: grab;
+  min-width: 10px;
+  text-align: center;
+}
+.line-text[contenteditable="true"] {
+  background-color: var(--base03);
+  border: 1px dashed var(--blue);
+  color: var(--base1);
+  user-select: text;
+  cursor: auto;
+  outline: none;
+}
+
+.handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  z-index: 15;
+  display: none;
+}
+.resize-handle {
+  background-color: var(--blue);
+  cursor: ew-resize;
+  left: 100%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.root-drag-handle {
+  background-color: var(--red);
+  cursor: move;
+  left: 0%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.delete-handle {
+  color: var(--red);
+  background-color: transparent;
+  font-size: 14px;
+  line-height: 10px;
+  text-align: center;
+  font-family: monospace;
+  font-weight: bold;
+  cursor: pointer;
+  left: 30%;
+  top: 0px;
+  width: auto;
+  height: auto;
+  padding: 0 2px;
+  border-radius: 0;
+  z-index: 100;
+}
+.line-element-group:hover .handle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.handle.dragging {
+  display: flex !important;
+}
+.resize-handle.dragging {
+  background-color: #1a6a9e;
+}
+.root-drag-handle.dragging {
+  background-color: #a71e1c;
+}
+.delete-handle:hover {
+  color: #a71e1c;
+}
+
+/* Post-it Styles */
+.post-it {
+  position: absolute;
+  z-index: 500;
+  padding: 20px 8px 8px 8px;
+  border-radius: 3px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  min-width: 100px;
+  min-height: 50px;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  color: var(--base1);
+  word-wrap: break-word;
+  overflow: hidden;
+  cursor: default;
+  touch-action: none;
+  box-sizing: border-box;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+}
+.postit-drag-handle {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: calc(100% - 20px);
+  height: 18px;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  padding-left: 5px;
+  box-sizing: border-box;
+  z-index: 502;
+  font-size: 10px;
+  color: var(--base00);
+}
+.postit-drag-handle:active {
+  cursor: grabbing;
+}
+.postit-delete-button {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  font-size: 12px;
+  z-index: 503;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0);
+  color: var(--red);
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  opacity: 0.7;
+}
+.post-it:hover .postit-delete-button {
+  opacity: 1;
+}
+.postit-delete-button:hover {
+  background-color: rgba(220, 50, 50, 0.3);
+}
+.postit-content-area {
+  flex-grow: 1;
+  outline: none;
+  cursor: text;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 2px;
+  overflow-y: auto;
+  color: inherit;
+}
+.postit-content-area[contenteditable="true"] {
+  /*border: 1px dashed var(--blue);*/
+  border: none;
+}
+.postit-content-area a {
+  color: var(--blue);
+  text-decoration: underline;
+}
+.postit-content-area a:hover {
+  color: var(--cyan);
+}
+.postit-color-yellow {
+  background-color: var(--yellow);
+  color: var(--base03);
+}
+.postit-color-red {
+  background-color: var(--red);
+  color: var(--base03);
+}
+.postit-color-green {
+  background-color: var(--green);
+  color: var(--base03);
+}
+.postit-color-blue {
+  background-color: var(--blue);
+  color: var(--base03);
+}
+.postit-color-white {
+  background-color: var(--postit-white-bg);
+  color: var(--postit-white-text);
+}
+.postit-color-yellow .postit-drag-handle {
+  color: var(--base02);
+}
+.postit-color-red .postit-drag-handle {
+  color: var(--base03);
+}
+.postit-color-green .postit-drag-handle {
+  color: var(--base02);
+}
+.postit-color-blue .postit-drag-handle {
+  color: var(--base03);
+}
+.postit-color-white .postit-drag-handle {
+  color: var(--base01);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal-content {
+  background-color: var(--base02);
+  color: var(--base0);
+  padding: 25px;
+  border-radius: 8px;
+  border: 1px solid var(--base01);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+}
+.modal-content h3 {
+  margin-top: 0;
+  font-size: 1.25rem;
+  color: var(--base1);
+}
+.modal-content p {
+  margin-bottom: 20px;
+  color: var(--base0);
+  font-size: 0.9rem;
+}
+.modal-buttons button {
+  padding: 10px 15px;
+  margin: 0 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.modal-confirm-button {
+  background-color: var(--red);
+  color: var(--base03);
+}
+.modal-confirm-button:hover {
+  background-color: #a71e1c;
+}
+.modal-cancel-button {
+  background-color: var(--base01);
+  color: var(--base03);
+}
+.modal-cancel-button:hover {
+  background-color: var(--base00);
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+    padding-top: 0 !important; /* Remove any top padding from body */
+  }
+  #editor-container {
+    width: 100% !important;
+    height: auto !important;
+    min-height: initial !important;
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    overflow: visible !important;
+  }
+  .line-visual {
+    /* For the schema lines (divs) */
+    background-color: black !important;
+    -webkit-print-color-adjust: exact !important; /* Chrome, Safari, Edge */
+    color-adjust: exact !important; /* Standard */
+    /* Ensure height is maintained if it was set by JS */
+    /* height: specified_thickness !important; - JS already sets this, should carry over */
+  }
+  .line-text {
+    /* For text on schema lines */
+    color: black !important;
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+  .handle,
+  .delete-handle,
+  .resize-handle,
+  .root-drag-handle {
+    display: none !important;
+  }
+  .modal-overlay {
+    display: none !important;
+  }
+  /* For SVG drawings */
+  #drawingCanvas * {
+    stroke: black !important;
+    fill-opacity: 0 !important;
+    fill: none !important;
+  }
+  #drawingCanvas line[marker-end] {
+    /* For SVG arrows */
+    marker-end: url(#arrowhead-print) !important;
+  }
+  #drawingCanvas rect[fill]:not([fill="none"]) {
+    /* For SVG highlights if they have a fill */
+    fill: black !important; /* Or a light gray: #dddddd */
+    fill-opacity: 0.2 !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .post-it {
+    background-color: white !important;
+    color: black !important;
+    border: 1px solid #ccc !important;
+    box-shadow: 2px 2px 5px grey !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  .postit-drag-handle,
+  .postit-delete-button {
+    display: none !important;
+  }
+  .postit-content-area[contenteditable="true"] {
+    border: none;
+  }
+  .postit-content-area a {
+    color: #0000ee !important; /* Standard blue for links */
+    text-decoration: underline !important;
+  }
+}
