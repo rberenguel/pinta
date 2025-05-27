@@ -622,7 +622,7 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
     parentLine.startX + offsetAlongParentAxis * Math.cos(parentAngleRad);
   const childStartY =
     parentLine.startY + offsetAlongParentAxis * Math.sin(parentAngleRad);
-  const childAngle = parentLine.angle + 90;
+  const childAngle = parentLine.angle - 90;
   const childLength = 60;
   const childTextPerpOffset = -15;
   const childLine = createLineObject({
