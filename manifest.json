@@ -1,0 +1,30 @@
+{
+  "short_name": "Pinta",
+  "version": "0.0.1",
+  "name": "Pinta",
+  "description": "Gemini created version of how I do my outline diagrams by hand",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#002b36",
+  "theme_color": "#c60",
+  "file_handlers": [
+    {
+      "action": "./index.html",
+      "accept": {
+        "text/plain": [".json"]
+      }
+    }
+  ]
+}

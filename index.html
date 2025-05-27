@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphical Schema Editor</title>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <style>
+        /* Solarized-inspired Dark Theme Variables */
+        :root {
+            --base03: #002b36; /* Background */
+            --base02: #073642; /* Editor Background, Modal BG */
+            --base01: #586e75; /* UI Borders, secondary text, Modal Cancel BG */
+            --base00: #657b83; /* UI elements, Modal Cancel Hover BG */
+            --base0: #839496;  /* Modal Text */
+            --base1: #93a1a1;  /* Primary Text on Dark BG, Modal Title */
+            --yellow: #b58900; /* Post-it Yellow */
+            --orange: #cb4b16; /* Lines */
+            --red: #dc322f;    /* Root Drag, Delete, Confirm Button, Post-it Red */
+            --magenta: #d33682;
+            --violet: #6c71c4;
+            --blue: #268bd2;   /* Resize, Info Text, Post-it Blue */
+            --cyan: #2aa198;   /* Text on lines */
+            --green: #859900;  /* Post-it Green */
+            --postit-white-bg: #fdf6e3; /* Solarized light for white post-it */
+            --postit-white-text: #586e75; /* Darker text for white post-it */
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--base03); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            color: var(--base1); /* Default text color for body */
+        }
+      
+        #editor-container {
+            width: 80vw;
+            height: 70vh; 
+            background-color: var(--base02);
+            border: 1px solid var(--base01);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden; 
+            border-radius: 0.5rem;
+        }
+        .line-element-group {
+            position: absolute;
+            transform-origin: 0 0; 
+        }
+        .line-visual {
+            width: 100%; 
+            background-color: var(--orange); 
+            position: absolute; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            cursor: crosshair;
+            border-radius: 2px;
+        }
+        .line-text {
+            position: absolute;
+            white-space: nowrap;
+            color: var(--cyan); 
+            font-size: 12px;
+            padding: 1px 2px; 
+            background-color: transparent; 
+            border: none; 
+            user-select: none;
+            cursor: grab; 
+            min-width: 10px; 
+            text-align: center;
+        }
+        .line-text[contenteditable="true"] { 
+            background-color: var(--base03); 
+            border: 1px dashed var(--blue); 
+            color: var(--base1); 
+            user-select: text; 
+            cursor: auto; 
+            outline: none; 
+        }
+        
+        .handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            z-index: 10;
+            display: none; 
+        }
+        .resize-handle { 
+            background-color: var(--blue); 
+            cursor: ew-resize; 
+            left: 100%; 
+            top: 50%;
+            transform: translate(-50%, -50%); 
+        }
+        .root-drag-handle { 
+            background-color: var(--red); 
+            cursor: move; 
+            left: 0%; 
+            top: 50%;
+            transform: translate(-50%, -50%); 
+        }
+        .delete-handle { 
+            color: var(--red); 
+            background-color: transparent; 
+            font-size: 14px; 
+            line-height: 10px; 
+            text-align: center;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: pointer;
+            left: 30%; 
+            top: 0px; 
+            width: auto; 
+            height: auto; 
+            padding: 0 2px; 
+            border-radius: 0; 
+        }
+        .line-element-group:hover .handle { display: flex; justify-content: center; align-items: center; }
+        .handle.dragging { display: flex !important; }
+        .resize-handle.dragging { background-color: #1a6a9e; } 
+        .root-drag-handle.dragging { background-color: #a71e1c; } 
+        .delete-handle:hover { color: #a71e1c; } 
+
+        /* Post-it Styles */
+        .post-it {
+            position: absolute;
+            z-index: 500; /* Below lines' handles but above general content */
+            padding: 20px 8px 8px 8px; /* Top padding for handle, rest minimal */
+            border-radius: 3px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            min-width: 100px; /* Ensure some minimum size */
+            min-height: 50px;
+            font-family: 'Inter', sans-serif; /* Neutral small font */
+            font-size: 11px; /* Small font */
+            color: var(--base1); /* Light text on dark post-it */
+            word-wrap: break-word;
+            overflow: hidden;
+            cursor: default;
+            touch-action: none;
+            box-sizing: border-box;
+            outline: none;
+            display: flex; /* To allow content area to grow */
+            flex-direction: column;
+        }
+        .postit-drag-handle {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: calc(100% - 20px); /* Leave space for delete button */
+            height: 18px; /* Small handle */
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            padding-left: 5px;
+            box-sizing: border-box;
+            z-index: 502;
+            font-size: 10px;
+            color: var(--base00);
+        }
+        .postit-drag-handle:active { cursor: grabbing; }
+
+        .postit-delete-button {
+            position: absolute;
+            top: 1px;
+            right: 1px;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+            font-size: 12px;
+            z-index: 503;
+            border-radius: 3px;
+            background: rgba(0,0,0,0.1);
+            color: var(--red);
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            opacity: 0.7;
+        }
+        .post-it:hover .postit-delete-button { opacity: 1; }
+        .postit-delete-button:hover { background-color: rgba(220, 50, 50, 0.3); }
+
+        .postit-content-area {
+            flex-grow: 1; /* Allow content to take available space */
+            outline: none;
+            cursor: text;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 2px; /* Minimal padding inside content */
+            overflow-y: auto; /* Scroll if content overflows */
+            color: inherit; /* Inherit from .post-it */
+        }
+        .postit-content-area[contenteditable="true"] {
+            border: 1px dashed var(--blue);
+        }
+        .postit-content-area a { color: var(--blue); text-decoration: underline; }
+        .postit-content-area a:hover { color: var(--cyan); }
+
+        /* Post-it Colors (Solarized Dark adaptations) */
+        .postit-color-yellow { background-color: var(--yellow); color: var(--base03); }
+        .postit-color-red    { background-color: var(--red); color: var(--base03); } /* Ensure contrast */
+        .postit-color-green  { background-color: var(--green); color: var(--base03); }
+        .postit-color-blue   { background-color: var(--blue); color: var(--base03); }
+        .postit-color-white  { background-color: var(--postit-white-bg); color: var(--postit-white-text); }
+        
+        .postit-color-yellow .postit-drag-handle { color: var(--base02); }
+        .postit-color-red .postit-drag-handle { color: var(--base03); }
+        .postit-color-green .postit-drag-handle { color: var(--base02); }
+        .postit-color-blue .postit-drag-handle { color: var(--base03); }
+        .postit-color-white .postit-drag-handle { color: var(--base01); }
+
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.75); display: none; 
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--base02); 
+            color: var(--base0); 
+            padding: 25px; border-radius: 8px;
+            border: 1px solid var(--base01);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); width: 90%; max-width: 400px; text-align: center;
+        }
+        .modal-content h3 { margin-top: 0; font-size: 1.25rem; color: var(--base1);}
+        .modal-content p { margin-bottom: 20px; color: var(--base0); font-size: 0.9rem;}
+        .modal-buttons button {
+            padding: 10px 15px; margin: 0 10px; border: none;
+            border-radius: 5px; cursor: pointer; font-weight: 500;
+        }
+        .modal-confirm-button { background-color: var(--red); color: var(--base03); } 
+        .modal-confirm-button:hover { background-color: #a71e1c; } 
+        .modal-cancel-button { background-color: var(--base01); color: var(--base03); } 
+        .modal-cancel-button:hover { background-color: var(--base00); }
+
+        /* Print Styles */
+        @media print {
+            body { background-color: white !important; color: black !important; padding-top: 0; }
+            #editor-container {
+                width: 100% !important; height: auto !important; min-height: initial !important;
+                border: none !important; box-shadow: none !important;
+                background-color: white !important; overflow: visible !important;
+            }
+            .line-visual { background-color: black !important; }
+            .line-text {
+                color: black !important; background-color: transparent !important;
+                border: none !important; padding: 0 !important;
+            }
+            .handle, .delete-handle, .resize-handle, .root-drag-handle { display: none !important; }
+            .modal-overlay { display: none !important; }
+
+            .post-it {
+                background-color: white !important;
+                color: black !important;
+                border: 1px solid #ccc !important; /* Light border for print */
+                box-shadow: 2px 2px 5px grey !important;
+                -webkit-print-color-adjust: exact !important; /* Ensure background prints */
+                color-adjust: exact !important;
+            }
+            .postit-drag-handle, .postit-delete-button {
+                display: none !important;
+            }
+            .postit-content-area a {
+                color: #0000EE !important; /* Standard link blue for print */
+                text-decoration: underline !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="editor-container"></div>
+    <input type="file" id="filePicker" accept=".json" style="display: none;" />
+
+    <div class="modal-overlay" id="deleteConfirmationModal">
+        <div class="modal-content">
+            <h3>Confirm Deletion</h3>
+            <p id="deleteModalMessage">Are you sure you want to delete this line? This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button class="modal-cancel-button" id="cancelDeleteButton">Cancel</button>
+                <button class="modal-confirm-button" id="confirmDeleteButton">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const editorContainer = document.getElementById('editor-container');
+        let linesStore = {}; 
+        let postItsStore = {}; // For post-it notes
+        let lineIdCounter = 0;
+        let postItIdCounter = 0; // For post-it notes
+        let activeTextEditElement = null; 
+        const MAX_TEXT_PERP_OFFSET = 30;
+        const DELETE_BUTTON_PERP_OFFSET = 0; 
+        const MAIN_LINE_DEFAULT_THICKNESS = 4; 
+        const CHILD_LINE_DEFAULT_THICKNESS = 2; 
+        const POSTIT_DEFAULT_COLOR = 'yellow';
+        const POSTIT_VALID_COLORS = ["yellow", "red", "green", "blue", "white"];
+
+
+        const deleteModal = document.getElementById('deleteConfirmationModal');
+        const deleteModalMessage = document.getElementById('deleteModalMessage');
+        const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+        const cancelDeleteButton = document.getElementById('cancelDeleteButton');
+        let itemToDeleteId = null; // Can be line or post-it
+        let itemTypeToDelete = ''; // 'line' or 'postit'
+
+
+        const filePicker = document.getElementById('filePicker'); 
+
+        // --- Line Functions ---
+        function createLineObject(params) {
+            const id = `line-${lineIdCounter++}`;
+            const defaultParams = {
+                parentId: null, startX: 0, startY: 0, length: 100, angle: 0, 
+                text: "...", textPosRatio: 0.5, textPerpOffset: -15, 
+                thickness: params.parentId ? CHILD_LINE_DEFAULT_THICKNESS : MAIN_LINE_DEFAULT_THICKNESS, 
+                color: 'var(--orange)', children: [], offsetRatioOnParent: 0.5 
+            };
+            const line = { ...defaultParams, ...params, id };
+            linesStore[id] = line;
+            return line;
+        }
+
+        function renderLine(line, isUpdate = false) {
+            let group = document.getElementById(line.id);
+            let textElement, visual, resizeHandle, rootDragHandle, deleteHandleInstance;
+
+            const absLength = Math.abs(line.length);
+            const groupScaleX = line.length < 0 ? -1 : 1;
+            const normAngle = (line.angle % 360 + 360) % 360; 
+            let textInternalRotation = (normAngle > 90 && normAngle < 270) ? 180 : 0;
+            const textScaleX = groupScaleX;
+
+            if (group && isUpdate) { 
+                textElement = group.querySelector('.line-text');
+                visual = group.querySelector('.line-visual');
+                deleteHandleInstance = group.querySelector('.delete-handle'); 
+
+                group.style.left = `${line.startX}px`;
+                group.style.top = `${line.startY}px`;
+                group.style.width = `${absLength}px`;
+                group.style.transform = `rotate(${line.angle}deg) scaleX(${groupScaleX})`;
+                if (visual) {
+                     visual.style.height = `${line.thickness}px`;
+                     visual.style.backgroundColor = line.color; 
+                }
+            } else { 
+                if (group) group.remove(); 
+                group = document.createElement('div');
+                group.id = line.id;
+                group.className = 'line-element-group';
+                group.style.left = `${line.startX}px`;
+                group.style.top = `${line.startY}px`;
+                group.style.width = `${absLength}px`;
+                group.style.transform = `rotate(${line.angle}deg) scaleX(${groupScaleX})`;
+                group.style.transformOrigin = `0 0`;
+
+                visual = document.createElement('div'); 
+                visual.className = 'line-visual';
+                visual.style.height = `${line.thickness}px`;
+                visual.style.backgroundColor = line.color;
+                visual.dataset.lineId = line.id;
+                visual.addEventListener('click', handleVisualClick);
+
+                textElement = document.createElement('div');
+                textElement.className = 'line-text';
+                textElement.dataset.lineId = line.id;
+                textElement.addEventListener('click', handleTextClick);
+                
+                if (line.parentId !== null) {
+                    resizeHandle = document.createElement('div');
+                    resizeHandle.className = 'handle resize-handle';
+                    resizeHandle.dataset.lineId = line.id;
+                    group.appendChild(resizeHandle);
+                    setupLineResizable(resizeHandle, line); 
+                }
+                
+                group.appendChild(visual);
+                group.appendChild(textElement);
+                
+                if (line.parentId !== null) { 
+                    rootDragHandle = document.createElement('div');
+                    rootDragHandle.className = 'handle root-drag-handle';
+                    rootDragHandle.dataset.lineId = line.id;
+                    group.appendChild(rootDragHandle);
+                    setupRootDraggable(rootDragHandle, line);
+
+                    deleteHandleInstance = document.createElement('div');
+                    deleteHandleInstance.className = 'handle delete-handle';
+                    deleteHandleInstance.textContent = 'X';
+                    deleteHandleInstance.dataset.lineId = line.id;
+                    deleteHandleInstance.dataset.itemType = 'line'; // For generic delete handler
+                    deleteHandleInstance.addEventListener('click', handleDeleteItemClick);
+                    group.appendChild(deleteHandleInstance);
+                }
+                
+                editorContainer.appendChild(group);
+                setupTextDraggable(textElement, line);
+            }
+            
+            textElement.textContent = line.text || "...";
+            textElement.style.left = `${line.textPosRatio * 100}%`; 
+            textElement.style.top = `${line.textPerpOffset}px`; 
+            textElement.style.transform = `translateX(-50%) translateY(-50%) scaleX(${textScaleX}) rotate(${textInternalRotation}deg)`; 
+
+            if (deleteHandleInstance) {
+                deleteHandleInstance.style.left = `30%`; 
+                deleteHandleInstance.style.top = `${DELETE_BUTTON_PERP_OFFSET}px`; 
+                deleteHandleInstance.style.transform = `translateX(-50%) translateY(-50%) scaleX(${textScaleX}) rotate(${textInternalRotation}deg)`;
+            }
+
+            if (isUpdate) updateChildrenPositions(line.id);
+        }
+        // ... (Keep all existing line interaction functions: handleVisualClick, handleTextClick, makeEditable, setupTextDraggable, setupLineResizable, setupRootDraggable, addNewChildLine, updateChildrenPositions) ...
+        // (Make sure to adjust handleDeleteClick to handleDeleteItemClick where appropriate)
+
+        function handleVisualClick(event) { 
+            event.stopPropagation();
+            if (activeTextEditElement) activeTextEditElement.blur();
+            const clickedLine = linesStore[event.target.dataset.lineId];
+            if (!clickedLine) return;
+            const editorRect = editorContainer.getBoundingClientRect();
+            const clickXEditor = event.clientX - editorRect.left;
+            const clickYEditor = event.clientY - editorRect.top;
+            const dx = clickXEditor - clickedLine.startX;
+            const dy = clickYEditor - clickedLine.startY;
+            const angleRad = clickedLine.angle * Math.PI / 180;
+            const cosA = Math.cos(angleRad);
+            const sinA = Math.sin(angleRad);
+            const projectedDist = dx * cosA + dy * sinA;
+            let clickOffsetRatio;
+            if (Math.abs(clickedLine.length) < 1e-6) { 
+                clickOffsetRatio = 0.5; 
+            } else {
+                clickOffsetRatio = projectedDist / clickedLine.length; 
+            }
+            clickOffsetRatio = Math.max(0, Math.min(1, clickOffsetRatio));
+            addNewChildLine(clickedLine.id, clickOffsetRatio);
+        }
+
+        function handleTextClick(e) { 
+            e.stopPropagation();
+            const lineGroup = document.getElementById(e.target.dataset.lineId);
+            const rHandle = lineGroup?.querySelector('.resize-handle');
+            const rdHandle = lineGroup?.querySelector('.root-drag-handle');
+            const dHandle = lineGroup?.querySelector('.delete-handle');
+            if (e.target.classList.contains('dragging') || 
+                (rHandle && rHandle.classList.contains('dragging')) ||
+                (rdHandle && rdHandle.classList.contains('dragging')) ||
+                (dHandle && dHandle.classList.contains('dragging'))) return; 
+            if (activeTextEditElement && activeTextEditElement !== e.target) activeTextEditElement.blur(); 
+            makeEditable(e.target);
+        }
+        
+        function makeEditable(textEl) { 
+            if (textEl.isContentEditable || textEl.classList.contains('dragging')) return;
+            activeTextEditElement = textEl;
+            textEl.contentEditable = "true";
+            textEl.style.cursor = 'auto'; 
+            textEl.focus();
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(textEl);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            const itemId = textEl.dataset.lineId || textEl.closest('.post-it')?.id; // For post-it or line text
+            const itemType = textEl.dataset.lineId ? 'line' : (textEl.closest('.post-it') ? 'postit' : null);
+
+
+            const onBlur = () => {
+                textEl.contentEditable = "false";
+                textEl.style.cursor = 'grab'; // Revert cursor
+                if (itemId && itemType === 'line' && linesStore[itemId]) {
+                     linesStore[itemId].text = textEl.textContent;
+                } else if (itemId && itemType === 'postit' && postItsStore[itemId]) {
+                    postItsStore[itemId].content = textEl.innerHTML; // Save HTML for post-its
+                    // Potentially re-parse for links/title if needed here, or on save
+                }
+                textEl.removeEventListener('blur', onBlur);
+                textEl.removeEventListener('keydown', onKeydown);
+                activeTextEditElement = null;
+            };
+            const onKeydown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey && itemType === 'line') { // Only for lines, post-its allow newlines
+                    e.preventDefault(); 
+                    textEl.blur(); 
+                } else if (e.key === 'Escape') { 
+                    if (itemId && itemType === 'line' && linesStore[itemId]) {
+                         textEl.textContent = linesStore[itemId].text; 
+                    } else if (itemId && itemType === 'postit' && postItsStore[itemId]) {
+                        textEl.innerHTML = postItsStore[itemId].content;
+                    }
+                    textEl.blur();
+                }
+            };
+            textEl.addEventListener('blur', onBlur);
+            textEl.addEventListener('keydown', onKeydown);
+        }
+
+        function setupTextDraggable(textElement, lineObject) { 
+            interact(textElement).draggable({
+                listeners: {
+                    start(event) {
+                        event.target.classList.add('dragging');
+                        if (activeTextEditElement === event.target) event.target.blur();
+                    },
+                    move(event) {
+                        const target = event.target;
+                        const lineId = target.dataset.lineId;
+                        const currentLine = linesStore[lineId];
+                        if (!currentLine) return;
+                        const absLineLength = Math.abs(currentLine.length);
+                        const angleRad = currentLine.angle * Math.PI / 180;
+                        const cosA = Math.cos(angleRad);
+                        const sinA = Math.sin(angleRad);
+                        const groupFlipFactor = currentLine.length < 0 ? -1 : 1;
+                        const localDx = (event.dx * cosA + event.dy * sinA) * groupFlipFactor;
+                        const localDy = (-event.dx * sinA + event.dy * cosA); 
+                        if (absLineLength > 0) {
+                            currentLine.textPosRatio += localDx / absLineLength;
+                            currentLine.textPosRatio = Math.max(0, Math.min(1, currentLine.textPosRatio));
+                        }
+                        currentLine.textPerpOffset += localDy;
+                        currentLine.textPerpOffset = Math.max(-MAX_TEXT_PERP_OFFSET, Math.min(MAX_TEXT_PERP_OFFSET, currentLine.textPerpOffset));
+                        renderLine(currentLine, true);
+                    },
+                    end(event) { event.target.classList.remove('dragging'); }
+                },
+                autoScroll: { container: editorContainer }, 
+                inertia: false 
+            }).on('tap', function(event) { 
+                if (!event.target.classList.contains('dragging')) {
+                    const lineId = event.target.dataset.lineId;
+                    const lineGroup = document.getElementById(lineId);
+                    const rHandle = lineGroup?.querySelector('.resize-handle');
+                    const rdHandle = lineGroup?.querySelector('.root-drag-handle');
+                    const dHandle = lineGroup?.querySelector('.delete-handle');
+                    if ((rHandle && rHandle.classList.contains('dragging')) || 
+                        (rdHandle && rdHandle.classList.contains('dragging')) ||
+                        (dHandle && dHandle.classList.contains('dragging'))) return;
+                    if (activeTextEditElement && activeTextEditElement !== event.target) activeTextEditElement.blur(); 
+                    makeEditable(event.target);
+                }
+                event.preventDefault(); event.stopPropagation();
+            });
+        }
+
+        function setupLineResizable(handle, line) { 
+             interact(handle).draggable({
+                listeners: {
+                    start(event) {
+                        event.target.classList.add('dragging');
+                        if (activeTextEditElement) activeTextEditElement.blur(); 
+                    },
+                    move(event) {
+                        const currentLine = linesStore[line.id];
+                        if (!currentLine) return;
+                        const angleRad = currentLine.angle * Math.PI / 180;
+                        const editorRect = editorContainer.getBoundingClientRect();
+                        const mouseVecX = event.pageX - (editorRect.left + currentLine.startX);
+                        const mouseVecY = event.pageY - (editorRect.top + currentLine.startY);
+                        let newProjectedLength = mouseVecX * Math.cos(angleRad) + mouseVecY * Math.sin(angleRad);
+                        currentLine.length = newProjectedLength;
+                        renderLine(currentLine, true); 
+                    },
+                    end(event) {
+                        event.target.classList.remove('dragging');
+                        updateChildrenPositions(line.id);
+                    }
+                },
+                autoScroll: { container: editorContainer }, inertia: false
+            });
+        }
+
+        function setupRootDraggable(handle, childLine) { 
+            interact(handle).draggable({
+                listeners: {
+                    start(event) {
+                        event.target.classList.add('dragging');
+                        if (activeTextEditElement) activeTextEditElement.blur();
+                    },
+                    move(event) {
+                        const parentLine = linesStore[childLine.parentId];
+                        if (!parentLine) return;
+                        const parentAngleRad = parentLine.angle * Math.PI / 180;
+                        const parentAbsLength = Math.abs(parentLine.length);
+                        if (parentAbsLength === 0) return;
+                        const editorRect = editorContainer.getBoundingClientRect();
+                        const mouseRelToParentX = event.pageX - (editorRect.left + parentLine.startX);
+                        const mouseRelToParentY = event.pageY - (editorRect.top + parentLine.startY);
+                        let projectedDistOnParent = mouseRelToParentX * Math.cos(parentAngleRad) + mouseRelToParentY * Math.sin(parentAngleRad);
+                        let newOffsetRatio;
+                        if (Math.abs(parentLine.length) < 1e-6) { newOffsetRatio = 0.5; } 
+                        else { newOffsetRatio = projectedDistOnParent / parentLine.length; }
+                        newOffsetRatio = Math.max(0, Math.min(1, newOffsetRatio));
+                        childLine.offsetRatioOnParent = newOffsetRatio;
+                        const actualOffsetAlongParent = parentLine.length * newOffsetRatio; 
+                        childLine.startX = parentLine.startX + actualOffsetAlongParent * Math.cos(parentAngleRad);
+                        childLine.startY = parentLine.startY + actualOffsetAlongParent * Math.sin(parentAngleRad);
+                        renderLine(childLine, true); 
+                        updateChildrenPositions(childLine.id); 
+                    },
+                    end(event) { event.target.classList.remove('dragging');}
+                },
+                autoScroll: { container: editorContainer }, inertia: false
+            });
+        }
+        
+        function addNewChildLine(parentId, clickOffsetRatioOnParent) { 
+            const parentLine = linesStore[parentId];
+            if (!parentLine) return;
+            const parentAngleRad = parentLine.angle * Math.PI / 180;
+            const offsetAlongParentAxis = parentLine.length * clickOffsetRatioOnParent; 
+            const childStartX = parentLine.startX + offsetAlongParentAxis * Math.cos(parentAngleRad);
+            const childStartY = parentLine.startY + offsetAlongParentAxis * Math.sin(parentAngleRad);
+            const childAngle = parentLine.angle + 90; 
+            const childLength = 60; 
+            const childTextPerpOffset = -15; 
+            const childLine = createLineObject({
+                parentId: parentId, startX: childStartX, startY: childStartY,
+                length: childLength, angle: childAngle, text: "...", thickness: CHILD_LINE_DEFAULT_THICKNESS, 
+                color: 'var(--orange)', textPerpOffset: childTextPerpOffset, 
+                offsetRatioOnParent: clickOffsetRatioOnParent 
+            });
+            parentLine.children.push(childLine.id);
+            renderLine(childLine);
+        }
+
+        function updateChildrenPositions(parentId) { 
+            const parentLine = linesStore[parentId];
+            if (!parentLine || !parentLine.children) return;
+            parentLine.children.forEach(childId => {
+                const childLine = linesStore[childId];
+                if (childLine) {
+                    const parentAngleRad = parentLine.angle * Math.PI / 180;
+                    const offsetAlongParentAxis = parentLine.length * childLine.offsetRatioOnParent;
+                    childLine.startX = parentLine.startX + offsetAlongParentAxis * Math.cos(parentAngleRad);
+                    childLine.startY = parentLine.startY + offsetAlongParentAxis * Math.sin(parentAngleRad);
+                    renderLine(childLine, true); 
+                }
+            });
+        }
+
+        // --- Post-it Functions ---
+        function createPostIt(noteData = {}) {
+            const id = noteData.id || `postit-${postItIdCounter++}`;
+            const postItElement = document.createElement("div");
+            postItElement.id = id;
+            postItElement.classList.add("post-it");
+
+            const initialColor = noteData.color && POSTIT_VALID_COLORS.includes(noteData.color) 
+                               ? noteData.color : POSTIT_DEFAULT_COLOR;
+            postItElement.classList.add(`postit-color-${initialColor}`);
+            postItElement.dataset.color = initialColor;
+
+            // Positioning (convert % to px if loading, or use provided px)
+            const editorRect = editorContainer.getBoundingClientRect();
+            if (noteData.xPercent !== undefined && editorRect.width > 0) {
+                postItElement.style.left = `${(noteData.xPercent / 100) * editorRect.width}px`;
+            } else {
+                postItElement.style.left = noteData.left || "10px";
+            }
+            if (noteData.yPercent !== undefined && editorRect.height > 0) {
+                postItElement.style.top = `${(noteData.yPercent / 100) * editorRect.height}px`;
+            } else {
+                postItElement.style.top = noteData.top || "10px";
+            }
+            
+            postItElement.setAttribute("data-x", "0"); // For interact.js relative dragging
+            postItElement.setAttribute("data-y", "0");
+            postItElement.style.transform = `translate(0px, 0px)`;
+
+
+            const dragHandle = document.createElement("div");
+            dragHandle.classList.add("postit-drag-handle");
+            dragHandle.textContent = noteData.title || "Note"; // Simple title display
+            postItElement.appendChild(dragHandle);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.classList.add("postit-delete-button");
+            deleteBtn.innerHTML = "&times;";
+            deleteBtn.dataset.itemId = id; // Use generic itemId
+            deleteBtn.dataset.itemType = 'postit';
+            deleteBtn.addEventListener("click", handleDeleteItemClick);
+            postItElement.appendChild(deleteBtn);
+
+            const contentArea = document.createElement("div");
+            contentArea.classList.add("postit-content-area");
+            contentArea.innerHTML = noteData.content || "";
+            contentArea.contentEditable = "true";
+            const fontSizePercent = noteData.fontSizePercent || 100;
+            contentArea.style.fontSize = `${fontSizePercent}%`;
+            contentArea.dataset.fontSizePercent = fontSizePercent;
+
+            contentArea.addEventListener("blur", () => {
+                postItsStore[id].content = contentArea.innerHTML;
+                // No need to call saveAllNotesState from postit.js
+            });
+            contentArea.addEventListener("click", (e) => makeEditable(e.target));
+             // Handle Ctrl+Key for color changes & font size for post-its
+            contentArea.addEventListener("keydown", (e) => handlePostItKeyDown(e, postItElement, contentArea));
+            contentArea.addEventListener("paste", (e) => handlePostItPaste(e, contentArea));
+
+
+            postItElement.appendChild(contentArea);
+            editorContainer.appendChild(postItElement);
+
+            interact(postItElement).draggable({
+                allowFrom: ".postit-drag-handle",
+                inertia: true,
+                modifiers: [
+                    interact.modifiers.restrictRect({
+                        restriction: 'parent',
+                        endOnly: true
+                    })
+                ],
+                listeners: {
+                    move: (event) => {
+                        const target = event.target;
+                        const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                        const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+                        target.style.transform = `translate(${x}px, ${y}px)`;
+                        target.setAttribute('data-x', x);
+                        target.setAttribute('data-y', y);
+                    },
+                    end: (event) => {
+                        const target = event.target;
+                        let currentX = parseFloat(target.getAttribute('data-x')) || 0;
+                        let currentY = parseFloat(target.getAttribute('data-y')) || 0;
+                        let baseLeft = parseFloat(target.style.left) || 0;
+                        let baseTop = parseFloat(target.style.top) || 0;
+                        
+                        target.style.left = (baseLeft + currentX) + "px";
+                        target.style.top = (baseTop + currentY) + "px";
+                        target.style.transform = "translate(0px, 0px)";
+                        target.setAttribute("data-x", "0");
+                        target.setAttribute("data-y", "0");
+
+                        // Update store with percentage position
+                        const noteId = target.id;
+                        if (postItsStore[noteId]) {
+                            const editorRect = editorContainer.getBoundingClientRect();
+                            if (editorRect.width > 0) {
+                                postItsStore[noteId].xPercent = (parseFloat(target.style.left) / editorRect.width) * 100;
+                            }
+                            if (editorRect.height > 0) {
+                                postItsStore[noteId].yPercent = (parseFloat(target.style.top) / editorRect.height) * 100;
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Store initial data
+            if (!postItsStore[id]) {
+                 const editorRectForStore = editorContainer.getBoundingClientRect();
+                 postItsStore[id] = {
+                    id: id,
+                    title: noteData.title || "Note",
+                    content: contentArea.innerHTML,
+                    xPercent: editorRectForStore.width > 0 ? (parseFloat(postItElement.style.left) / editorRectForStore.width) * 100 : 0,
+                    yPercent: editorRectForStore.height > 0 ? (parseFloat(postItElement.style.top) / editorRectForStore.height) * 100 : 0,
+                    color: initialColor,
+                    fontSizePercent: fontSizePercent
+                };
+            }
+            if (parseInt(id.split('-')[1]) >= postItIdCounter) {
+                postItIdCounter = parseInt(id.split('-')[1]) + 1;
+            }
+            return postItElement;
+        }
+
+        function handlePostItKeyDown(e, postItElement, contentArea) {
+            let shouldSave = false;
+            let preventDefault = false;
+
+            if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+                if (POSTIT_VALID_COLORS.map(c => c[0]).includes(e.key.toLowerCase())) {
+                    preventDefault = true;
+                    shouldSave = true;
+                    let newColorKey = e.key.toLowerCase();
+                    let newColor = POSTIT_DEFAULT_COLOR;
+                    if (newColorKey === 'y') newColor = 'yellow';
+                    else if (newColorKey === 'r') newColor = 'red';
+                    else if (newColorKey === 'g') newColor = 'green';
+                    else if (newColorKey === 'b') newColor = 'blue';
+                    else if (newColorKey === 'w') newColor = 'white';
+                    
+                    POSTIT_VALID_COLORS.forEach(c => postItElement.classList.remove(`postit-color-${c}`));
+                    postItElement.classList.add(`postit-color-${newColor}`);
+                    postItElement.dataset.color = newColor;
+                    if (postItsStore[postItElement.id]) postItsStore[postItElement.id].color = newColor;
+
+                } else if (e.key === "." || e.key === ",") {
+                    preventDefault = true;
+                    shouldSave = true;
+                    let currentPercent = parseFloat(contentArea.dataset.fontSizePercent) || 100;
+                    let increment = 10;
+                    let newPercent = e.key === "." ? currentPercent + increment : currentPercent - increment;
+                    newPercent = Math.max(50, Math.min(300, newPercent)); // Clamp font size
+                    contentArea.style.fontSize = newPercent + "%";
+                    contentArea.dataset.fontSizePercent = newPercent;
+                    if (postItsStore[postItElement.id]) postItsStore[postItElement.id].fontSizePercent = newPercent;
+                }
+            }
+             if (e.key.length === 1 || e.key === "Backspace" || e.key === "Delete" || e.key === "Enter") {
+                shouldSave = true; // Mark for potential save on blur or later
+            }
+
+
+            if (preventDefault) e.preventDefault();
+            // Save is handled by blur event on contentArea
+        }
+
+        function handlePostItPaste(e, contentArea) {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0 || !contentArea.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+                return; // Paste is happening outside the content area or no selection
+            }
+            const range = selection.getRangeAt(0);
+            let pastedText = (e.clipboardData || window.clipboardData)?.getData("text/plain");
+            if (!pastedText) return;
+
+            let isValidUrl = false;
+            let url = "";
+            try {
+                if (pastedText.startsWith("http://") || pastedText.startsWith("https://")) {
+                    url = new URL(pastedText).href; // Validate and normalize
+                    isValidUrl = true;
+                }
+            } catch (_) { isValidUrl = false; }
+
+            if (isValidUrl && !selection.isCollapsed) { // Only if text is selected
+                e.preventDefault();
+                try {
+                    const selectedText = selection.toString();
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.textContent = selectedText.trim() || url; // Use selected text or URL as link text
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer"; // Security best practice
+                    
+                    range.deleteContents();
+                    range.insertNode(link);
+
+                    // Move cursor after the inserted link
+                    range.setStartAfter(link);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    if (postItsStore[contentArea.closest('.post-it').id]) {
+                         postItsStore[contentArea.closest('.post-it').id].content = contentArea.innerHTML;
+                    }
+                } catch (domError) {
+                    console.error("Error creating link on paste:", domError);
+                }
+            }
+            // Allow default paste otherwise, or if no text selected for link
+        }
+
+
+        editorContainer.addEventListener('click', (ev) => {
+            if (ev.altKey && ev.target === editorContainer) { // Click on empty area with Alt
+                 const editorRect = editorContainer.getBoundingClientRect();
+                 const xPercent = ((ev.clientX - editorRect.left) / editorRect.width) * 100;
+                 const yPercent = ((ev.clientY - editorRect.top) / editorRect.height) * 100;
+                 createPostIt({ xPercent: xPercent, yPercent: yPercent });
+            }
+        });
+
+        interact(editorContainer).on('hold', function (event) {
+            if (event.target === editorContainer) { // Hold on empty area
+                const editorRect = editorContainer.getBoundingClientRect();
+                const xPercent = ((event.pageX - editorRect.left) / editorRect.width) * 100;
+                const yPercent = ((event.pageY - editorRect.top) / editorRect.height) * 100;
+                createPostIt({ xPercent: xPercent, yPercent: yPercent });
+            }
+        });
+
+
+        // --- Generic Delete Logic ---
+        function handleDeleteItemClick(event) {
+            event.stopPropagation();
+            itemToDeleteId = event.target.dataset.itemId || event.target.dataset.lineId; // Use itemId for post-its
+            itemTypeToDelete = event.target.dataset.itemType;
+            
+            let itemName = 'this item';
+            let descendantCount = 0;
+
+            if (itemTypeToDelete === 'line') {
+                const line = linesStore[itemToDeleteId];
+                if (!line) return;
+                itemName = `the line "${line.text || 'untitled'}"`;
+                descendantCount = getDescendantIds(itemToDeleteId).length;
+            } else if (itemTypeToDelete === 'postit') {
+                const postIt = postItsStore[itemToDeleteId];
+                 if (!postIt) return;
+                itemName = `the note "${postIt.title || 'untitled'}"`;
+                // Post-its don't have descendants in this model
+            } else {
+                return; // Unknown item type
+            }
+
+            let message = `Are you sure you want to delete ${itemName}?`;
+            if (descendantCount > 0) {
+                message += ` This will also delete ${descendantCount} child line(s).`;
+            }
+            message += " This action cannot be undone.";
+            deleteModalMessage.textContent = message;
+            deleteModal.style.display = 'flex';
+        }
+
+        confirmDeleteButton.onclick = () => {
+            if (itemToDeleteId && itemTypeToDelete === 'line') {
+                deleteLineRecursive(itemToDeleteId);
+            } else if (itemToDeleteId && itemTypeToDelete === 'postit') {
+                deletePostIt(itemToDeleteId);
+            }
+            itemToDeleteId = null;
+            itemTypeToDelete = '';
+            deleteModal.style.display = 'none';
+        };
+         cancelDeleteButton.onclick = () => { 
+            itemToDeleteId = null;
+            itemTypeToDelete = '';
+            deleteModal.style.display = 'none';
+        };
+
+        function deletePostIt(postItId) {
+            const postIt = postItsStore[postItId];
+            if (!postIt) return;
+            const element = document.getElementById(postItId);
+            if (element) element.remove();
+            delete postItsStore[postItId];
+        }
+
+
+        // --- Save/Load ---
+        async function triggerSaveDiagram() {
+            const mainLineId = Object.keys(linesStore).find(id => linesStore[id].parentId === null);
+            // Prepare postItsStore for saving: ensure xPercent/yPercent are up-to-date from DOM
+            for (const id in postItsStore) {
+                const postItElement = document.getElementById(id);
+                if (postItElement) {
+                    const editorRect = editorContainer.getBoundingClientRect();
+                    if (editorRect.width > 0) {
+                         postItsStore[id].xPercent = (parseFloat(postItElement.style.left) / editorRect.width) * 100;
+                    }
+                    if (editorRect.height > 0) {
+                        postItsStore[id].yPercent = (parseFloat(postItElement.style.top) / editorRect.height) * 100;
+                    }
+                }
+            }
+
+            const dataToSave = {
+                lines: linesStore,
+                postIts: postItsStore, // Add post-its to save data
+                mainLineReference: mainLineId && linesStore[mainLineId] ? { 
+                    id: mainLineId,
+                    length: linesStore[mainLineId].length,
+                } : null
+            };
+            const diagramData = JSON.stringify(dataToSave, null, 2);
+            const blob = new Blob([diagramData], { type: 'application/json' });
+            let fileHandle = null; 
+            
+            try {
+                if (window.showSaveFilePicker) {
+                     fileHandle = await window.showSaveFilePicker({
+                        suggestedName: 'diagram_with_notes.json',
+                        types: [{ description: 'JSON Diagram Files', accept: { 'application/json': ['.json'] } }],
+                    });
+                }
+
+                if (fileHandle) {
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    console.log('Diagram saved successfully.');
+                } else { 
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'diagram_with_notes.json';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                    console.log('Diagram download initiated.');
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') console.error('Error saving diagram:', err);
+                else console.log('Save diagram aborted by user.');
+            }
+        }
+
+        async function triggerLoadDiagram() {
+             if (window.showOpenFilePicker) {
+                try {
+                    const [fileHandle] = await window.showOpenFilePicker({
+                        types: [{ description: 'JSON Diagram Files', accept: { 'application/json': ['.json'] } }],
+                        multiple: false,
+                    });
+                    const file = await fileHandle.getFile();
+                    loadDataFromFile(file);
+                } catch (err) {
+                    if (err.name !== 'AbortError') console.error('Error opening file:', err);
+                }
+            } else {
+                filePicker.click(); 
+            }
+        }
+
+        filePicker.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                loadDataFromFile(file);
+            }
+        });
+
+        function loadDataFromFile(file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const savedData = JSON.parse(event.target.result);
+                    if (typeof savedData === 'object' && savedData !== null && savedData.lines && savedData.mainLineReference) {
+                        
+                        const loadedLinesPart = savedData.lines;
+                        const mainLineRef = savedData.mainLineReference;
+                        const loadedPostItsPart = savedData.postIts || {};
+
+
+                        editorContainer.innerHTML = '';
+                        linesStore = {}; 
+                        postItsStore = {};
+                        lineIdCounter = 0; 
+                        postItIdCounter = 0;
+
+                        const containerRect = editorContainer.getBoundingClientRect();
+                        if (!editorContainer || containerRect.width === 0 || containerRect.height === 0) {
+                             console.error("Editor container not ready during load."); return; 
+                        }
+                        const safeMargin = Math.max(50, Math.min(containerRect.width, containerRect.height) * 0.10);
+                        const p1x = safeMargin; const p1y = containerRect.height - safeMargin;
+                        const p2x = containerRect.width - safeMargin; const p2y = safeMargin;
+                        const dx = p2x - p1x; const dy = p2y - p1y;
+                        const currentDisplayMainLength = Math.sqrt(dx*dx + dy*dy);
+                        const currentDisplayMainAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+                        const currentDisplayMainStartX = p1x;
+                        const currentDisplayMainStartY = p1y;
+                        const currentDisplayMainThickness = MAIN_LINE_DEFAULT_THICKNESS;
+
+                        const scaleFactor = mainLineRef && mainLineRef.length !== 0 ? (currentDisplayMainLength / mainLineRef.length) : 1;
+
+
+                        let maxLineIdNum = -1;
+                        const tempLinesArray = []; 
+                        for (const id in loadedLinesPart) { tempLinesArray.push(loadedLinesPart[id]); }
+                        tempLinesArray.sort((a,b) => (a.parentId === null ? -1 : (b.parentId === null ? 1: 0)));
+
+                        tempLinesArray.forEach(loadedLine => {
+                            const numId = parseInt(loadedLine.id.split('-')[1]);
+                            if (!isNaN(numId) && numId > maxLineIdNum) maxLineIdNum = numId;
+                            let newLineData = { ...loadedLine }; 
+                            if (mainLineRef && loadedLine.id === mainLineRef.id) { 
+                                newLineData.startX = currentDisplayMainStartX;
+                                newLineData.startY = currentDisplayMainStartY;
+                                newLineData.length = currentDisplayMainLength;
+                                newLineData.angle = currentDisplayMainAngle;
+                                newLineData.thickness = currentDisplayMainThickness; 
+                            } else { 
+                                newLineData.length = loadedLine.length * scaleFactor;
+                                newLineData.thickness = Math.max(1, loadedLine.thickness * scaleFactor);
+                                newLineData.textPerpOffset = loadedLine.textPerpOffset * scaleFactor;
+                            }
+                            linesStore[newLineData.id] = newLineData;
+                        });
+                        lineIdCounter = maxLineIdNum + 1;
+
+                        const mainLineToRender = mainLineRef ? linesStore[mainLineRef.id] : null;
+                        if (mainLineToRender) {
+                            renderLine(mainLineToRender); 
+                            updateChildrenPositions(mainLineRef.id); 
+                        } else if (Object.keys(linesStore).length > 0) { // If no main line ref but other lines exist (e.g. old format)
+                             console.warn("Main line reference missing or invalid, attempting to render all lines directly.");
+                             for (const id in linesStore) renderLine(linesStore[id]); // Render what we have
+                        } else {
+                             console.log("No lines to render from loaded file, or main line missing. Initializing fresh.");
+                             init(); // Fallback to fresh init if no lines at all or main line is problematic
+                             return;
+                        }
+                        
+                        // Load Post-its
+                        let maxPostItIdNum = -1;
+                        for (const id in loadedPostItsPart) {
+                            const noteData = loadedPostItsPart[id];
+                            const numId = parseInt(id.split('-')[1]);
+                            if (!isNaN(numId) && numId > maxPostItIdNum) maxPostItIdNum = numId;
+                            createPostIt(noteData); // createPostIt handles conversion from % to px
+                        }
+                        postItIdCounter = maxPostItIdNum + 1;
+
+
+                        console.log('Diagram loaded and scaled successfully.');
+
+                    } else {
+                        console.error('Invalid diagram data format.');
+                        alert('Error: Could not load diagram. Invalid file format.');
+                    }
+                } catch (err) {
+                    console.error('Error parsing diagram data:', err);
+                    alert('Error: Could not load diagram. File may be corrupted or not a valid diagram.');
+                }
+            };
+            reader.onerror = () => {
+                console.error('Error reading file.');
+                alert('Error: Could not read file.');
+            };
+            reader.readAsText(file);
+        }
+
+        function handleKeyDown(event) {
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const ctrlCmd = isMac ? event.metaKey : event.ctrlKey;
+
+            if (ctrlCmd && event.key.toLowerCase() === 's') {
+                event.preventDefault();
+                triggerSaveDiagram();
+            } else if (ctrlCmd && event.key.toLowerCase() === 'o') {
+                event.preventDefault();
+                triggerLoadDiagram();
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('keydown', handleKeyDown);
+            init();
+        });
+        
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            // On resize, we might want to re-calculate positions of post-its if they are % based
+            // For now, lines are scaled on load, post-its are also % based on load.
+            // A full dynamic rescale on window resize is more complex.
+            // Let's re-render post-its to adjust their px positions from stored percentages.
+            Object.values(postItsStore).forEach(noteData => {
+                const el = document.getElementById(noteData.id);
+                if (el) {
+                    const editorRect = editorContainer.getBoundingClientRect();
+                    if (editorRect.width > 0) el.style.left = `${(noteData.xPercent / 100) * editorRect.width}px`;
+                    if (editorRect.height > 0) el.style.top = `${(noteData.yPercent / 100) * editorRect.height}px`;
+                }
+            });
+        }); 
+
+        function init() { 
+            editorContainer.innerHTML = ''; 
+            linesStore = {};
+            postItsStore = {};
+            lineIdCounter = 0;
+            postItIdCounter = 0;
+            activeTextEditElement = null; 
+            
+            const containerRect = editorContainer.getBoundingClientRect();
+            if (!editorContainer || containerRect.width === 0 || containerRect.height === 0) {
+                console.warn("Editor container not ready or has zero dimensions for init.");
+                if (!editorContainer) {
+                    console.error("CRITICAL: editor-container not found in DOM for init.");
+                    return; 
+                }
+            }
+            const safeMargin = Math.max(50, Math.min(containerRect.width, containerRect.height) * 0.10); 
+            const p1x = safeMargin;
+            const p1y = containerRect.height - safeMargin;
+            const p2x = containerRect.width - safeMargin;
+            const p2y = safeMargin;
+            const dx = p2x - p1x;
+            const dy = p2y - p1y;
+            const mainLength = Math.sqrt(dx*dx + dy*dy);
+            const mainAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            const mainLine = createLineObject({
+                parentId: null, 
+                startX: p1x, 
+                startY: p1y, 
+                length: mainLength, 
+                angle: mainAngle,
+                text: "...", 
+                thickness: MAIN_LINE_DEFAULT_THICKNESS, 
+                textPerpOffset: -15, 
+                color: 'var(--orange)' 
+            });
+            renderLine(mainLine);
+        }
+    </script>
+</body>
+</html>
