@@ -4,7 +4,7 @@ Outline editor, written by Gemini with my constant change of requests.
 
 Why? Reasons.
 
-TODO: 
+TODO:
 
 - [ ] refactor the big JS file
 - [ ] Save/export to static HTML

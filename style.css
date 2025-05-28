@@ -1,22 +1,102 @@
-/* Solarized-inspired Dark Theme Variables */
 :root {
-  --base03: #002b36; /* Background */
-  --base02: #073642; /* Editor Background, Modal BG */
-  --base01: #586e75; /* UI Borders, secondary text, Modal Cancel BG */
-  --base00: #657b83; /* UI elements, Modal Cancel Hover BG */
-  --base0: #839496; /* Modal Text */
-  --base1: #93a1a1; /* Primary Text on Dark BG, Modal Title */
+  /* Original Solarized Dark Variables (can be kept for reference or direct use if an element should always be dark-themed) */
+  --base03: #002b36;
+  --base02: #073642;
+  --base01: #586e75;
+  --base00: #657b83;
+  --base0: #839496;
+  --base1: #93a1a1;
 
-  --yellow: #b58900; /* Drawing Yellow */
-  --orange: #cb4b16; /* Schema Lines, Drawing Orange */
-  --red: #dc322f; /* Root Drag, Delete, Confirm Button, Drawing Red */
-  --magenta: #d33682; /* Drawing Magenta */
-  --violet: #6c71c4; /* Drawing Violet */
-  --blue: #268bd2; /* Resize, Drawing Blue */
-  --cyan: #2aa198; /* Schema Text, Drawing Cyan */
-  --green: #859900; /* Drawing Green */
-  --postit-white-bg: #fdf6e3;
+  /* Original Drawing & Accent Colors (Solarized - can remain "as is" for highlights) */
+  --yellow: #b58900;
+  --orange: #cb4b16; /* Used for schema lines in dark theme */
+  --red: #dc322f;
+  --magenta: #d33682;
+  --violet: #6c71c4;
+  --blue: #268bd2;
+  --cyan: #2aa198; /* Used for schema text in dark theme */
+  --green: #859900;
+
+  /* Original Post-it specific colors */
+  --postit-white-bg: #fdf6e3; /* This is a nice off-white, good for light theme editor */
   --postit-white-text: #586e75;
+  --postit-transp-bg: #99999922;
+  /* NEW Theme-Dependent Variables (Default to Dark Theme values) */
+  --theme-main-background: var(--base03);
+  --theme-editor-background: var(--base02);
+  --theme-primary-text: var(
+    --base1
+  ); /* For most body text, line labels if not specifically colored */
+  --theme-secondary-text: var(--base01); /* For less prominent UI text */
+  --theme-border-color: var(--base01);
+
+  --theme-schema-line-color: var(--orange); /* Schema lines color */
+  --theme-schema-text-color: var(
+    --cyan
+  ); /* Text on schema lines (the editable labels) */
+
+  /* Modal Theming */
+  --theme-modal-background: var(--base02);
+  --theme-modal-overlay-bg: rgba(0, 0, 0, 0.75);
+  --theme-modal-text-primary: var(--base1); /* e.g., Modal title */
+  --theme-modal-text-secondary: var(--base0); /* e.g., Modal paragraph */
+  --theme-modal-button-confirm-bg: var(--red);
+  --theme-modal-button-confirm-text: var(
+    --base03
+  ); /* Text on red confirm button */
+  --theme-modal-button-cancel-bg: var(--base01);
+  --theme-modal-button-cancel-text: var(--base03);
+  --theme-modal-button-cancel-hover-bg: var(--base00);
+
+  /* Post-it Theming (examples, assuming post-it backgrounds stay solarized) */
+  --theme-postit-yellow-text: var(--base03);
+  --theme-postit-red-text: var(--base03);
+  --theme-postit-green-text: var(--base03);
+  --theme-postit-blue-text: var(--base03);
+  --theme-postit-white-text: var(
+    --postit-white-text
+  ); /* Uses its specific variable */
+  --theme-postit-transp-text: #333;
+
+  --theme-postit-yellow-drag-handle: var(--base02);
+  --theme-postit-red-drag-handle: var(--base03);
+  --theme-postit-green-drag-handle: var(--base02);
+  --theme-postit-blue-drag-handle: var(--base03);
+  --theme-postit-white-drag-handle: var(--base01);
+}
+
+body.light-theme {
+  --theme-main-background: #999;
+  --theme-editor-background: #aaa;
+  --theme-primary-text: #1c1c1c;
+  --theme-secondary-text: #4a4a4a;
+  --theme-border-color: #c0c0c0;
+
+  --theme-schema-line-color: #333;
+  --theme-schema-text-color: #333;
+
+  --theme-modal-background: #ffffff;
+  --theme-modal-overlay-bg: rgba(50, 50, 50, 0.6);
+  --theme-modal-text-primary: #1c1c1c;
+  --theme-modal-text-secondary: #4a4a4a;
+
+  --theme-modal-button-confirm-text: #ffffff;
+  --theme-modal-button-cancel-bg: #e0e0e0;
+  --theme-modal-button-cancel-text: #1c1c1c;
+  --theme-modal-button-cancel-hover-bg: #d0d0d0;
+
+  --theme-postit-yellow-text: #1c1c1c;
+  --theme-postit-red-text: #ffffff;
+  --theme-postit-green-text: #1c1c1c;
+  --theme-postit-blue-text: #ffffff;
+  --theme-postit-white-text: #1c1c1c;
+  --theme-postit-transp-text: #1c1c1c;
+
+  --theme-postit-yellow-drag-handle: var(--base01);
+  --theme-postit-red-drag-handle: var(--postit-white-bg);
+  --theme-postit-green-drag-handle: var(--base01);
+  --theme-postit-blue-drag-handle: var(--postit-white-bg);
+  --theme-postit-white-drag-handle: var(--base01);
 }
 
 body {
@@ -30,13 +110,14 @@ body {
     Helvetica,
     Arial,
     sans-serif;
-  background-color: var(--base03);
+  background-color: var(--theme-main-background);
+  color: var(--theme-primary-text);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  color: var(--base1);
+
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -48,8 +129,8 @@ body {
   width: 98vw; /* Base size on viewport width */
   max-height: 98vh; /* Constrain height; width will adjust to maintain aspect ratio if this limit is hit */
   margin: auto; /* Ensure centering within the flex body */
-  background-color: var(--base02);
-  border: 1px solid var(--base01);
+  background-color: var(--theme-editor-background);
+  border: 1px solid var(--theme-border-color);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: hidden;
@@ -78,7 +159,7 @@ body {
 }
 .line-visual {
   width: 100%;
-  background-color: var(--orange);
+  background-color: var(--theme-schema-line-color);
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -87,8 +168,8 @@ body {
 }
 .line-text {
   position: absolute;
-  white-space: nowrap;
-  color: var(--cyan);
+  white-space: pre-wrap; /* Changed from nowrap to pre-wrap */
+  color: var(--theme-schema-text-color);
   font-size: 16px;
   padding: 1px 2px;
   background-color: transparent;
@@ -97,11 +178,15 @@ body {
   cursor: grab;
   min-width: 10px;
   text-align: center;
+  /* Consider adding word-break if very long words without spaces cause issues */
+  /* word-break: break-word; */
 }
 .line-text[contenteditable="true"] {
-  background-color: var(--base03);
-  border: 1px dashed var(--blue);
-  color: var(--base1);
+  background-color: var(
+    --theme-editor-background
+  ); /* Or a slightly different bg for editing */
+  border: 1px dashed var(--blue); /* Keep blue for edit indication, or theme this too */
+  color: var(--theme-primary-text); /* Ensure editable text is primary color */
   user-select: text;
   cursor: auto;
   outline: none;
@@ -265,8 +350,15 @@ body {
 }
 .postit-color-white {
   background-color: var(--postit-white-bg);
-  color: var(--postit-white-text);
+  color: #333;
 }
+
+.postit-color-transp {
+  background-color: var(--postit-transp-bg);
+  backdrop-filter: blur(5px);
+  color: var(--theme-postit-transp-text);
+}
+
 .postit-color-yellow .postit-drag-handle {
   color: var(--base02);
 }
@@ -290,18 +382,18 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.75);
+  background-color: var(--theme-modal-overlay-bg);
   display: none;
   justify-content: center;
   align-items: center;
   z-index: 1000;
 }
 .modal-content {
-  background-color: var(--base02);
-  color: var(--base0);
+  background-color: var(--theme-modal-background);
+  color: var(--theme-modal-text-secondary); /* Default text for <p> */
   padding: 25px;
   border-radius: 8px;
-  border: 1px solid var(--base01);
+  border: 1px solid var(--theme-border-color);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
   width: 90%;
   max-width: 400px;
@@ -310,7 +402,7 @@ body {
 .modal-content h3 {
   margin-top: 0;
   font-size: 1.25rem;
-  color: var(--base1);
+  color: var(--theme-modal-text-primary); /* Modal title */
 }
 .modal-content p {
   margin-bottom: 20px;
@@ -326,18 +418,19 @@ body {
   font-weight: 500;
 }
 .modal-confirm-button {
-  background-color: var(--red);
-  color: var(--base03);
+  background-color: var(--theme-modal-button-confirm-bg); /* Stays --red */
+  color: var(--theme-modal-button-confirm-text);
 }
 .modal-confirm-button:hover {
-  background-color: #a71e1c;
+  background-color: #a71e1c; /* Darken on hover, could be a variable too */
 }
 .modal-cancel-button {
-  background-color: var(--base01);
-  color: var(--base03);
+  background-color: var(--theme-modal-button-cancel-bg);
+  color: var(--theme-modal-button-cancel-text);
 }
 .modal-cancel-button:hover {
-  background-color: var(--base00);
+  background-color: var(--theme-modal-button-cancel-bg);
+  color: var(--theme-modal-button-cancel-text);
 }
 
 /* Print Styles */

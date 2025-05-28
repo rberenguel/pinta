@@ -133,7 +133,36 @@
         </div>
       </div>
     </div>
-
-    <script src="pinta.js"></script>
+    <div class="modal-overlay" id="linkModal">
+      <div class="modal-content">
+        <h3>Edit Link</h3>
+        <input
+          type="text"
+          id="linkUrlInput"
+          placeholder="Enter URL (e.g., https://example.com)"
+          style="width: 90%; margin-bottom: 15px; padding: 8px"
+        />
+        <div class="modal-buttons">
+          <button
+            class="modal-cancel-button"
+            id="removeLinkButton"
+            style="background-color: var(--base01)"
+          >
+            Remove Link
+          </button>
+          <button class="modal-cancel-button" id="cancelLinkModalButton">
+            Cancel
+          </button>
+          <button
+            class="modal-confirm-button"
+            id="saveLinkButton"
+            style="background-color: var(--blue)"
+          >
+            Save Link
+          </button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="pinta.js"></script>
   </body>
 </html>
