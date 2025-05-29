@@ -149,10 +149,10 @@ function handleKeyDown(event) {
     state.linkModal?.style.display === "flex" ||
     (helpModal &&
       helpModal.style.display === "flex" &&
-      event.key.toLowerCase() !== "h");
+      event.key.toLowerCase() !== "?");
 
   if (
-    event.key.toLowerCase() === "h" &&
+    event.key.toLowerCase() === "?" &&
     !isEditingText &&
     !isModalAlreadyOpen
   ) {
@@ -162,7 +162,7 @@ function handleKeyDown(event) {
   }
   // For closing with 'h' if it's already open
   if (
-    event.key.toLowerCase() === "h" &&
+    event.key.toLowerCase() === "?" &&
     helpModal &&
     helpModal.style.display === "flex"
   ) {

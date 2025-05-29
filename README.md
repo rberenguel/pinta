@@ -6,7 +6,7 @@ Why? _Reasons_.
 
 ---
 
-Press `h` to get help (on how to use this, I'm a doctor
+Press `?` to get help (on how to use this, I'm a doctor
 but I'm not your doctor or that kind of doctor).
 
 ---
