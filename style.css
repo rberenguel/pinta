@@ -42,7 +42,7 @@
   --theme-postit-green-text: var(--base03);
   --theme-postit-blue-text: var(--base03);
   --theme-postit-white-text: var(--postit-white-text);
-  --theme-postit-transp-text: #333;
+  --theme-postit-transp-text: var(--yellow);
 
   --theme-postit-yellow-drag-handle: var(--base02);
   --theme-postit-red-drag-handle: var(--base03);

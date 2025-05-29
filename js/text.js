@@ -210,13 +210,12 @@ function makeEditable(textEl) {
         if (e.key === "," || e.key === "<") {
           e.preventDefault();
           let newSize = (currentLine.fontSize || 16) - 2;
-          if (newSize < 8) newSize = 8;
+          if (newSize < 4) newSize = 4;
           currentLine.fontSize = newSize;
           textEl.style.fontSize = `${newSize}px`;
         } else if (e.key === "." || e.key === ">") {
           e.preventDefault();
           let newSize = (currentLine.fontSize || 16) + 2;
-          if (newSize > 72) newSize = 72;
           currentLine.fontSize = newSize;
           textEl.style.fontSize = `${newSize}px`;
         } else if (e.key.toLowerCase() === "b") {
