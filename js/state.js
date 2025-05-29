@@ -43,10 +43,7 @@ export const state = {
 };
 
 export const SVG_NS = "http://www.w3.org/2000/svg";
-export const MAX_TEXT_PERP_OFFSET = 30;
-export const DELETE_BUTTON_PERP_OFFSET = 0;
-export const MAIN_LINE_DEFAULT_THICKNESS = 4;
-export const CHILD_LINE_DEFAULT_THICKNESS = 2;
+
 export const POSTIT_DEFAULT_COLOR = "yellow";
 export const POSTIT_VALID_COLORS = [
   "yellow",

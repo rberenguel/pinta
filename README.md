@@ -1,11 +1,19 @@
 # Pinta
 
-Outline editor, written by Gemini with my constant change of requests.
+Outline editor, written by Gemini with my constant changing requests.
 
-Why? Reasons.
+Why? _Reasons_.
+
+---
+
+Press `h` to get help (on how to use this, I'm a doctor
+but I'm not your doctor or that kind of doctor).
+
+---
 
 TODO:
 
-- [ ] refactor the big JS file
-- [ ] Save/export to static HTML
+- [x] refactor the big JS file
+- [x] Save/export to static HTML
 - [ ] Better UX of shape selection
+- [ ] Better README

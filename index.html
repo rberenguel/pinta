@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="icon.png" />
     <title>Pinta</title>
     <link href="style.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <script src="lib/interact.min.js"></script>
   </head>
   <body>
     <div id="editor-container">
@@ -160,6 +160,163 @@
           >
             Save Link
           </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-overlay" id="helpModal" style="display: none">
+      <button class="modal-close-button" id="closeHelpModalButton">
+        &times;
+      </button>
+      <div class="modal-content" id="helpModalContent">
+        <h3>Pinta</h3>
+        <div class="help-sections-container">
+          <div class="help-section">
+            <h4>General</h4>
+            <ul>
+              <li>
+                Pinta helps create diagrams with a main topic and branching
+                sub-topics.
+              </li>
+              <li>Add schema lines, post-it notes, and drawings.</li>
+              <li>Most items can be dragged, edited, and deleted.</li>
+            </ul>
+          </div>
+
+          <div class="help-section">
+            <h4>Schema Lines</h4>
+            <ul>
+              <li>
+                <strong>Create Child Line:</strong> <code>Click</code> on any
+                existing line.
+              </li>
+              <li>
+                <strong>Labels:</strong>
+                <ul>
+                  <li>Edit: <code>Click</code> on text.</li>
+                  <li>Multiline: <code>Shift+Enter</code> while editing.</li>
+                  <li>Move: Drag text along or perpendicular to its line.</li>
+                </ul>
+              </li>
+              <li><strong>Resize Child Line:</strong> Drag its outer end.</li>
+              <li>
+                <strong>Move Child Line Base:</strong> Drag its connection point
+                along the parent line.
+              </li>
+            </ul>
+          </div>
+
+          <div class="help-section">
+            <h4>Line Labels (Advanced - when editing text)</h4>
+            <ul>
+              <li>
+                <strong>Font Size:</strong> <code>Cmd/Ctrl</code> +
+                <code>.</code> (increase) or <code>,</code> (decrease).
+              </li>
+              <li>
+                <strong>Bold:</strong> <code>Cmd/Ctrl</code> + <code>B</code>.
+              </li>
+              <li>
+                <strong>Align Center:</strong> <code>Cmd/Ctrl</code> +
+                <code>C</code>.
+              </li>
+              <li>
+                <strong>Link:</strong> <code>Cmd/Ctrl</code> + <code>K</code> to
+                add/edit. Click icon on line to open.
+              </li>
+            </ul>
+          </div>
+
+          <div class="help-section">
+            <h4>Post-it Notes</h4>
+            <ul>
+              <li>
+                <strong>Create:</strong> <code>Alt+Click</code> or
+                <code>Hold Click</code> on empty editor space.
+              </li>
+              <li>
+                <strong>Edit:</strong> Click content area. Supports pasting
+                links.
+              </li>
+              <li>
+                <strong>Change Color (Ctrl + key):</strong>
+                <code>y</code> (yellow), <code>r</code> (red),
+                <code>g</code> (green), <code>b</code> (blue),
+                <code>w</code> (white), <code>t</code> (transparent).
+              </li>
+              <li>
+                <strong>Font Size (Ctrl + key):</strong>
+                <code>.</code> (increase), <code>,</code> (decrease).
+              </li>
+            </ul>
+          </div>
+
+          <div class="help-section">
+            <h4>Drawings (SVG Layer)</h4>
+            <ul>
+              <li>
+                <strong>Select Tool:</strong> <code>r</code> (rectangle),
+                <code>h</code> (highlight), <code>a</code> (arrow).
+              </li>
+              <li>
+                <strong>Cancel Tool:</strong> <code>s</code> or
+                <code>Esc</code>.
+              </li>
+              <li>
+                <strong>Draw:</strong> <code>Click and drag</code> on canvas
+                with a tool selected.
+              </li>
+              <li>
+                <strong>Manipulate:</strong> <code>Click</code> to select, then
+                drag. <code>Backspace</code> or <code>Delete</code> to remove.
+              </li>
+              <li>
+                <strong>Change Color:</strong>
+                <ol>
+                  <li>Deselect any tool (press <code>s</code>).</li>
+                  <li>Select a drawing.</li>
+                  <li>Press <code>c</code> (color change mode).</li>
+                  <li>
+                    Press a color key: <code>r, o, y, g, c, b, v, m</code>.
+                  </li>
+                </ol>
+              </li>
+            </ul>
+          </div>
+
+          <div class="help-section">
+            <h4>General Operations</h4>
+            <ul>
+              <li>
+                <strong>Save Diagram:</strong> <code>Cmd/Ctrl</code> +
+                <code>S</code>.
+              </li>
+              <li>
+                <strong>Load Diagram:</strong> <code>Cmd/Ctrl</code> +
+                <code>O</code>.
+              </li>
+              <li>
+                <strong>Export to Static HTML:</strong> <code>Cmd/Ctrl</code> +
+                <code>E</code>.
+              </li>
+              <li>
+                <strong>Toggle Theme:</strong> <code>q</code> (cycles
+                Dark/Light).
+              </li>
+              <li>
+                <strong>Close Modals / Cancel Tool:</strong> <code>Esc</code>.
+              </li>
+              <li>
+                <strong>Delete Selected Item:</strong> <code>Backspace</code> or
+                <code>Delete</code> (for lines, post-its, drawings, deleting a
+                line also deletes all its children).
+              </li>
+            </ul>
+          </div>
+          <div class="help-section">
+            <h4>About Pinta</h4>
+            <p>Pinta - Visual Diagram Editor.</p>
+            <p>&copy; Ruben Berenguel 2025 with most code by Gemini</p>
+          </div>
         </div>
       </div>
     </div>

@@ -76,45 +76,50 @@ function createPostIt(noteData = {}) {
   postItElement.appendChild(contentArea);
   editorContainer.appendChild(postItElement);
 
-  interact(postItElement).draggable({
-    allowFrom: ".postit-drag-handle",
-    inertia: true,
-    modifiers: [
-      interact.modifiers.restrictRect({ restriction: "parent", endOnly: true }),
-    ],
-    listeners: {
-      move: (event) => {
-        const target = event.target;
-        const x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
-        const y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
-        target.style.transform = `translate(${x}px, ${y}px)`;
-        target.setAttribute("data-x", x);
-        target.setAttribute("data-y", y);
+  interact(postItElement)
+    .draggable({
+      allowFrom: ".postit-drag-handle",
+      inertia: true,
+      modifiers: [
+        interact.modifiers.restrictRect({
+          restriction: "parent",
+          endOnly: true,
+        }),
+      ],
+      listeners: {
+        move: (event) => {
+          const target = event.target;
+          const x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
+          const y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
+          target.style.transform = `translate(${x}px, ${y}px)`;
+          target.setAttribute("data-x", x);
+          target.setAttribute("data-y", y);
+        },
+        end: (event) => {
+          const target = event.target;
+          let currentX = parseFloat(target.getAttribute("data-x")) || 0;
+          let currentY = parseFloat(target.getAttribute("data-y")) || 0;
+          let baseLeft = parseFloat(target.style.left) || 0;
+          let baseTop = parseFloat(target.style.top) || 0;
+          target.style.left = baseLeft + currentX + "px";
+          target.style.top = baseTop + currentY + "px";
+          target.style.transform = "translate(0px, 0px)";
+          target.setAttribute("data-x", "0");
+          target.setAttribute("data-y", "0");
+          const noteId = target.id;
+          if (state.postItsStore[noteId]) {
+            const currentEditorRect = editorContainer.getBoundingClientRect();
+            if (currentEditorRect.width > 0)
+              state.postItsStore[noteId].xPercent =
+                (parseFloat(target.style.left) / currentEditorRect.width) * 100;
+            if (currentEditorRect.height > 0)
+              state.postItsStore[noteId].yPercent =
+                (parseFloat(target.style.top) / currentEditorRect.height) * 100;
+          }
+        },
       },
-      end: (event) => {
-        const target = event.target;
-        let currentX = parseFloat(target.getAttribute("data-x")) || 0;
-        let currentY = parseFloat(target.getAttribute("data-y")) || 0;
-        let baseLeft = parseFloat(target.style.left) || 0;
-        let baseTop = parseFloat(target.style.top) || 0;
-        target.style.left = baseLeft + currentX + "px";
-        target.style.top = baseTop + currentY + "px";
-        target.style.transform = "translate(0px, 0px)";
-        target.setAttribute("data-x", "0");
-        target.setAttribute("data-y", "0");
-        const noteId = target.id;
-        if (state.postItsStore[noteId]) {
-          const currentEditorRect = editorContainer.getBoundingClientRect();
-          if (currentEditorRect.width > 0)
-            state.postItsStore[noteId].xPercent =
-              (parseFloat(target.style.left) / currentEditorRect.width) * 100;
-          if (currentEditorRect.height > 0)
-            state.postItsStore[noteId].yPercent =
-              (parseFloat(target.style.top) / currentEditorRect.height) * 100;
-        }
-      },
-    },
-  });
+    })
+    .styleCursor(false);
 
   if (!state.postItsStore[id]) {
     const editorRectForStore = editorContainer.getBoundingClientRect();

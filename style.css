@@ -1,5 +1,4 @@
 :root {
-  /* Original Solarized Dark Variables (can be kept for reference or direct use if an element should always be dark-themed) */
   --base03: #002b36;
   --base02: #073642;
   --base01: #586e75;
@@ -7,55 +6,42 @@
   --base0: #839496;
   --base1: #93a1a1;
 
-  /* Original Drawing & Accent Colors (Solarized - can remain "as is" for highlights) */
   --yellow: #b58900;
-  --orange: #cb4b16; /* Used for schema lines in dark theme */
+  --orange: #cb4b16;
   --red: #dc322f;
   --magenta: #d33682;
   --violet: #6c71c4;
   --blue: #268bd2;
-  --cyan: #2aa198; /* Used for schema text in dark theme */
+  --cyan: #2aa198;
   --green: #859900;
 
-  /* Original Post-it specific colors */
-  --postit-white-bg: #fdf6e3; /* This is a nice off-white, good for light theme editor */
+  --postit-white-bg: #fdf6e3;
   --postit-white-text: #586e75;
   --postit-transp-bg: #99999922;
-  /* NEW Theme-Dependent Variables (Default to Dark Theme values) */
   --theme-main-background: var(--base03);
   --theme-editor-background: var(--base02);
-  --theme-primary-text: var(
-    --base1
-  ); /* For most body text, line labels if not specifically colored */
-  --theme-secondary-text: var(--base01); /* For less prominent UI text */
+  --theme-primary-text: var(--base1);
+  --theme-secondary-text: var(--base01);
   --theme-border-color: var(--base01);
 
-  --theme-schema-line-color: var(--orange); /* Schema lines color */
-  --theme-schema-text-color: var(
-    --cyan
-  ); /* Text on schema lines (the editable labels) */
+  --theme-schema-line-color: var(--orange);
+  --theme-schema-text-color: var(--cyan);
 
-  /* Modal Theming */
   --theme-modal-background: var(--base02);
   --theme-modal-overlay-bg: rgba(0, 0, 0, 0.75);
-  --theme-modal-text-primary: var(--base1); /* e.g., Modal title */
-  --theme-modal-text-secondary: var(--base0); /* e.g., Modal paragraph */
+  --theme-modal-text-primary: var(--base1);
+  --theme-modal-text-secondary: var(--base0);
   --theme-modal-button-confirm-bg: var(--red);
-  --theme-modal-button-confirm-text: var(
-    --base03
-  ); /* Text on red confirm button */
+  --theme-modal-button-confirm-text: var(--base03);
   --theme-modal-button-cancel-bg: var(--base01);
   --theme-modal-button-cancel-text: var(--base03);
   --theme-modal-button-cancel-hover-bg: var(--base00);
 
-  /* Post-it Theming (examples, assuming post-it backgrounds stay solarized) */
   --theme-postit-yellow-text: var(--base03);
   --theme-postit-red-text: var(--base03);
   --theme-postit-green-text: var(--base03);
   --theme-postit-blue-text: var(--base03);
-  --theme-postit-white-text: var(
-    --postit-white-text
-  ); /* Uses its specific variable */
+  --theme-postit-white-text: var(--postit-white-text);
   --theme-postit-transp-text: #333;
 
   --theme-postit-yellow-drag-handle: var(--base02);
@@ -126,9 +112,9 @@ body {
 
 #editor-container {
   aspect-ratio: 4 / 3;
-  width: 98vw; /* Base size on viewport width */
-  max-height: 98vh; /* Constrain height; width will adjust to maintain aspect ratio if this limit is hit */
-  margin: auto; /* Ensure centering within the flex body */
+  width: 98vw;
+  max-height: 98vh;
+  margin: auto;
   background-color: var(--theme-editor-background);
   border: 1px solid var(--theme-border-color);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
@@ -145,10 +131,8 @@ body {
   z-index: 100;
   pointer-events: none;
 }
-/* .active-drawing or .tool-selected will set pointer-events: auto via JS */
 
 #drawingCanvas > * {
-  /* Make individual SVG shapes clickable */
   pointer-events: all;
 }
 
@@ -165,28 +149,27 @@ body {
   transform: translateY(-50%);
   cursor: crosshair;
   border-radius: 2px;
+  background-clip: padding-box;
+  border-top: 0.5em solid transparent;
+  border-bottom: 0.5em solid transparent;
 }
 .line-text {
   position: absolute;
-  white-space: pre-wrap; /* Changed from nowrap to pre-wrap */
+  white-space: pre-wrap;
   color: var(--theme-schema-text-color);
   font-size: 16px;
   padding: 1px 2px;
   background-color: transparent;
   border: none;
   user-select: none;
-  cursor: grab;
+
   min-width: 10px;
   text-align: center;
-  /* Consider adding word-break if very long words without spaces cause issues */
-  /* word-break: break-word; */
 }
 .line-text[contenteditable="true"] {
-  background-color: var(
-    --theme-editor-background
-  ); /* Or a slightly different bg for editing */
-  border: 1px dashed var(--blue); /* Keep blue for edit indication, or theme this too */
-  color: var(--theme-primary-text); /* Ensure editable text is primary color */
+  background-color: var(--theme-editor-background);
+  border: 1px dashed var(--blue);
+  color: var(--theme-primary-text);
   user-select: text;
   cursor: auto;
   outline: none;
@@ -202,14 +185,14 @@ body {
 }
 .resize-handle {
   background-color: var(--blue);
-  cursor: ew-resize;
+  cursor: ns-resize;
   left: 100%;
   top: 50%;
   transform: translate(-50%, -50%);
 }
 .root-drag-handle {
   background-color: var(--red);
-  cursor: move;
+  cursor: ew-resize;
   left: 0%;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -249,7 +232,6 @@ body {
   color: #a71e1c;
 }
 
-/* Post-it Styles */
 .post-it {
   position: absolute;
   z-index: 500;
@@ -322,7 +304,6 @@ body {
   color: inherit;
 }
 .postit-content-area[contenteditable="true"] {
-  /*border: 1px dashed var(--blue);*/
   border: none;
 }
 .postit-content-area a {
@@ -375,7 +356,6 @@ body {
   color: var(--base01);
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -390,7 +370,7 @@ body {
 }
 .modal-content {
   background-color: var(--theme-modal-background);
-  color: var(--theme-modal-text-secondary); /* Default text for <p> */
+  color: var(--theme-modal-text-secondary);
   padding: 25px;
   border-radius: 8px;
   border: 1px solid var(--theme-border-color);
@@ -402,7 +382,7 @@ body {
 .modal-content h3 {
   margin-top: 0;
   font-size: 1.25rem;
-  color: var(--theme-modal-text-primary); /* Modal title */
+  color: var(--theme-modal-text-primary);
 }
 .modal-content p {
   margin-bottom: 20px;
@@ -418,11 +398,11 @@ body {
   font-weight: 500;
 }
 .modal-confirm-button {
-  background-color: var(--theme-modal-button-confirm-bg); /* Stays --red */
+  background-color: var(--theme-modal-button-confirm-bg);
   color: var(--theme-modal-button-confirm-text);
 }
 .modal-confirm-button:hover {
-  background-color: #a71e1c; /* Darken on hover, could be a variable too */
+  background-color: #a71e1c;
 }
 .modal-cancel-button {
   background-color: var(--theme-modal-button-cancel-bg);
@@ -433,12 +413,11 @@ body {
   color: var(--theme-modal-button-cancel-text);
 }
 
-/* Print Styles */
 @media print {
   body {
     background-color: white !important;
     color: black !important;
-    padding-top: 0 !important; /* Remove any top padding from body */
+    padding-top: 0 !important;
   }
   #editor-container {
     width: 100% !important;
@@ -450,15 +429,11 @@ body {
     overflow: visible !important;
   }
   .line-visual {
-    /* For the schema lines (divs) */
     background-color: black !important;
-    -webkit-print-color-adjust: exact !important; /* Chrome, Safari, Edge */
-    color-adjust: exact !important; /* Standard */
-    /* Ensure height is maintained if it was set by JS */
-    /* height: specified_thickness !important; - JS already sets this, should carry over */
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
   .line-text {
-    /* For text on schema lines */
     color: black !important;
     background-color: transparent !important;
     border: none !important;
@@ -473,19 +448,17 @@ body {
   .modal-overlay {
     display: none !important;
   }
-  /* For SVG drawings */
+
   #drawingCanvas * {
     stroke: black !important;
     fill-opacity: 0 !important;
     fill: none !important;
   }
   #drawingCanvas line[marker-end] {
-    /* For SVG arrows */
     marker-end: url(#arrowhead-print) !important;
   }
   #drawingCanvas rect[fill]:not([fill="none"]) {
-    /* For SVG highlights if they have a fill */
-    fill: black !important; /* Or a light gray: #dddddd */
+    fill: black !important;
     fill-opacity: 0.2 !important;
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
@@ -507,7 +480,81 @@ body {
     border: none;
   }
   .postit-content-area a {
-    color: #0000ee !important; /* Standard blue for links */
+    color: #0000ee !important;
     text-decoration: underline !important;
   }
+}
+
+#helpModalContent {
+  text-align: left;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding-bottom: 60px;
+  min-width: 80vw !important;
+}
+
+.help-sections-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.help-section {
+  flex: 1 1 300px;
+}
+
+.help-section h4 {
+  margin-top: 0;
+  margin-bottom: 0.5em;
+}
+
+.help-section ul {
+  padding-left: 20px;
+  margin-top: 0.25em;
+  list-style-type: disc;
+}
+
+.help-section ul ul {
+  list-style-type: circle;
+  margin-top: 0.25em;
+}
+
+.help-section li {
+  margin-bottom: 0.3em;
+}
+
+.help-section code {
+  background-color: var(--theme-editor-background);
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  font-family: monospace;
+  color: var(--theme-schema-text-color);
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: var(--theme-secondary-text);
+  cursor: pointer;
+  padding: 5px;
+  line-height: 1;
+  z-index: 10;
+}
+
+.modal-close-button:hover {
+  color: var(--theme-primary-text);
+}
+
+#helpModal .modal-buttons {
+  position: absolute;
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  padding-top: 15px;
+  background-color: var(--theme-modal-background);
+  border-top: 1px solid var(--theme-border-color);
 }

@@ -1,6 +1,6 @@
 ### 1. Goal of the Project
 
-The primary goal of Pinta is to create a dynamic, web-based graphical editor that allows for the visual representation of hierarchical information [project description in first user turn of this session]. It's inspired by an on-paper method of drawing a main diagonal line for a central topic, with perpendicular lines branching out for sub-topics. The tool aims to provide an interactive way to build, modify, and annotate these schemas. Ultimately, Pinta is designed to be a versatile Progressive Web Application (PWA) for creating, saving, and loading these visual diagrams, complete with annotations and basic drawing capabilities [project description in first user turn of this session].
+The primary goal of Pinta is to create a dynamic, web-based graphical editor that allows for the visual representation of hierarchical information. It's inspired by an on-paper method of drawing a main diagonal line for a central topic, with perpendicular lines branching out for sub-topics. The tool aims to provide an interactive way to build, modify, and annotate these schemas. Ultimately, Pinta is designed to be a versatile Progressive Web Application (PWA) for creating, saving, and loading these visual diagrams, complete with annotations and basic drawing capabilities.
 
 ### 2. How it Works
 
@@ -8,20 +8,20 @@ Pinta's functionality is centered around a few core components and interaction m
 
 - **Core Structure (Schema Lines):**
 
-  - The editor initializes with a main diagonal line whose size and position are determined by the viewport. This line acts as a reference for the diagram's scale, especially when loading [project description in first user turn of this session].
+  - The editor initializes with a main diagonal line whose size and position are determined by the viewport. This line acts as a reference for the diagram's scale, especially when loading.
   - Clicking on any existing line creates a new child line. These child lines are oriented perpendicularly to their parent by storing a `relativeDirection` (`1` or `-1`) and dynamically calculating their display angle based on the parent's current angle. This system was a recent refactor to improve responsiveness to screen resizing.
-  - Text labels can be added to each line. These labels support multiline input (Shift+Enter) and are editable. The text can be dragged along its line, and its perpendicular offset can be adjusted [project description in first user turn of this session, and subsequent feature additions].
+  - Text labels can be added to each line. These labels support multiline input (Shift+Enter) and are editable. The text can be dragged along its line, and its perpendicular offset can be adjusted.
   - Line labels now also support dynamic font sizing (Ctrl/Cmd + `.` or `,`), bolding (Ctrl/Cmd + `B`), and centering toggles (Ctrl/Cmd + `C`).
-  - Hyperlinks can be associated with line labels (via Ctrl/Cmd + `K`), displaying a prefix icon (e.g., 🔗, 📜) based on the URL content. The icon is clickable, opening the link in a new tab, and the full URL appears on hover [project description in first user turn of this session, and subsequent feature additions].
-  - Child lines are resizable from their outer end and their base can be dragged along their parent line [project description in first user turn of this session].
+  - Hyperlinks can be associated with line labels (via Ctrl/Cmd + `K`), displaying a prefix icon (e.g., 📜, 📦) based on the URL content. The icon is clickable, opening the link in a new tab, and the full URL appears on hover.
+  - Child lines are resizable from their outer end and their base can be dragged along their parent line.
 
 - **Annotation Tools:**
 
-  - **Post-it Notes:** Users can create (Alt+Click or Hold on empty space), drag, edit content (including rich text like links via paste), delete, and change the color and font size of Post-it notes. Their positions are saved as percentages of the editor container [project description in first user turn of this session, and subsequent feature additions]. The Post-it functionality has been moved to its own module, `js/postit.js`.
+  - **Post-it Notes:** Users can create (Alt+Click or Hold on empty space), drag, edit content (including rich text like links via paste), delete, and change the color and font size of Post-it notes. Their positions are saved as percentages of the editor container. The Post-it functionality has been moved to its own module, `js/postit.js`.
   - **SVG Drawings:** An SVG layer (`drawingCanvas`) allows for basic freehand drawings:
     - Rectangles and Highlights (selected with 'r' or 'h' keys).
     - Arrows (selected with 'a' key).
-    - These shapes can be selected, dragged, deleted, and their color can be changed using keyboard shortcuts ('c' then a color key) [project description in first user turn of this session].
+    - These shapes can be selected, dragged, deleted, and their color can be changed using keyboard shortcuts ('c' then a color key).
 
 - **User Interface & Interaction:**
 
@@ -32,11 +32,11 @@ Pinta's functionality is centered around a few core components and interaction m
 
 - **Data Management:**
 
-  - The entire diagram state (schema lines, post-its, SVG drawings) is saved into a single JSON file [project description in first user turn of this session, and subsequent feature additions].
-  - When loading a diagram, the main line's dimensions and angle are recalculated based on the current viewport. Other elements like child lines, SVG drawings, and Post-it notes are scaled or positioned relative to this, ensuring diagrams adapt visually to different window sizes [project description in first user turn of this session, and subsequent feature additions].
+  - The entire diagram state (schema lines, post-its, SVG drawings) is saved into a single JSON file.
+  - When loading a diagram, the main line's dimensions and angle are recalculated based on the current viewport. Other elements like child lines, SVG drawings, and Post-it notes are scaled or positioned relative to this, ensuring diagrams adapt visually to different window sizes.
 
 - **Output & Print:**
-  - The project description mentions a "Print to HTML" option for exporting a static, self-contained HTML page [project description in first user turn of this session].
+  - The project description mentions a "Print to HTML" option for exporting a static, self-contained HTML page.
   - CSS print styles are included for printing directly from the browser, rendering a clean black-and-white version.
 
 ### 3. What We Have Been Doing Recently
@@ -49,7 +49,7 @@ Our recent work has focused on enhancing existing features, adding new capabilit
     - Enabled multiline text input for line labels using Shift+Enter.
     - Refined click-to-edit behavior: short labels get fully selected, while for longer labels, a click now positions the cursor for easier partial edits.
     - Added dynamic styling: font size adjustment (Ctrl/Cmd + `.` or `,`), bold toggle (Ctrl/Cmd + `B`), and text alignment toggle (Ctrl/Cmd + `C`).
-    - Implemented hyperlink support: Ctrl/Cmd + `K` opens a modal to add/edit/remove a URL. Linked labels display a prefix icon (e.g., 🔗, 📜 based on URL patterns), show the URL on hover, and the icon is clickable to open the link in a new tab.
+    - Implemented hyperlink support: Ctrl/Cmd + `K` opens a modal to add/edit/remove a URL. Linked labels display a prefix icon (e.g., 📜, 📦 based on URL patterns), show the URL on hover, and the icon is clickable to open the link in a new tab.
   - **Core Line Logic Refactor:** A major change was made to how line orientation is handled. Instead of storing absolute angles for child lines, we now store a `relativeDirection` property. The actual display angle is calculated dynamically at render time based on the parent's angle and this relative direction. This makes the diagram more responsive to screen size changes and maintains relational integrity better. This involved creating a `getLineDisplayAngle` helper function and updating all relevant line creation, rendering, interaction (resize, drag), and save/load logic.
 
 - **Codebase Refactoring (Modularization):**
