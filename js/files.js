@@ -455,13 +455,20 @@ function escapeHtml(unsafe) {
 }
 
 async function exportToStaticHTML(loadedCSSText) {
+  // If loadedCSSText is not passed, try to fetch it.
   if (!loadedCSSText) {
-    alert("Styles are not loaded yet. Please try again in a moment.");
-    // Optionally, try to fetch them again here if it's critical path
-    await fetchAppStyles(); // Attempt to fetch if not loaded
-    if (!loadedCSSText) {
-      alert("Failed to load styles for export. Cannot proceed.");
-      return;
+    // This is a simplified version. In your actual code,
+    // ensure loadedCSSText is properly populated before this function is called,
+    // or pass it as an argument after fetching.
+    // For demonstration, we'll try a conceptual fetch.
+    const styleResponse = await fetch("./style.css");
+    if (styleResponse.ok) {
+      loadedCSSText = await styleResponse.text();
+    } else {
+      alert(
+        "Styles could not be loaded for export. The diagram might not look correct.",
+      );
+      loadedCSSText = "/* Stylesheet could not be loaded */";
     }
   }
 
@@ -470,12 +477,12 @@ async function exportToStaticHTML(loadedCSSText) {
     : "";
   let diagramContentHTML = "";
 
-  // A. Editor Wrapper (mimics #editor-container)
-  const editorRect = editorContainer.getBoundingClientRect(); //
+  const liveEditorRectForRelativePositioning =
+    editorContainer.getBoundingClientRect();
   const editorWrapperStyle = `
     position: relative;
-    width: ${editorRect.width}px;
-    height: ${editorRect.height}px;
+    width: ${liveEditorRectForRelativePositioning.width}px;
+    height: ${liveEditorRectForRelativePositioning.height}px;
     background-color: var(--theme-editor-background);
     border: 1px solid var(--theme-border-color);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
@@ -487,78 +494,48 @@ async function exportToStaticHTML(loadedCSSText) {
   // B. Serialize Schema Lines
   const linesHtml = Object.values(state.linesStore)
     .map((line) => {
-      const displayAngle = getLineDisplayAngle(line.id, state.linesStore); // Assumes getLineDisplayAngle is available
-      const absLength = Math.abs(line.length);
-      const groupScaleX = line.length < 0 ? -1 : 1;
-      const normAngleForText = ((displayAngle % 360) + 360) % 360;
       const lineElementGroup = document.getElementById(line.id);
-      const textElement = lineElementGroup
-        ? lineElementGroup.querySelector(".line-text")
-        : null;
-      const textInternalRotation =
-        normAngleForText > 90 && normAngleForText < 270 ? 180 : 0;
-      const textScaleX = groupScaleX;
+      if (!lineElementGroup) return "";
 
-      const groupStyle = `position:absolute; left:${line.startX}px; top:${line.startY}px; width:${absLength}px; transform:rotate(${displayAngle}deg) scaleX(${groupScaleX}); transform-origin:0 0;`;
-      // Use actual color value for line.color if it's a CSS var, or ensure var is defined.
-      // For simplicity, assuming CSS vars in embedded style will handle it.
-      const visualStyle = `width:100%; background-color:${line.color || "var(--theme-schema-line-color)"}; position:absolute; top:50%; transform:translateY(-50%); height:${line.thickness}px; border-radius:2px; background-clip:padding-box; border-top:0.5em solid transparent; border-bottom:0.5em solid transparent;`; // Added border technique
+      const groupClassAttr = lineElementGroup.className
+        ? `class="${lineElementGroup.className}"`
+        : "";
+      // Styles for the group are set directly by renderLine (left, top, width, transform, transform-origin)
+      // So, lineElementGroup.style.cssText should capture them.
+      const groupStyle = lineElementGroup.style.cssText || "";
 
-      let textContentHtml;
-      const rawLineText = line.text || "...";
-      if (line.linkUrl) {
-        const prefix = getLinkPrefix(line.linkUrl); // Assumes getLinkPrefix is available
-        // Line text with link becomes fully clickable, no extra decoration
-        textContentHtml = `<a href="${escapeHtml(line.linkUrl)}" target="_blank" style="text-decoration:none; color:inherit;">${escapeHtml(prefix)}${escapeHtml(rawLineText)}</a>`;
-      } else {
-        textContentHtml = escapeHtml(rawLineText);
+      let visualHtml = "";
+      const visualElement = lineElementGroup.querySelector(".line-visual");
+      if (visualElement) {
+        const visualClassAttr = visualElement.className
+          ? `class="${visualElement.className}"`
+          : "";
+        // Styles for visual (height, background-color) are set by renderLine
+        const visualStyle = visualElement.style.cssText || "";
+        visualHtml = `<div ${visualClassAttr} style="${visualStyle}"></div>`;
       }
-      let whiteSpaceStyle = "";
-      let widthStyle = "";
-      // let widthStyle = 'width: auto;'; // 'width: auto' is often default for block/inline-block if maxWidth is used
 
-      if (textElement && textElement.style) {
-        if (textElement.style.whiteSpace) {
-          whiteSpaceStyle = `white-space: ${textElement.style.whiteSpace};`;
+      let textHtml = "";
+      const textElement = lineElementGroup.querySelector(".line-text");
+      if (textElement) {
+        const textClassAttr = textElement.className
+          ? `class="${textElement.className}"`
+          : "";
+        // Styles for text (left, top, transform, font-size, font-weight, text-align, white-space, width, max-width etc.) are set by renderLine
+        const textStyle = textElement.style.cssText || "";
+
+        let textContentHtml;
+        const rawLineText = line.text || "..."; // Use stored text
+        if (line.linkUrl) {
+          const prefix = getLinkPrefix(line.linkUrl);
+          textContentHtml = `<a href="${escapeHtml(line.linkUrl)}" target="_blank" style="text-decoration:none; color:inherit;">${escapeHtml(prefix)}${escapeHtml(rawLineText)}</a>`;
         } else {
-          // Fallback if not explicitly set (though renderLine should set it)
-          whiteSpaceStyle = "white-space: pre-wrap;"; // Default to pre-wrap if somehow not set
+          textContentHtml = escapeHtml(rawLineText);
         }
-
-        if (
-          textElement.style.maxWidth &&
-          textElement.style.maxWidth !== "none" &&
-          textElement.style.maxWidth !== ""
-        ) {
-          widthStyle = `width: ${textElement.style.width};`;
-        }
-        // If 'renderLine' also sets 'element.style.width' explicitly (other than 'auto'), fetch it:
-        // if (textElement.style.width && textElement.style.width !== 'auto') {
-        //   widthStyle = `width: ${textElement.style.width};`;
-        // }
-      } else {
-        // Fallback logic if the DOM element isn't found or styles aren't set.
-        // This indicates an issue, but we can provide a graceful degradation.
-        console.warn(
-          `HTML Export: Text element for line ${line.id} not found or styles missing. Using default export text styles.`,
-        );
-        const hasExplicitNewlinesFallback =
-          line.text && line.text.includes("\n");
-        whiteSpaceStyle = hasExplicitNewlinesFallback
-          ? "white-space: pre-wrap;"
-          : "white-space: normal;";
+        textHtml = `<div ${textClassAttr} style="${textStyle}">${textContentHtml}</div>`;
       }
-      // *** END FETCHING STYLES ***
 
-      const textStyle = `position:absolute; ${whiteSpaceStyle} ${widthStyle} color:var(--theme-schema-text-color); font-size:${
-        line.fontSize || 16
-      }px; padding:1px 2px; left:${line.textPosRatio * 100}%; top:${
-        line.textPerpOffset
-      }px; transform:translateX(-50%) translateY(-50%) scaleX(${textScaleX}) rotate(${textInternalRotation}deg); font-weight:${
-        line.isBold ? "bold" : "normal"
-      }; text-align:${line.isCentered ? "center" : "left"};`;
-
-      return `<div class="line-element-group" style="${groupStyle}"><div class="line-visual" style="${visualStyle}"></div><div class="line-text" style="${textStyle}">${textContentHtml}</div></div>`;
+      return `<div ${groupClassAttr} style="${groupStyle}">${visualHtml}${textHtml}</div>`;
     })
     .join("");
   diagramContentHTML += linesHtml;
@@ -566,29 +543,70 @@ async function exportToStaticHTML(loadedCSSText) {
   // C. Serialize Post-it Notes
   const postItsHtml = Object.values(state.postItsStore)
     .map((postIt) => {
-      const leftPx = (postIt.xPercent / 100) * editorRect.width;
-      const topPx = (postIt.yPercent / 100) * editorRect.height;
-      // Styles from style.css for .post-it
-      const postItOuterStyle = `position:absolute; left:${leftPx}px; top:${topPx}px; z-index:500; padding:20px 8px 8px 8px; border-radius:3px; box-shadow:2px 2px 5px rgba(0,0,0,0.3); min-width:100px; min-height:50px; font-family:'Inter',sans-serif; font-size:${postIt.fontSizePercent ? (postIt.fontSizePercent / 100) * 11 + "px" : "11px"}; word-wrap:break-word; overflow:hidden; box-sizing:border-box; display:flex; flex-direction:column;`;
-      const colorClass = `postit-color-${postIt.color || "yellow"}`; //
+      const postItElement = document.getElementById(postIt.id);
+      if (!postItElement) return "";
 
-      // Simplified drag handle (not draggable in static export)
-      const titleHtml = `<div class="postit-drag-handle" style="height:18px; padding-left:5px; font-size:10px; box-sizing:border-box;">${escapeHtml(postIt.title || "")}</div>`;
-      const contentAreaHtml = `<div class="postit-content-area" style="flex-grow:1; white-space:pre-wrap; word-wrap:break-word; padding:2px; overflow-y:auto; color:inherit;">${postIt.content}</div>`; // postIt.content is already HTML
+      const elemRect = postItElement.getBoundingClientRect();
+      const exportLeft =
+        elemRect.left - liveEditorRectForRelativePositioning.left;
+      const exportTop = elemRect.top - liveEditorRectForRelativePositioning.top;
 
-      return `<div class="post-it ${colorClass}" style="${postItOuterStyle}">${titleHtml}${contentAreaHtml}</div>`;
+      // Base geometric styles from getBoundingClientRect
+      let postItGeneratedStyle = `position:absolute; left:${exportLeft}px; top:${exportTop}px; width:${elemRect.width}px; height:${elemRect.height}px;`;
+
+      // Append other relevant inline styles from the element if they exist and aren't geometry
+      // This is a simple concatenation; a more robust method would parse and merge.
+      // For post-its, other styles like padding, box-shadow, etc., mostly come from CSS classes.
+      // We need to be careful not to duplicate or override the geometry.
+      // A common dynamic style for post-its via JS might be 'transform', if used.
+      if (postItElement.style.transform) {
+        postItGeneratedStyle += ` transform: ${postItElement.style.transform};`;
+      }
+      // Add other specific inline styles if necessary.
+
+      const classAttr = postItElement.className
+        ? `class="${postItElement.className}"`
+        : ""; // This includes "post-it" and "postit-color-..."
+
+      let titleHtml = "";
+      const titleHandle = postItElement.querySelector(".postit-drag-handle");
+      if (titleHandle) {
+        const titleClass = titleHandle.className
+          ? `class="${titleHandle.className}"`
+          : "";
+        // Capture inline styles of the handle, if any are dynamically set by JS
+        const titleStyle = titleHandle.style.cssText
+          ? `style="${titleHandle.style.cssText}"`
+          : "";
+        titleHtml = `<div ${titleClass} ${titleStyle}>${escapeHtml(postIt.title || "")}</div>`;
+      }
+
+      let contentAreaHtml = "";
+      const contentArea = postItElement.querySelector(".postit-content-area");
+      if (contentArea) {
+        const contentClass = contentArea.className
+          ? `class="${contentArea.className}"`
+          : "";
+        // Capture inline styles of content area, e.g., dynamically set font-size
+        const contentStyle = contentArea.style.cssText
+          ? `style="${contentArea.style.cssText}"`
+          : "";
+        contentAreaHtml = `<div ${contentClass} ${contentStyle}>${postIt.content}</div>`; // postIt.content is already HTML
+      }
+
+      return `<div ${classAttr} style="${postItGeneratedStyle}">${titleHtml}${contentAreaHtml}</div>`;
     })
     .join("");
   diagramContentHTML += postItsHtml;
 
   // D. Serialize SVG Drawings
   if (state.drawingCanvas) {
-    // state.drawingCanvas is the <svg> element
-    // Ensure SVG is styled relative to its container, not viewport percentages if it was 100% before
-    const svgStyle = `position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;`;
-    // Clone to avoid modifying the live canvas, then set style, then get outerHTML
     const svgClone = state.drawingCanvas.cloneNode(true);
-    svgClone.setAttribute("style", svgStyle);
+    // The style ensures it overlays correctly within the #editor-container-export
+    svgClone.setAttribute(
+      "style",
+      "position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;",
+    );
     diagramContentHTML += svgClone.outerHTML;
   }
 
@@ -605,18 +623,16 @@ async function exportToStaticHTML(loadedCSSText) {
     /* Additional styles for static export if needed */
     body {
         margin: 0;
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* From body style.css */
-        background-color: var(--theme-main-background); /* */
-        color: var(--theme-primary-text); /* */
-        display: flex; /* */
-        justify-content: center; /* */
-        align-items: center; /* */
-        min-height: 100vh; /* */
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--theme-main-background);
+        color: var(--theme-primary-text);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
     }
-    /* Ensure links within exported post-its are styled correctly if default is overridden */
-    .postit-content-area a { color: var(--blue); text-decoration: underline; } /* From style.css */
-    .postit-content-area a:hover { color: var(--cyan); } /* From style.css */
-
+    .postit-content-area a { color: var(--blue); text-decoration: underline; }
+    .postit-content-area a:hover { color: var(--cyan); }
   </style>
 </head>
 <body class="${currentThemeClass}">

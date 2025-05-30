@@ -7,9 +7,11 @@ Why? _Reasons_.
 ## How it looks and what it does
 
 This is the main "example" which also serves as feature list. This is the state of the example
-as of version 0.1.0 (current).
+as of version 0.1.x (current).
 
 ![](https://raw.githubusercontent.com/rberenguel/pinta/gh-pages/media/pinta-example-dark.png)
+
+You can see how the HTML export looks (for dark mode) [here](http://mostlymaths.net/pinta/media/pinta-example-dark.html).
 
 It also has a light mode.
 
@@ -30,4 +32,4 @@ TODO:
 - [x] Save/export to static HTML
 - [ ] Better UX of shape selection
 - [ ] Better README
-- [ ] Export has some quirks still
+- [x] Export has some quirks still
