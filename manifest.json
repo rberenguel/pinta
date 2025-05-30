@@ -23,7 +23,8 @@
     {
       "action": "./index.html",
       "accept": {
-        "text/plain": [".pnt"]
+        "text/plain": [".pnt"],
+        "text/html": [".html", ".htm"]
       }
     }
   ]
