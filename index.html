@@ -8,6 +8,8 @@
     <title>Pinta</title>
     <link href="style.css" rel="stylesheet" />
     <script src="lib/interact.min.js"></script>
+    <link href="lib/metap/metap.css" rel="stylesheet" />
+    <script src="lib/metap/metap.js"></script>
   </head>
   <body>
     <div id="editor-container">
@@ -114,7 +116,7 @@
         </defs>
       </svg>
     </div>
-    <input type="file" id="filePicker" accept=".json" style="display: none" />
+    <input type="file" id="filePicker" accept=".pnt" style="display: none" />
 
     <div class="modal-overlay" id="deleteConfirmationModal">
       <div class="modal-content">
@@ -179,6 +181,10 @@
               </li>
               <li>Add schema lines, post-it notes, and drawings.</li>
               <li>Most items can be dragged, edited, and deleted.</li>
+              <li>
+                <code>Ctrl/Cmd + P</code> to open a command palette (it has an
+                example)
+              </li>
             </ul>
           </div>
 

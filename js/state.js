@@ -1,6 +1,7 @@
 export const state = {
   // Data Stores
   linesStore: {},
+  currentMainLineAngle: 0,
   postItsStore: {},
   drawingElementsStore: {},
 

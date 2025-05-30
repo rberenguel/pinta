@@ -149,6 +149,38 @@ function renderLine(line, isUpdate = false) {
 
     const textNode = document.createTextNode(line.text || "...");
     textElement.appendChild(textNode);
+    const hasExplicitNewlines = line.text && line.text.includes("\n");
+
+    // Reset potentially conflicting styles that might be set by other parts or previous states
+
+    if (hasExplicitNewlines) {
+      // User has formatted with Shift+Enter, respect their newlines.
+      textElement.style.whiteSpace = "pre-wrap";
+      // Allow width to be determined by the content.
+      // No explicit max-width, or you could set a very large one if you want a global cap.
+    } else {
+      console.debug("Resizing proportionally to line");
+      textElement.style.removeProperty("max-width");
+      textElement.style.removeProperty("width"); // If 'width' was ever explicitly set elsewhere
+      // No explicit newlines, make width proportional to line length.
+      textElement.style.whiteSpace = "normal"; // Allows text to wrap within the calculated width.
+
+      // Adjust these factors as needed for your desired look and feel
+      const proportionalityFactor = 0.85; // Text box can use up to 85% of the line's visual length.
+      const minPixelWidth = 50; // Minimum width in pixels for very short lines or default text.
+      const maxPixelWidthConsideration = 400; // A general sensible upper cap for auto-proportional width
+
+      let calculatedMaxWidth = absLength * proportionalityFactor;
+      calculatedMaxWidth = Math.max(minPixelWidth, calculatedMaxWidth);
+      calculatedMaxWidth = Math.min(
+        calculatedMaxWidth,
+        maxPixelWidthConsideration,
+      ); // Apply the upper cap
+
+      textElement.style.maxWidth = `${calculatedMaxWidth}px`;
+      textElement.style.width = `${calculatedMaxWidth}px`;
+      // 'width: auto;' is the default and will make the element use space up to its maxWidth.
+    }
   }
 
   //
@@ -369,6 +401,63 @@ function setupRootDraggable(handle, childLine) {
     .styleCursor(false);
 }
 
+function segmentIntersection(p1, p2, p3, p4) {
+  const d12x = p2.x - p1.x; // (x2 - x1)
+  const d12y = p2.y - p1.y; // (y2 - y1)
+  const d34x = p4.x - p3.x; // (x4 - x3)
+  const d34y = p4.y - p3.y; // (y4 - y3)
+
+  const denominator = d12x * d34y - d12y * d34x; // (x2-x1)(y4-y3) - (y2-y1)(x4-x3)
+
+  // Check if lines are parallel or collinear (denominator is zero)
+  const epsilon = 1e-9; // Small epsilon for floating point comparisons
+  if (Math.abs(denominator) < epsilon) {
+    return null;
+  }
+
+  const t13x = p1.x - p3.x; // (x1 - x3)
+  const t13y = p1.y - p3.y; // (y1 - y3)
+
+  // Calculate t (parameter for segment p1-p2)
+  // Standard formula for t's numerator: (x1-x3)(y3-y4) - (y1-y3)(x3-x4)
+  // In our variables: t13x * (-d34y) - t13y * (-d34x) = -t13x*d34y + t13y*d34x
+  // Or, ( (x4-x3)*(y1-y3) - (y4-y3)*(x1-x3) ) / denominator  <-- This is Bourke's ua
+  const tNumerator = d34x * t13y - d34y * t13x;
+  const t = tNumerator / denominator;
+
+  // Calculate u (parameter for segment p3-p4)
+  // Standard formula for u's numerator: -((x1-x2)(y1-y3) - (y1-y2)(x1-x3))
+  // In our variables: - ( (-d12x)*t13y - (-d12y)*t13x ) = d12x*t13y - d12y*t13x
+  // Or, ( (x2-x1)*(y1-y3) - (y2-y1)*(x1-x3) ) / denominator  <-- This is Bourke's ub
+  const uNumerator = d12x * t13y - d12y * t13x;
+  const u = uNumerator / denominator;
+
+  // Check if intersection point lies within both line segments
+  // Allow for small floating point inaccuracies by using epsilon in checks
+  if (
+    t >= -epsilon &&
+    t <= 1.0 + epsilon &&
+    u >= -epsilon &&
+    u <= 1.0 + epsilon
+  ) {
+    // Intersection point
+    const intersectX = p1.x + t * d12x;
+    const intersectY = p1.y + t * d12y;
+
+    // Clamp t to be strictly within [0, 1] for the returned parameter,
+    // useful for distance calculations if t was slightly outside due to epsilon.
+    const clampedT = Math.max(0, Math.min(1, t));
+
+    return {
+      x: intersectX,
+      y: intersectY,
+      t_param_on_first_segment: clampedT,
+    };
+  }
+
+  return null; // No intersection within the segments
+}
+
 function addNewChildLine(parentId, clickOffsetRatioOnParent) {
   const parentLine = state.linesStore[parentId];
   console.log(parentLine);
@@ -390,16 +479,96 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
   }
 
   const lengthMultiplier = 1.0 - 0.75 / depth;
-  let childLength = parentLine.length * lengthMultiplier;
-  childLength =
-    Math.sign(childLength) * Math.max(Math.abs(childLength), MIN_LINE_LENGTH);
+  let initialSignedChildLength = parentLine.length * lengthMultiplier;
+  initialSignedChildLength =
+    Math.sign(initialSignedChildLength) *
+    Math.max(Math.abs(initialSignedChildLength), MIN_LINE_LENGTH);
   const childTextPerpOffset = -15;
 
+  const initialSign = Math.sign(initialSignedChildLength) || 1;
+  let absLenAfterScreenClip = Math.abs(initialSignedChildLength);
+
+  // --- Screen Edge Clipping (from previous step, slightly condensed) ---
+  const childDisplayAngle = parentDisplayAngle + sign * 90;
+  const childDisplayAngleRad = (childDisplayAngle * Math.PI) / 180;
+  const cosA = Math.cos(childDisplayAngleRad);
+  const sinA = Math.sin(childDisplayAngleRad);
+  const editorRect = editorContainer.getBoundingClientRect();
+  const screenPadding = 25;
+
+  let maxLen = absLenAfterScreenClip;
+  if (cosA > 1e-6) {
+    const len = (editorRect.width - screenPadding - childStartX) / cosA;
+    if (len >= 0) maxLen = Math.min(maxLen, len);
+  } else if (cosA < -1e-6) {
+    const len = (screenPadding - childStartX) / cosA;
+    if (len >= 0) maxLen = Math.min(maxLen, len);
+  }
+  if (sinA > 1e-6) {
+    const len = (editorRect.height - screenPadding - childStartY) / sinA;
+    if (len >= 0) maxLen = Math.min(maxLen, len);
+  } else if (sinA < -1e-6) {
+    const len = (screenPadding - childStartY) / sinA;
+    if (len >= 0) maxLen = Math.min(maxLen, len);
+  }
+  absLenAfterScreenClip = Math.max(MIN_LINE_LENGTH, maxLen);
+  // --- End Screen Edge Clipping ---
+
+  // --- START Collision Detection with other lines ---
+  let finalAbsoluteLength = absLenAfterScreenClip;
+  const newChildP1 = { x: childStartX, y: childStartY };
+  const collisionPadding = 10; // Stop Npx before hitting another line
+
+  for (const existingLineId in state.linesStore) {
+    if (existingLineId === parentId) continue; // Don't check against own parent
+
+    const existingLine = state.linesStore[existingLineId];
+    const exL_angle = getLineDisplayAngle(existingLineId, state.linesStore);
+    const exL_angleRad = (exL_angle * Math.PI) / 180;
+
+    const exL_P1 = { x: existingLine.startX, y: existingLine.startY };
+    const exL_P2 = {
+      x: existingLine.startX + existingLine.length * Math.cos(exL_angleRad),
+      y: existingLine.startY + existingLine.length * Math.sin(exL_angleRad),
+    };
+
+    // Candidate new child line segment using its current best length (after screen clip, before this collision)
+    const newChildP2_candidate = {
+      x: newChildP1.x + finalAbsoluteLength * cosA, // Use current `finalAbsoluteLength` for the end of segment
+      y: newChildP1.y + finalAbsoluteLength * sinA,
+    };
+
+    const intersectData = segmentIntersection(
+      newChildP1,
+      newChildP2_candidate,
+      exL_P1,
+      exL_P2,
+    );
+    console.log(intersectData);
+    if (intersectData) {
+      // An intersection occurred with `existingLine`
+      // The intersection is at `t_param_on_first_segment` ratio along the `newChildP1` to `newChildP2_candidate` segment.
+      let distToCollision =
+        intersectData.t_param_on_first_segment * finalAbsoluteLength;
+
+      distToCollision -= collisionPadding; // Apply padding
+
+      // If this collision is closer than previous ones (or the screen-clipped length)
+      // and results in a valid positive length.
+      if (distToCollision > 0 && distToCollision < finalAbsoluteLength) {
+        finalAbsoluteLength = distToCollision;
+      }
+    }
+  }
+  // Ensure final length is still at least MIN_LINE_LENGTH after all collision checks
+  finalAbsoluteLength = Math.max(finalAbsoluteLength, MIN_LINE_LENGTH);
+  const finalSignedLength = initialSign * finalAbsoluteLength;
+  // --- END Collision Detection ---
   const childLine = createLineObject({
     parentId: parentId,
     startX: childStartX,
     startY: childStartY,
-    length: childLength,
+    length: finalSignedLength,
     relativeDirection: sign,
     text: "...",
     thickness: CHILD_LINE_DEFAULT_THICKNESS,

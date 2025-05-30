@@ -12,12 +12,15 @@ import {
 import { Rect, Arrow } from "./js/drawing.js";
 import { createPostIt } from "./js/postit.js";
 import { initializelinkModal } from "./js/text.js";
+import { del, get } from "./lib/idb-keyval.js";
 
 import {
   triggerSaveDiagram,
   triggerLoadDiagram,
   loadDataFromFile,
   exportToStaticHTML,
+  verifyPermission,
+  clearLastFileHandle,
 } from "./js/files.js";
 import {
   createLineObject,
@@ -27,10 +30,109 @@ import {
 
 import { handleDeleteItemClick } from "./js/delete.js";
 
+let launchHandledByQueue = false;
+
 let helpModal;
 let closeHelpModalButton;
 
 let loadedCSSText = "";
+
+async function handleLaunchQueueFiles(launchParams) {
+  console.debug("Processing launch queue");
+  if (!launchParams.files || launchParams.files.length === 0) {
+    console.info("No files in launch queue");
+    launchHandledByQueue = false;
+    return false; // No files launched
+  }
+  launchHandledByQueue = true; // Mark that launch queue is attempting to handle a file
+  const fileHandle = launchParams.files[0];
+
+  if (fileHandle) {
+    try {
+      console.log("Pinta: Attempting to load file from PWA launch queue...");
+      if (await verifyPermission(fileHandle)) {
+        await set("pintaLastFileHandle", fileHandle);
+        const file = await fileHandle.getFile();
+        loadDataFromFile(file); // Pinta's function to parse and render diagram data
+        console.log("Pinta: Successfully loaded file from launch queue.");
+        return true; // File successfully processed
+      } else {
+        console.error("Pinta: Permission denied for file launched via PWA.");
+        try {
+          await del("pintaLastFileHandle");
+        } catch (e) {
+          // Ignoring error
+        }
+      }
+    } catch (error) {
+      console.error("Pinta: Error handling file from PWA launch queue:", error);
+    }
+  }
+  return false; // File not processed
+}
+
+async function loadFromStorageOrInitDefault() {
+  console.info("Loading from storage");
+  if (launchHandledByQueue) {
+    // If launch queue already attempted to load a file (successfully or not),
+    // respect that outcome. If it failed and state is still empty, init() might be called later.
+    // If Pinta's state is empty after launch queue attempt (e.g., error during loadDataFromFile)
+    if (
+      !Object.keys(state.linesStore || {}).length &&
+      !Object.keys(state.postItsStore || {}).length
+    ) {
+      console.log(
+        "Pinta: Launch queue processed, but diagram state is empty. Initializing default diagram.",
+      );
+      init(); // Initialize a default Pinta diagram
+    }
+    return;
+  }
+
+  let successfullyLoadedFromIDB = false;
+  try {
+    const fileHandle = await get("pintaLastFileHandle");
+    if (fileHandle) {
+      console.log(
+        "Pinta: Found last file handle in IndexedDB. Verifying permission...",
+      );
+      if (await verifyPermission(fileHandle)) {
+        const file = await fileHandle.getFile();
+        loadDataFromFile(file);
+        console.log(
+          "Pinta: Successfully loaded last session file from IndexedDB.",
+        );
+        successfullyLoadedFromIDB = true;
+      } else {
+        console.warn(
+          "Pinta: Permission denied for stored file handle. Clearing it.",
+        );
+        try {
+          await del("pintaLastFileHandle");
+        } catch (e) {
+          // Ignore error
+        }
+      }
+    } else {
+      console.log("Pinta: No last file handle found in IndexedDB.");
+    }
+  } catch (error) {
+    console.error(
+      "Pinta: Error loading last session file from IndexedDB:",
+      error,
+    );
+    try {
+      await del("pintaLastFileHandle");
+    } catch (e) {
+      // Ignore error
+    }
+  }
+
+  if (!successfullyLoadedFromIDB) {
+    console.log("Pinta: Initializing a new default diagram.");
+    init(); // Pinta's existing function to set up a blank or default diagram
+  }
+}
 
 async function fetchAppStyles() {
   try {
@@ -131,6 +233,14 @@ function handleKeyDown(event) {
   if (ctrlCmd && event.key.toLowerCase() === "e") {
     event.preventDefault();
     exportToStaticHTML(loadedCSSText);
+    return;
+  }
+  if (ctrlCmd && event.key.toLowerCase() === "n") {
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    event.preventDefault();
+    event.stopPropagation();
+    createNewDiagram();
     return;
   }
   if (event.key.toLowerCase() === "q" && !isEditingText && !isModalActive) {
@@ -269,26 +379,106 @@ function handleKeyDown(event) {
     }
   }
 }
-document.addEventListener("DOMContentLoaded", () => {
-  fetchAppStyles();
-  helpModal = document.getElementById("helpModal");
-  closeHelpModalButton = document.getElementById("closeHelpModalButton");
-  if (closeHelpModalButton) {
-    closeHelpModalButton.addEventListener("click", hideHelpModal);
-  }
 
-  // Optional: Click on overlay to close
-  if (helpModal) {
-    helpModal.addEventListener("click", (event) => {
-      if (event.target === helpModal) {
-        // Only if click is on the overlay itself
-        hideHelpModal();
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    fetchAppStyles();
+    helpModal = document.getElementById("helpModal");
+    closeHelpModalButton = document.getElementById("closeHelpModalButton");
+    if (closeHelpModalButton) {
+      closeHelpModalButton.addEventListener("click", hideHelpModal);
+    }
+
+    // Optional: Click on overlay to close
+    if (helpModal) {
+      helpModal.addEventListener("click", (event) => {
+        if (event.target === helpModal) {
+          // Only if click is on the overlay itself
+          hideHelpModal();
+        }
+      });
+    }
+    document.body.addEventListener("keydown", handleKeyDown);
+    initializelinkModal();
+    if (
+      "launchQueue" in window &&
+      typeof window.launchQueue.setConsumer === "function"
+    ) {
+      console.log("Pinta: Launch queue API is available.");
+      window.launchQueue.setConsumer(async (launchParams) => {
+        console.log("Async fetching launch queue data");
+        try {
+          await handleLaunchQueueFiles(launchParams);
+          // After launch queue attempt, ensure diagram is initialized if nothing loaded
+          if (
+            !launchHandledByQueue ||
+            (!Object.keys(state.linesStore || {}).length &&
+              !Object.keys(state.postItsStore || {}).length)
+          ) {
+            console.info(
+              "Nothing to be processed from the launch queue. Could be a failure",
+            );
+            await loadFromStorageOrInitDefault(); // Try IDB or default init
+          }
+        } catch (consumerError) {
+          console.error(
+            "Pinta: Error in launchQueue consumer's async execution flow:",
+            consumerError,
+          );
+          // Critical failure in consumer, try to initialize default state
+          if (
+            !Object.keys(state.linesStore || {}).length &&
+            !Object.keys(state.postItsStore || {}).length
+          ) {
+            try {
+              init();
+            } catch (initErr) {
+              console.error(
+                "Pinta: Fallback init after consumer error also failed:",
+                initErr,
+              );
+            }
+          }
+        }
+      });
+    } else {
+      console.log(
+        "Pinta: Launch queue API not available. Loading from storage or default.",
+      );
+      await loadFromStorageOrInitDefault();
+    }
+
+    console.log(
+      "Pinta DOMContentLoaded: Proceeding to loadFromStorageOrInitDefault.",
+    );
+    await loadFromStorageOrInitDefault();
+  } catch (err) {
+    console.error(
+      "Pinta: Critical error during DOMContentLoaded initialization sequence:",
+      err,
+    );
+    // Attempt a final fallback initialization if everything above failed
+    if (
+      !Object.keys(state.linesStore || {}).length &&
+      !Object.keys(state.postItsStore || {}).length
+    ) {
+      try {
+        console.log(
+          "Pinta DOMContentLoaded: Critical error caught, attempting emergency fallback init.",
+        );
+        init();
+      } catch (initError) {
+        console.error(
+          "Pinta: Emergency fallback init in DOMContentLoaded also failed:",
+          initError,
+        );
+        if (editorContainer)
+          editorContainer.innerHTML =
+            "<h1>Pinta failed to start. Please check console.</h1>";
       }
-    });
+    }
   }
-  document.body.addEventListener("keydown", handleKeyDown);
-  initializelinkModal();
-  init();
+  console.log("Pinta DOMContentLoaded: End - Pinta startup sequence complete.");
 });
 
 let resizeTimeout;
@@ -509,6 +699,7 @@ function init() {
   const dy = p2y - p1y;
   const mainLength = Math.sqrt(dx * dx + dy * dy);
   const mainAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  state.currentMainLineAngle = mainAngle;
 
   const mainLine = createLineObject({
     parentId: null,
@@ -523,3 +714,71 @@ function init() {
   });
   renderLine(mainLine);
 }
+
+async function createNewDiagram() {
+  // Made exportable if called from elsewhere
+  init(); // Re-initializes the Pinta diagram to a blank state
+  await clearLastFileHandle(); // Clears the stored file handle from IndexedDB
+  console.log("Pinta: New diagram created. Last file handle has been cleared.");
+}
+
+async function openExample(filePath = "./example.pnt") {
+  // Default path
+  console.log(`Pinta: Attempting to open example file: ${filePath}`);
+  try {
+    // It's good practice to clear any "last saved file" handle when loading an example,
+    // so a subsequent "Save" acts like "Save As".
+    if (typeof clearLastFileHandle === "function") {
+      await clearLastFileHandle();
+    } else {
+      console.warn(
+        "Pinta: clearLastFileHandle function not available for openExample.",
+      );
+    }
+
+    const response = await fetch(filePath);
+    if (!response.ok) {
+      throw new Error(
+        `Network response was not ok: ${response.status} ${response.statusText} while fetching ${filePath}`,
+      );
+    }
+    const fileContentJsonString = await response.text(); // This is the JSON string
+
+    // Call Pinta's function that processes the diagram data string
+    loadDataFromFile(fileContentJsonString); // Pass the string directly
+
+    console.log(`Pinta: Example file ${filePath} loaded and processed.`);
+  } catch (error) {
+    console.error(
+      `Pinta: Failed to open or process example file ${filePath}:`,
+      error,
+    );
+    alert(
+      `Failed to load the example diagram "${filePath.split("/").pop()}":\n${error.message}`,
+    );
+    // Optionally, initialize a blank diagram if example loading fails and the canvas is empty
+    if (
+      !Object.keys(state.linesStore || {}).length &&
+      !Object.keys(state.postItsStore || {}).length
+    ) {
+      console.log(
+        "Pinta: Example loading failed, initializing a new default diagram.",
+      );
+      init(); // Call your existing init function
+    }
+  }
+}
+
+const commands = [
+  {
+    title: "New",
+    aliases: ["preferences", "configuration"],
+    lambda: createNewDiagram,
+  },
+  {
+    title: "Open main example",
+    lambda: openExample,
+  },
+];
+
+metaP.bind(commands);

@@ -97,6 +97,28 @@ class Rect extends DrawingElement {
     this.svg.appendChild(rect);
     return rect;
   }
+  _applyRotation() {
+    if (!this.element) return;
+
+    const mainAngle = state.currentMainLineAngle || 0; // Get main line's angle from global state
+
+    if (this.width > 0 || this.height > 0) {
+      // Only apply if shape has dimensions
+      if (Math.abs(mainAngle) > 0.1) {
+        // Apply only if angle is non-trivial (e.g. > 0.1 degrees)
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        this.element.setAttribute(
+          "transform",
+          `rotate(${mainAngle} ${centerX} ${centerY})`,
+        );
+      } else {
+        this.element.removeAttribute("transform"); // Remove transform if angle is zero
+      }
+    } else {
+      this.element.removeAttribute("transform"); // No rotation for zero-size rect
+    }
+  }
   updateShape(currentX, currentY) {
     const newWidth = currentX - this.startX;
     const newHeight = currentY - this.startY;
@@ -109,6 +131,7 @@ class Rect extends DrawingElement {
       this.element.setAttribute("y", this.y);
       this.element.setAttribute("width", this.width);
       this.element.setAttribute("height", this.height);
+      this._applyRotation();
     });
   }
   dragInit(clientX, clientY) {
@@ -124,6 +147,7 @@ class Rect extends DrawingElement {
     requestAnimationFrame(() => {
       this.element.setAttribute("x", this.x);
       this.element.setAttribute("y", this.y);
+      this._applyRotation();
     });
   }
   toSaveData() {

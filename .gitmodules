@@ -1,0 +1,3 @@
+[submodule "lib/metap"]
+	path = lib/metap
+	url = https://github.com/rberenguel/metap.git

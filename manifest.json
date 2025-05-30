@@ -1,6 +1,6 @@
 {
   "short_name": "Pinta",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "name": "Pinta",
   "description": "Gemini created version of how I do my outline diagrams by hand",
   "icons": [
@@ -23,7 +23,7 @@
     {
       "action": "./index.html",
       "accept": {
-        "text/plain": [".json"]
+        "text/plain": [".pnt"]
       }
     }
   ]
