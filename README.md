@@ -7,7 +7,7 @@ Why? _Reasons_.
 ## How it looks and what it does
 
 This is the main "example" which also serves as feature list. This is the state of the example
-as of version 0.3.0 (current version).
+as of version 0.3.X (current version).
 
 ![](https://raw.githubusercontent.com/rberenguel/pinta/gh-pages/media/pinta-example-dark.png)
 

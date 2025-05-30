@@ -12,7 +12,7 @@ import {
 import { Rect, Arrow } from "./js/drawing.js";
 import { createPostIt } from "./js/postit.js";
 import { initializelinkModal } from "./js/text.js";
-import { del, get } from "./lib/idb-keyval.js";
+import { del, get, set } from "./lib/idb-keyval.js";
 
 import {
   triggerSaveDiagram,
@@ -244,6 +244,9 @@ function handleKeyDown(event) {
     return;
   }
   if (event.key.toLowerCase() === "q" && !isEditingText && !isModalActive) {
+    if (event.metaKey || event.ctrlKey) {
+      return;
+    }
     event.preventDefault();
     document.body.classList.toggle("light-theme");
 
