@@ -30,3 +30,4 @@ TODO:
 - [x] Save/export to static HTML
 - [ ] Better UX of shape selection
 - [ ] Better README
+- [ ] Export has some quirks still
