@@ -288,7 +288,11 @@ function handleKeyDown(event) {
       hideHelpModal();
     }
   }
-  if (!isEditingText && !isModalActive) {
+  if (
+    !isEditingText &&
+    !isModalActive &&
+    !state.hoveredLineIdForVisualColorChange
+  ) {
     let toolSelected = false;
     if (event.key.toLowerCase() === "r") {
       state.currentDrawingTool = "rect";
@@ -778,6 +782,10 @@ const commands = [
   {
     title: "Open main example",
     lambda: openExample,
+  },
+  {
+    title: "Export to static HTML",
+    lambda: () => exportToStaticHTML(loadedCSSText),
   },
 ];
 

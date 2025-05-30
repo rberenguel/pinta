@@ -21,6 +21,8 @@ import {
 } from "./lines.js";
 
 import { getLinkPrefix } from "./text.js";
+const EXPORT_START_MARKER = "<!-- PINTA_DIAGRAM_DATA_START -->";
+const EXPORT_END_MARKER = "<!-- PINTA_DIAGRAM_DATA_END -->";
 
 async function verifyPermission(fileHandle) {
   // Check if the browser supports the File System Access API's permission model for this handle
@@ -64,37 +66,51 @@ async function clearLastFileHandle() {
   }
 }
 
-// js/files.js (continued)
+// Add this new function within js/files.js
 
-async function triggerSaveDiagram() {
-  // ... (existing code to collect state.linesStore, state.postItsStore, etc. into dataToSave) ...
-  // This part remains the same as your current Pinta logic
-  const mainLineId = Object.keys(state.linesStore).find(
-    (id) => state.linesStore[id].parentId === null,
-  );
+function getCurrentDiagramDataForSave() {
+  // Ensure Post-it data in state is current with what's in the DOM
+  // This is important because content/title/position might have been updated
+  // without necessarily blurring each element to trigger individual state saves.
   for (const id in state.postItsStore) {
     const postItElement = document.getElementById(id);
     if (postItElement) {
       const editorRect = editorContainer.getBoundingClientRect();
-      if (editorRect.width > 0)
+      if (editorRect.width > 0) {
+        // Use the current visual position to update xPercent/yPercent
+        // This assumes that drag operations have concluded and style.left/top are accurate
         state.postItsStore[id].xPercent =
           (parseFloat(postItElement.style.left) / editorRect.width) * 100;
-      if (editorRect.height > 0)
+      }
+      if (editorRect.height > 0) {
         state.postItsStore[id].yPercent =
           (parseFloat(postItElement.style.top) / editorRect.height) * 100;
-      state.postItsStore[id].content =
-        postItElement.querySelector(".postit-content-area")?.innerHTML || "";
-      state.postItsStore[id].title =
-        postItElement.querySelector(".postit-drag-handle")?.textContent || "";
+      }
+      // Sync content and title from DOM to state object just before saving
+      const contentArea = postItElement.querySelector(".postit-content-area");
+      if (contentArea) {
+        state.postItsStore[id].content = contentArea.innerHTML;
+      }
+      const dragHandle = postItElement.querySelector(".postit-drag-handle");
+      if (dragHandle) {
+        state.postItsStore[id].title = dragHandle.textContent || "";
+      }
+      // Color and fontSizePercent should already be up-to-date in state.postItsStore[id]
+      // due to the direct state updates in their respective handlers.
     }
   }
+
+  const mainLineId = Object.keys(state.linesStore).find(
+    (id) => state.linesStore[id].parentId === null,
+  );
+
   const drawingsToSave = Object.values(state.drawingElementsStore)
     .map((el) => el.toSaveData())
     .filter((d) => d !== null);
 
-  const dataToSave = {
-    lines: state.linesStore,
-    postIts: state.postItsStore,
+  const diagramData = {
+    lines: state.linesStore, // Assumes line data (visualColor, textColor, thickness) is already up-to-date in state
+    postIts: state.postItsStore, // Now synced with latest DOM content/title/position
     drawings: drawingsToSave,
     mainLineReference:
       mainLineId && state.linesStore[mainLineId]
@@ -104,28 +120,32 @@ async function triggerSaveDiagram() {
           }
         : null,
   };
-  const diagramData = JSON.stringify(dataToSave, null, 2);
+  return diagramData;
+}
+
+async function triggerSaveDiagram() {
+  const dataToSave = getCurrentDiagramDataForSave(); // Use the new helper
+  const diagramData = JSON.stringify(dataToSave, null, 2); // Pretty print for .pnt files
   const blob = new Blob([diagramData], { type: "application/json" });
   let fileHandle = null;
 
   try {
-    // Attempt to get the currently stored file handle for a "Save" operation
     const existingHandle = await get("pintaLastFileHandle");
     if (existingHandle && (await verifyPermission(existingHandle))) {
       fileHandle = existingHandle;
-      console.log("Pinta: Using existing file handle for saving.");
+      // console.log("Pinta: Using existing file handle for saving.");
     } else {
-      // No valid existing handle, or permission issue, so treat as "Save As"
       if (window.showSaveFilePicker) {
-        console.log(
-          "Pinta: No valid existing handle, prompting for new file location (Save As).",
-        );
+        // console.log("Pinta: No valid existing handle, prompting for new file location (Save As).");
         fileHandle = await window.showSaveFilePicker({
           suggestedName: "diagram.pnt",
           types: [
             {
               description: "Pinta JSON Diagram Files (.pnt)",
-              accept: { "application/json": [".pnt"] },
+              accept: {
+                "application/json": [".pnt"],
+                "text/html": [".html", ".htm"],
+              },
             },
           ],
         });
@@ -136,10 +156,11 @@ async function triggerSaveDiagram() {
       const writable = await fileHandle.createWritable();
       await writable.write(blob);
       await writable.close();
-      await set("pintaLastFileHandle", fileHandle); // Store/update the handle
+      await set("pintaLastFileHandle", fileHandle);
+      info.innerHTML = "&#x1F4BE;";
+      info.classList.add("fades");
       console.log("Pinta: Diagram saved successfully. Handle stored/updated.");
     } else {
-      // Fallback for browsers without showSaveFilePicker or if user cancelled initial "Save As"
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "pinta.pnt";
@@ -147,19 +168,16 @@ async function triggerSaveDiagram() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
-      console.log(
-        "Pinta: Diagram download initiated (fallback). No handle stored.",
-      );
+      // console.log("Pinta: Diagram download initiated (fallback). No handle stored.");
     }
   } catch (err) {
     if (err.name !== "AbortError") {
       console.error("Pinta: Error saving diagram:", err);
     } else {
-      console.log("Pinta: Save diagram aborted by user.");
+      // console.log("Pinta: Save diagram aborted by user.");
     }
   }
 }
-
 // js/files.js (continued)
 
 async function triggerLoadDiagram() {
@@ -169,14 +187,32 @@ async function triggerLoadDiagram() {
         types: [
           {
             description: "Pinta JSON Diagram Files (.pnt)",
-            accept: { "application/json": [".pnt"] },
+            accept: {
+              "application/json": [".pnt"],
+              "text/html": [".html", ".htm"],
+            },
           },
         ],
         multiple: false,
       });
+      const file = await fileHandle.getFile();
       if (await verifyPermission(fileHandle)) {
-        await set("pintaLastFileHandle", fileHandle);
-        const file = await fileHandle.getFile();
+        if (
+          !file.name.toLowerCase().endsWith(".html") &&
+          !file.name.toLowerCase().endsWith(".htm")
+        ) {
+          // If it's a .pnt file (or other non-HTML), store its handle
+          await set("pintaLastFileHandle", fileHandle);
+          console.log("Pinta: .pnt diagram loaded and handle stored.");
+        } else {
+          // If it's an HTML file, do NOT store its handle.
+          // Instead, clear any existing last file handle to ensure
+          // the next "Save" acts like "Save As".
+          console.log(
+            "Pinta: Diagram loaded from HTML file. Handle NOT stored; will prompt for .pnt on next save.",
+          );
+          await clearLastFileHandle(); // Ensures next save is a "Save As" for a .pnt
+        }
         loadDataFromFile(file);
         console.log("Pinta: Diagram loaded and handle stored.");
       } else {
@@ -195,9 +231,37 @@ async function triggerLoadDiagram() {
   }
 }
 
-function _processLoadedDiagramData(jsonString) {
+function _processLoadedDiagramData(fileContentString) {
+  let jsonToParse = fileContentString;
+
+  const trimmedContent = fileContentString.trim();
+
+  // Check if it's likely an HTML file and contains our start marker
+  if (
+    (trimmedContent.toLowerCase().startsWith("<html") ||
+      trimmedContent.toLowerCase().startsWith("<!doctype html")) &&
+    trimmedContent.includes(EXPORT_START_MARKER)
+  ) {
+    const startIndex = trimmedContent.indexOf(EXPORT_START_MARKER);
+    const endIndex = trimmedContent.lastIndexOf(EXPORT_END_MARKER); // Use lastIndexOf for safety
+
+    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+      jsonToParse = trimmedContent
+        .substring(startIndex + EXPORT_START_MARKER.length, endIndex)
+        .trim();
+      console.log("Pinta: Extracted diagram data from HTML comment.");
+    } else {
+      console.warn(
+        "Pinta: HTML file loaded, but Pinta data comment not found or malformed.",
+      );
+      alert(
+        "Error: This HTML file does not appear to contain valid Pinta diagram data.",
+      );
+      return; // Stop processing if it's HTML but data is missing/wrong
+    }
+  }
   try {
-    const savedData = JSON.parse(jsonString);
+    const savedData = JSON.parse(jsonToParse);
     if (
       typeof savedData === "object" &&
       savedData !== null &&
@@ -491,6 +555,13 @@ async function exportToStaticHTML(loadedCSSText) {
     margin: 20px auto; /* Center it on the page */
   `;
 
+  const pintaSaveData = getCurrentDiagramDataForSave();
+  const pintaJsonString = JSON.stringify(pintaSaveData);
+
+  // G. Embed JSON data into an HTML comment
+
+  const jsonComment = `\n${EXPORT_START_MARKER}\n${pintaJsonString}\n${EXPORT_END_MARKER}\n`;
+
   // B. Serialize Schema Lines
   const linesHtml = Object.values(state.linesStore)
     .map((line) => {
@@ -640,6 +711,7 @@ async function exportToStaticHTML(loadedCSSText) {
   <div id="editor-container-export" style="${editorWrapperStyle}">
     ${diagramContentHTML}
   </div>
+  ${jsonComment}
 </body>
 </html>`;
 

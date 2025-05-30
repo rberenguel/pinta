@@ -9,8 +9,24 @@ export {
 export const MAIN_LINE_DEFAULT_THICKNESS = 4;
 export const CHILD_LINE_DEFAULT_THICKNESS = 2;
 export const MIN_LINE_LENGTH = 10;
+export const SCHEMA_LINE_VISUAL_COLORS = {
+  r: "red",
+  y: "yellow",
+  b: "blue",
+  k: "black",
+  w: "white",
+  g: "green",
+  d: "default",
+};
+export const DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR =
+  "var(--theme-schema-line-color)";
+
+export const LINE_THICKNESS_STEP = 0.5; // Or 1, as you prefer
+export const MIN_LINE_THICKNESS = 0.5;
+export const MAX_LINE_THICKNESS = 20; // Example max
 
 import { getLinkPrefix, setupTextDraggable, handleTextClick } from "./text.js";
+import { DEFAULT_SCHEMA_TEXT_COLOR_VAR } from "./text.js";
 import { state, editorContainer } from "./state.js";
 import { handleDeleteItemClick } from "./delete.js";
 
@@ -31,7 +47,9 @@ function createLineObject(params) {
       params && params.parentId
         ? CHILD_LINE_DEFAULT_THICKNESS
         : MAIN_LINE_DEFAULT_THICKNESS,
-    color: "var(--theme-schema-line-color)",
+    color: "var(--theme-schema-line-color)", // Kind of deprecated with visualColor
+    visualColor: "default", // New property
+    textColor: "default", // Placeholder if you plan to add text color later
     children: [],
     offsetRatioOnParent: 0.5,
     fontSize: 16,
@@ -79,7 +97,17 @@ function renderLine(line, isUpdate = false) {
     group.style.transform = `rotate(${displayAngle}deg) scaleX(${groupScaleX})`;
     if (visual) {
       visual.style.height = `${line.thickness}px`;
-      visual.style.backgroundColor = line.color;
+      const currentVisualColor = line.visualColor || "default"; // Ensure fallback
+      visual.style.backgroundColor =
+        currentVisualColor === "default"
+          ? DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR // Use constant from state.js
+          : `var(--${currentVisualColor})`; // Assumes SCHEMA_LINE_VISUAL_COLORS maps 'red' to 'red', etc.
+
+      visual.removeEventListener("mouseenter", handleLineVisualMouseEnter); // Prevent multiple listeners
+      visual.addEventListener("mouseenter", handleLineVisualMouseEnter);
+
+      visual.removeEventListener("mouseleave", handleLineVisualMouseLeave); // Prevent multiple listeners
+      visual.addEventListener("mouseleave", handleLineVisualMouseLeave);
     }
   } else {
     if (group) group.remove();
@@ -95,9 +123,18 @@ function renderLine(line, isUpdate = false) {
     visual = document.createElement("div");
     visual.className = "line-visual";
     visual.style.height = `${line.thickness}px`;
-    visual.style.backgroundColor = line.color;
+    const currentVisualColor = line.visualColor || "default"; // Ensure fallback
+    visual.style.backgroundColor =
+      currentVisualColor === "default"
+        ? DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR // Use constant from state.js
+        : `var(--${currentVisualColor})`; // Assumes SCHEMA_LINE_VISUAL_COLORS maps 'red' to 'red', etc.
     visual.dataset.lineId = line.id;
     visual.addEventListener("click", handleVisualClick);
+    visual.removeEventListener("mouseenter", handleLineVisualMouseEnter); // Prevent multiple listeners
+    visual.addEventListener("mouseenter", handleLineVisualMouseEnter);
+
+    visual.removeEventListener("mouseleave", handleLineVisualMouseLeave); // Prevent multiple listeners
+    visual.addEventListener("mouseleave", handleLineVisualMouseLeave);
 
     textElement = document.createElement("div");
     textElement.className = "line-text";
@@ -163,7 +200,7 @@ function renderLine(line, isUpdate = false) {
       textElement.style.removeProperty("max-width");
       textElement.style.removeProperty("width"); // If 'width' was ever explicitly set elsewhere
       // No explicit newlines, make width proportional to line length.
-      textElement.style.whiteSpace = "normal"; // Allows text to wrap within the calculated width.
+      textElement.style.whiteSpace = "pre-wrap";
 
       // Adjust these factors as needed for your desired look and feel
       const proportionalityFactor = 0.85; // Text box can use up to 85% of the line's visual length.
@@ -181,6 +218,11 @@ function renderLine(line, isUpdate = false) {
       textElement.style.width = `${calculatedMaxWidth}px`;
       // 'width: auto;' is the default and will make the element use space up to its maxWidth.
     }
+    const currentTextColor = line.textColor || "default";
+    textElement.style.color =
+      currentTextColor === "default"
+        ? DEFAULT_SCHEMA_TEXT_COLOR_VAR // Use constant from state.js
+        : `var(--${currentTextColor})`; // Assumes color names map to CSS variables like var(--red)
   }
 
   //
@@ -612,4 +654,64 @@ function deleteLineRecursive(lineId) {
     parent.children = parent.children.filter((id) => id !== lineId);
   }
   delete state.linesStore[lineId];
+}
+
+function handleLineVisualMouseEnter(event) {
+  const lineId = event.target.dataset.lineId; // Assuming lineId is on visual's dataset
+  console.log(lineId);
+  if (lineId) {
+    state.hoveredLineIdForVisualColorChange = lineId;
+    document.addEventListener("keydown", handleLineVisualColorKeydown);
+  }
+}
+
+function handleLineVisualMouseLeave(event) {
+  state.hoveredLineIdForVisualColorChange = null;
+  document.removeEventListener("keydown", handleLineVisualColorKeydown);
+}
+
+function handleLineVisualColorKeydown(event) {
+  if (!state.hoveredLineIdForVisualColorChange) return;
+
+  const key = event.key.toLowerCase();
+  const lineId = state.hoveredLineIdForVisualColorChange;
+  const lineToUpdate = state.linesStore[lineId];
+  if (SCHEMA_LINE_VISUAL_COLORS[key]) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (lineToUpdate) {
+      const newColorName = SCHEMA_LINE_VISUAL_COLORS[key];
+      lineToUpdate.visualColor = newColorName;
+      renderLine(lineToUpdate, true); // Re-render to apply the new color
+    }
+    return;
+  }
+  const step = LINE_THICKNESS_STEP;
+  const minThickness = MIN_LINE_THICKNESS;
+  const maxThickness = MAX_LINE_THICKNESS;
+
+  if (key === "." || key === ">") {
+    // Increase thickness
+    event.preventDefault();
+    event.stopPropagation();
+    let newThickness =
+      (lineToUpdate.thickness || CHILD_LINE_DEFAULT_THICKNESS) + step;
+    lineToUpdate.thickness = Math.min(
+      maxThickness,
+      Math.max(minThickness, newThickness),
+    );
+    renderLine(lineToUpdate, true);
+  } else if (key === "," || key === "<") {
+    // Decrease thickness
+    event.preventDefault();
+    event.stopPropagation();
+    let newThickness =
+      (lineToUpdate.thickness || CHILD_LINE_DEFAULT_THICKNESS) - step;
+    lineToUpdate.thickness = Math.min(
+      maxThickness,
+      Math.max(minThickness, newThickness),
+    );
+    renderLine(lineToUpdate, true);
+  }
 }

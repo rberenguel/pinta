@@ -12,6 +12,7 @@
     <script src="lib/metap/metap.js"></script>
   </head>
   <body>
+    <div id="info"></div>
     <div id="editor-container">
       <svg id="drawingCanvas" width="100%" height="100%">
         <defs>
@@ -116,7 +117,12 @@
         </defs>
       </svg>
     </div>
-    <input type="file" id="filePicker" accept=".pnt" style="display: none" />
+    <input
+      type="file"
+      id="filePicker"
+      accept=".pnt,.html,.htm"
+      style="display: none"
+    />
 
     <div class="modal-overlay" id="deleteConfirmationModal">
       <div class="modal-content">

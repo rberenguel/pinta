@@ -2,6 +2,8 @@ export const state = {
   // Data Stores
   linesStore: {},
   currentMainLineAngle: 0,
+  hoveredLineIdForVisualColorChange: null,
+  isWaitingForColorKey: false,
   postItsStore: {},
   drawingElementsStore: {},
 
@@ -65,6 +67,15 @@ export const drawingColorNames = {
   v: "violet",
   m: "magenta",
 };
+
+export const SCHEMA_LINE_COLORS = {
+  r: "red", // Will use var(--red)
+  y: "yellow", // Will use var(--yellow)
+  b: "blue", // Will use var(--blue)
+  d: "default", // Special value for theme default
+};
+
+export const DEFAULT_LINE_VISUAL_COLOR = "var(--theme-schema-line-color)";
 
 export const LINK_SYMBOL_MAP = [
   { regex: /.*docs\.google\..*/i, symbol: "📜 " },

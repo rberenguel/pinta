@@ -5,6 +5,7 @@ export {
   handleTextClick,
 };
 export const MAX_TEXT_PERP_OFFSET = 30;
+export const DEFAULT_SCHEMA_TEXT_COLOR_VAR = "var(--theme-schema-text-color)";
 
 import {
   state,
@@ -13,7 +14,11 @@ import {
   DEFAULT_LINK_SYMBOL,
 } from "./state.js";
 
-import { renderLine, getLineDisplayAngle } from "./lines.js";
+import {
+  renderLine,
+  getLineDisplayAngle,
+  SCHEMA_LINE_VISUAL_COLORS,
+} from "./lines.js";
 
 function getLinkPrefix(url) {
   if (!url) return "";
@@ -177,6 +182,15 @@ function makeEditable(textEl) {
   }
 
   const onBlur = () => {
+    if (
+      state.isWaitingForColorKey &&
+      state.targetLineIdForTextColorChange === itemId
+    ) {
+      state.isWaitingForColorKey = false;
+      state.targetLineIdForTextColorChange = null;
+      // If you added a visual cue like an outline, remove it:
+      // textEl.style.outline = "";
+    }
     textEl.contentEditable = "false";
     textEl.style.cursor = textEl.classList.contains("line-text")
       ? "grab"
@@ -195,12 +209,60 @@ function makeEditable(textEl) {
 
   const onKeydown = (e) => {
     const isCtrlOrCmd = e.ctrlKey || e.metaKey;
-
     if (itemType === "line") {
-      if (isCtrlOrCmd) {
-        const lineId = itemId;
-        const currentLine = state.linesStore[lineId];
+      const lineId = itemId;
+      const currentLine = state.linesStore[lineId];
+      if (isCtrlOrCmd && e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        e.stopPropagation();
+        state.isWaitingForColorKey = true;
+        state.targetLineIdForTextColorChange = lineId;
+        return; // Entered color mode, wait for next key
+      }
+      if (
+        state.isWaitingForColorKey &&
+        state.targetLineIdForTextColorChange === lineId
+      ) {
+        e.stopPropagation(); // Important to prevent other actions while in this "mode"
+        const keyPressed = e.key.toLowerCase();
 
+        // Check if the pressed key is a defined color shortcut
+        if (
+          SCHEMA_LINE_VISUAL_COLORS &&
+          SCHEMA_LINE_VISUAL_COLORS[keyPressed]
+        ) {
+          e.preventDefault();
+          if (currentLine) {
+            const newColorName = SCHEMA_LINE_VISUAL_COLORS[keyPressed];
+            currentLine.textColor = newColorName;
+            textEl.style.color =
+              newColorName === "default"
+                ? DEFAULT_SCHEMA_TEXT_COLOR_VAR
+                : `var(--${newColorName})`;
+            // Visual cue can be removed here if one was added
+            // textEl.style.outline = "";
+          }
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          // console.log("Text color change cancelled by Escape.");
+          // Visual cue can be removed here
+          // textEl.style.outline = "";
+        } else {
+          // Any other key pressed cancels the mode.
+          // Optionally, you could choose to only let Escape cancel, and ignore other keys.
+          // But cancelling on any other key press is often more user-friendly.
+          e.preventDefault(); // Prevent the default action of the unexpected key
+          // console.log("Text color change cancelled by other key.");
+          // Visual cue can be removed here
+          // textEl.style.outline = "";
+        }
+
+        // Reset the waiting state regardless of what key (color, Escape, other) was pressed
+        state.isWaitingForColorKey = false;
+        state.targetLineIdForTextColorChange = null;
+        return; // Exit onKeydown after handling the modal key press
+      }
+      if (e.ctrlKey) {
         if (e.key.toLowerCase() === "k") {
           e.preventDefault();
           textEl.blur();
@@ -218,11 +280,11 @@ function makeEditable(textEl) {
           let newSize = (currentLine.fontSize || 16) + 2;
           currentLine.fontSize = newSize;
           textEl.style.fontSize = `${newSize}px`;
-        } else if (e.key.toLowerCase() === "b") {
+        } else if (e.key.toLowerCase() === "b" && e.shiftKey) {
           e.preventDefault();
           currentLine.isBold = !currentLine.isBold;
           textEl.style.fontWeight = currentLine.isBold ? "bold" : "normal";
-        } else if (e.key.toLowerCase() === "c") {
+        } else if (e.key.toLowerCase() === "c" && e.shiftKey) {
           e.preventDefault();
           currentLine.isCentered = !currentLine.isCentered;
           textEl.style.textAlign = currentLine.isCentered ? "center" : "left";
