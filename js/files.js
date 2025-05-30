@@ -21,8 +21,8 @@ import {
 } from "./lines.js";
 
 import { getLinkPrefix } from "./text.js";
-const EXPORT_START_MARKER = "<!-- PINTA_DIAGRAM_DATA_START -->";
-const EXPORT_END_MARKER = "<!-- PINTA_DIAGRAM_DATA_END -->";
+const EXPORT_START_MARKER = "<!-- PINTA_DIAGRAM_DATA_START ";
+const EXPORT_END_MARKER = "PINTA_DIAGRAM_DATA_END -->";
 
 async function verifyPermission(fileHandle) {
   // Check if the browser supports the File System Access API's permission model for this handle
