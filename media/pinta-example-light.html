@@ -1,0 +1,3172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pinta Diagram Export</title>
+    <style>
+      /* Embedded CSS from style.css */
+      :root {
+        --base03: #002b36;
+        --base02: #073642;
+        --base01: #586e75;
+        --base00: #657b83;
+        --base0: #839496;
+        --base1: #93a1a1;
+
+        --yellow: #b58900;
+        --orange: #cb4b16;
+        --red: #dc322f;
+        --magenta: #d33682;
+        --violet: #6c71c4;
+        --blue: #268bd2;
+        --cyan: #2aa198;
+        --green: #859900;
+
+        --postit-white-bg: #fdf6e3;
+        --postit-white-text: #586e75;
+        --postit-transp-bg: #99999922;
+        --theme-main-background: var(--base03);
+        --theme-editor-background: var(--base02);
+        --theme-primary-text: var(--base1);
+        --theme-secondary-text: var(--base01);
+        --theme-border-color: var(--base01);
+
+        --theme-schema-line-color: var(--orange);
+        --theme-schema-text-color: var(--cyan);
+
+        --theme-modal-background: var(--base02);
+        --theme-modal-overlay-bg: rgba(0, 0, 0, 0.75);
+        --theme-modal-text-primary: var(--base1);
+        --theme-modal-text-secondary: var(--base0);
+        --theme-modal-button-confirm-bg: var(--red);
+        --theme-modal-button-confirm-text: var(--base03);
+        --theme-modal-button-cancel-bg: var(--base01);
+        --theme-modal-button-cancel-text: var(--base03);
+        --theme-modal-button-cancel-hover-bg: var(--base00);
+
+        --theme-postit-yellow-text: var(--base03);
+        --theme-postit-red-text: var(--base03);
+        --theme-postit-green-text: var(--base03);
+        --theme-postit-blue-text: var(--base03);
+        --theme-postit-white-text: var(--postit-white-text);
+        --theme-postit-transp-text: var(--yellow);
+
+        --theme-postit-yellow-drag-handle: var(--base02);
+        --theme-postit-red-drag-handle: var(--base03);
+        --theme-postit-green-drag-handle: var(--base02);
+        --theme-postit-blue-drag-handle: var(--base03);
+        --theme-postit-white-drag-handle: var(--base01);
+      }
+
+      body.light-theme {
+        --theme-main-background: #999;
+        --theme-editor-background: #aaa;
+        --theme-primary-text: #1c1c1c;
+        --theme-secondary-text: #4a4a4a;
+        --theme-border-color: #c0c0c0;
+
+        --theme-schema-line-color: #333;
+        --theme-schema-text-color: #333;
+
+        --theme-modal-background: #ffffff;
+        --theme-modal-overlay-bg: rgba(50, 50, 50, 0.6);
+        --theme-modal-text-primary: #1c1c1c;
+        --theme-modal-text-secondary: #4a4a4a;
+
+        --theme-modal-button-confirm-text: #ffffff;
+        --theme-modal-button-cancel-bg: #e0e0e0;
+        --theme-modal-button-cancel-text: #1c1c1c;
+        --theme-modal-button-cancel-hover-bg: #d0d0d0;
+
+        --theme-postit-yellow-text: #1c1c1c;
+        --theme-postit-red-text: #ffffff;
+        --theme-postit-green-text: #1c1c1c;
+        --theme-postit-blue-text: #ffffff;
+        --theme-postit-white-text: #1c1c1c;
+        --theme-postit-transp-text: #1c1c1c;
+
+        --theme-postit-yellow-drag-handle: var(--base01);
+        --theme-postit-red-drag-handle: var(--postit-white-bg);
+        --theme-postit-green-drag-handle: var(--base01);
+        --theme-postit-blue-drag-handle: var(--postit-white-bg);
+        --theme-postit-white-drag-handle: var(--base01);
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background-color: var(--theme-main-background);
+        color: var(--theme-primary-text);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      #editor-container {
+        aspect-ratio: 4 / 3;
+        width: 98vw;
+        max-height: 98vh;
+        margin: auto;
+        background-color: var(--theme-editor-background);
+        border: 1px solid var(--theme-border-color);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+        border-radius: 0.5rem;
+      }
+      #drawingCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 100;
+        pointer-events: none;
+      }
+
+      #drawingCanvas > * {
+        pointer-events: all;
+      }
+
+      .line-element-group {
+        position: absolute;
+        transform-origin: 0 0;
+        z-index: 10;
+      }
+      .line-visual {
+        width: 100%;
+        background-color: var(--theme-schema-line-color);
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: crosshair;
+        border-radius: 2px;
+        background-clip: padding-box;
+        border-top: 0.5em solid transparent;
+        border-bottom: 0.5em solid transparent;
+      }
+      .line-text {
+        position: absolute;
+        white-space: pre-wrap;
+        color: var(--theme-schema-text-color);
+        font-size: 16px;
+        padding: 1px 2px;
+        background-color: transparent;
+        border: none;
+        user-select: none;
+
+        min-width: 10px;
+        text-align: center;
+      }
+      .line-text[contenteditable="true"] {
+        background-color: var(--theme-editor-background);
+        border: 1px dashed var(--blue);
+        color: var(--theme-primary-text);
+        user-select: text;
+        cursor: auto;
+        outline: none;
+      }
+
+      .handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        z-index: 15;
+        display: none;
+      }
+      .resize-handle {
+        background-color: var(--blue);
+        cursor: ns-resize;
+        left: 100%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .root-drag-handle {
+        background-color: var(--red);
+        cursor: ew-resize;
+        left: 0%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .delete-handle {
+        color: var(--red);
+        background-color: transparent;
+        font-size: 14px;
+        line-height: 10px;
+        text-align: center;
+        font-family: monospace;
+        font-weight: bold;
+        cursor: pointer;
+        left: 30%;
+        top: 0px;
+        width: auto;
+        height: auto;
+        padding: 0 2px;
+        border-radius: 0;
+        z-index: 100;
+      }
+      .line-element-group:hover .handle {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .handle.dragging {
+        display: flex !important;
+      }
+      .resize-handle.dragging {
+        background-color: #1a6a9e;
+      }
+      .root-drag-handle.dragging {
+        background-color: #a71e1c;
+      }
+      .delete-handle:hover {
+        color: #a71e1c;
+      }
+
+      .post-it {
+        position: absolute;
+        z-index: 500;
+        padding: 20px 8px 8px 8px;
+        border-radius: 3px;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        min-width: 100px;
+        min-height: 50px;
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        color: var(--base1);
+        word-wrap: break-word;
+        overflow: hidden;
+        cursor: default;
+        touch-action: none;
+        box-sizing: border-box;
+        outline: none;
+        display: flex;
+        flex-direction: column;
+      }
+      .postit-drag-handle {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: calc(100% - 20px);
+        height: 18px;
+        cursor: grab;
+        display: flex;
+        align-items: center;
+        padding-left: 5px;
+        box-sizing: border-box;
+        z-index: 502;
+        font-size: 10px;
+        color: var(--base00);
+      }
+      .postit-drag-handle:active {
+        cursor: grabbing;
+      }
+      .postit-delete-button {
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+        font-size: 12px;
+        z-index: 503;
+        border-radius: 3px;
+        background: rgba(0, 0, 0, 0);
+        color: var(--red);
+        border: none;
+        cursor: pointer;
+        text-align: center;
+        opacity: 0.7;
+      }
+      .post-it:hover .postit-delete-button {
+        opacity: 1;
+      }
+      .postit-delete-button:hover {
+        background-color: rgba(220, 50, 50, 0.3);
+      }
+      .postit-content-area {
+        flex-grow: 1;
+        outline: none;
+        cursor: text;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        padding: 2px;
+        overflow-y: auto;
+        color: inherit;
+      }
+      .postit-content-area[contenteditable="true"] {
+        border: none;
+      }
+      .postit-content-area a {
+        color: var(--blue);
+        text-decoration: underline;
+      }
+      .postit-content-area a:hover {
+        color: var(--cyan);
+      }
+      .postit-color-yellow {
+        background-color: var(--yellow);
+        color: var(--base03);
+      }
+      .postit-color-red {
+        background-color: var(--red);
+        color: var(--base03);
+      }
+      .postit-color-green {
+        background-color: var(--green);
+        color: var(--base03);
+      }
+      .postit-color-blue {
+        background-color: var(--blue);
+        color: var(--base03);
+      }
+      .postit-color-white {
+        background-color: var(--postit-white-bg);
+        color: #333;
+      }
+
+      .postit-color-transp {
+        background-color: var(--postit-transp-bg);
+        backdrop-filter: blur(5px);
+        color: var(--theme-postit-transp-text);
+      }
+
+      .postit-color-yellow .postit-drag-handle {
+        color: var(--base02);
+      }
+      .postit-color-red .postit-drag-handle {
+        color: var(--base03);
+      }
+      .postit-color-green .postit-drag-handle {
+        color: var(--base02);
+      }
+      .postit-color-blue .postit-drag-handle {
+        color: var(--base03);
+      }
+      .postit-color-white .postit-drag-handle {
+        color: var(--base01);
+      }
+
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--theme-modal-overlay-bg);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .modal-content {
+        background-color: var(--theme-modal-background);
+        color: var(--theme-modal-text-secondary);
+        padding: 25px;
+        border-radius: 8px;
+        border: 1px solid var(--theme-border-color);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+      }
+      .modal-content h3 {
+        margin-top: 0;
+        font-size: 1.25rem;
+        color: var(--theme-modal-text-primary);
+      }
+      .modal-content p {
+        margin-bottom: 20px;
+        color: var(--base0);
+        font-size: 0.9rem;
+      }
+      .modal-buttons button {
+        padding: 10px 15px;
+        margin: 0 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .modal-confirm-button {
+        background-color: var(--theme-modal-button-confirm-bg);
+        color: var(--theme-modal-button-confirm-text);
+      }
+      .modal-confirm-button:hover {
+        background-color: #a71e1c;
+      }
+      .modal-cancel-button {
+        background-color: var(--theme-modal-button-cancel-bg);
+        color: var(--theme-modal-button-cancel-text);
+      }
+      .modal-cancel-button:hover {
+        background-color: var(--theme-modal-button-cancel-bg);
+        color: var(--theme-modal-button-cancel-text);
+      }
+
+      @media print {
+        body {
+          background-color: white !important;
+          color: black !important;
+          padding-top: 0 !important;
+        }
+        #editor-container {
+          width: 100% !important;
+          height: auto !important;
+          min-height: initial !important;
+          border: none !important;
+          box-shadow: none !important;
+          background-color: white !important;
+          overflow: visible !important;
+        }
+        .line-visual {
+          background-color: black !important;
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+        .line-text {
+          color: black !important;
+          background-color: transparent !important;
+          border: none !important;
+          padding: 0 !important;
+        }
+        .handle,
+        .delete-handle,
+        .resize-handle,
+        .root-drag-handle {
+          display: none !important;
+        }
+        .modal-overlay {
+          display: none !important;
+        }
+
+        #drawingCanvas * {
+          stroke: black !important;
+          fill-opacity: 0 !important;
+          fill: none !important;
+        }
+        #drawingCanvas line[marker-end] {
+          marker-end: url(#arrowhead-print) !important;
+        }
+        #drawingCanvas rect[fill]:not([fill="none"]) {
+          fill: black !important;
+          fill-opacity: 0.2 !important;
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+
+        .post-it {
+          background-color: white !important;
+          color: black !important;
+          border: 1px solid #ccc !important;
+          box-shadow: 2px 2px 5px grey !important;
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+        .postit-drag-handle,
+        .postit-delete-button {
+          display: none !important;
+        }
+        .postit-content-area[contenteditable="true"] {
+          border: none;
+        }
+        .postit-content-area a {
+          color: #0000ee !important;
+          text-decoration: underline !important;
+        }
+      }
+
+      #helpModalContent {
+        text-align: left;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding-bottom: 60px;
+        min-width: 80vw !important;
+      }
+
+      .help-sections-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .help-section {
+        flex: 1 1 300px;
+      }
+
+      .help-section h4 {
+        margin-top: 0;
+        margin-bottom: 0.5em;
+      }
+
+      .help-section ul {
+        padding-left: 20px;
+        margin-top: 0.25em;
+        list-style-type: disc;
+      }
+
+      .help-section ul ul {
+        list-style-type: circle;
+        margin-top: 0.25em;
+      }
+
+      .help-section li {
+        margin-bottom: 0.3em;
+      }
+
+      .help-section code {
+        background-color: var(--theme-editor-background);
+        padding: 0.1em 0.4em;
+        border-radius: 3px;
+        font-family: monospace;
+        color: var(--theme-schema-text-color);
+      }
+
+      .modal-close-button {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        color: var(--theme-secondary-text);
+        cursor: pointer;
+        padding: 5px;
+        line-height: 1;
+        z-index: 10;
+      }
+
+      .modal-close-button:hover {
+        color: var(--theme-primary-text);
+      }
+
+      #helpModal .modal-buttons {
+        position: absolute;
+        bottom: 15px;
+        left: 0;
+        right: 0;
+        padding-top: 15px;
+        background-color: var(--theme-modal-background);
+        border-top: 1px solid var(--theme-border-color);
+      }
+
+      /* Additional styles for static export if needed */
+      body {
+        margin: 0;
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif; /* From body style.css */
+        background-color: var(--theme-main-background); /* */
+        color: var(--theme-primary-text); /* */
+        display: flex; /* */
+        justify-content: center; /* */
+        align-items: center; /* */
+        min-height: 100vh; /* */
+      }
+      /* Ensure links within exported post-its are styled correctly if default is overridden */
+      .postit-content-area a {
+        color: var(--blue);
+        text-decoration: underline;
+      } /* From style.css */
+      .postit-content-area a:hover {
+        color: var(--cyan);
+      } /* From style.css */
+    </style>
+  </head>
+  <body class="light-theme">
+    <div
+      id="editor-container-export"
+      style="
+        position: relative;
+        width: 2510.796875px;
+        height: 1303.4375px;
+        background-color: var(--theme-editor-background);
+        border: 1px solid var(--theme-border-color);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        border-radius: 0.5rem;
+        margin: 20px auto; /* Center it on the page */
+      "
+    >
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 130.34375px;
+          top: 1173.09375px;
+          width: 2479.9838229236275px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 4px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 400px;
+            color: var(--theme-schema-text-color);
+            font-size: 54px;
+            padding: 1px 2px;
+            left: 64.48177861260127%;
+            top: -29.499831474863456px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Pinta 🪮
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 343.13525541994494px;
+          top: 1074.48150263907px;
+          width: 306.24625886749357px;
+          transform: rotate(-114.8640400778072deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 3.7185248384613336px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 260.309px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -27.888936288460002px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Structured outline editor
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 237.34751838839776px;
+          top: 846.2062891605574px;
+          width: 387.49747233181677px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 329.373px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 47.30027186052752%;
+            top: -27.119545734759118px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Click on lines to add new child lines
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 266.2648849505635px;
+          top: 908.6059416197668px;
+          width: 387.49747233181677px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 329.373px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 49.36131469269592%;
+            top: -27.246028278750778px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Hover on lines to resize (top)
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 292.5967201199674px;
+          top: 965.4263771753942px;
+          width: 387.49747233181677px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 329.373px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 49.44173722616064%;
+            top: -28.345846613061777px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Hover on lines to drag on parent line (bottom)
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 320.6805585639761px;
+          top: 1026.0273919621113px;
+          width: 387.49747233181677px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 329.373px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 48.53735992781065%;
+            top: -24.825025301926782px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Hover on lines to delete it and any children (X)
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 762.6432505369003px;
+          top: 880.0723033492777px;
+          width: 619.9959557309069px;
+          transform: rotate(-114.8640400778072deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 400px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Text stuff
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 514.3467079469126px;
+          top: 344.2829211753931px;
+          width: 387.49747233181677px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 329.373px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 53.717804537605375%;
+            top: -29.966122412427037px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: left;
+          "
+        >
+          <a
+            href="https://mostlymaths.net/"
+            target="_blank"
+            style="text-decoration: none; color: inherit"
+            >🔗 While editing text you can add/remove links with Cmd/Ctrl k</a
+          >
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 542.0973502133655px;
+          top: 404.16494498360896px;
+          width: 387.49747233181677px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 329.373px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50.386880742063745%;
+            top: -23.428228830196225px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          You can add new lines with shift enter. And (un)center with Ctrl-c
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 581.6995969463661px;
+          top: 489.6210817805284px;
+          width: 387.49747233181677px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 329.373px;
+            color: var(--theme-schema-text-color);
+            font-size: 24px;
+            padding: 1px 2px;
+            left: 50.845262199967436%;
+            top: -30px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          You can resize the font with Ctrl , and Ctrl .
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 604.2940377994466px;
+          top: 538.3767405543472px;
+          width: 387.49747233181677px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 329.373px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: bold;
+            text-align: center;
+          "
+        >
+          And bold with Ctrl b
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 299.8585449641106px;
+          top: 1094.5368787595403px;
+          width: 161.30982858962744px;
+          transform: rotate(-114.8640400778072deg) scaleX(-1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 137.113px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 49.38803978881923%;
+            top: -24.014232147687753px;
+            transform: translateX(-50%) translateY(-50%) scaleX(-1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Press ? to get help
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 338.4067416141907px;
+          top: 1177.7185221752093px;
+          width: 214.8018705357922px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 182.582px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 47.321541535049924%;
+            top: -30px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          You can resize in reverse to swap direction
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 965.5545496996955px;
+          top: 786.038760112294px;
+          width: 539.8417401583863px;
+          transform: rotate(-114.8640400778072deg) scaleX(-1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 400px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(-1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Post its
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 997.944201291625px;
+          top: 855.9311204095695px;
+          width: 276.94568555597994px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 235.404px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 48.607318019674864%;
+            top: -29.730295796946628px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Hold on an empty space to add a Post it
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1023.2835748963907px;
+          top: 910.6099620348019px;
+          width: 290.30078045836456px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 246.756px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Change its color while editing
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1060.3473519657227px;
+          top: 893.4337954144366px;
+          width: 217.72558534377342px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 185.067px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Ctrl y: yellow
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1114.7796125873012px;
+          top: 868.2086928510774px;
+          width: 217.72558534377342px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 185.067px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Ctrl r: red
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1158.570392435817px;
+          top: 847.9150857071849px;
+          width: 217.72558534377342px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 185.067px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Ctrl b: blue
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1200.3196752239805px;
+          top: 828.5675530445303px;
+          width: 217.72558534377342px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 185.067px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Ctrl g: green
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1247.9188135344184px;
+          top: 806.5090691216282px;
+          width: 217.72558534377342px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 185.067px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Ctrl t: translucent
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1148.499801596003px;
+          top: 1180.809152251942px;
+          width: 252.43631028297716px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 214.571px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 47.11233516802128%;
+            top: -28.757197757873712px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Ctrl . and Ctrl , also resize the font on post its
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1178.1754178385747px;
+          top: 1244.8450019918728px;
+          width: 231.9336709031299px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 197.144px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Post its can be dragged
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1129.4938713117467px;
+          top: 710.065685420773px;
+          width: 596.3091490687506px;
+          transform: rotate(-114.8640400778072deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 400px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 23.914684972289756%;
+            top: -27.363855504743594px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Drawing
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 892.6422055182992px;
+          top: 198.97275453014436px;
+          width: 273.5717415565301px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 232.536px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 49.4724168681538%;
+            top: -28.93466564641701px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          You can draw arrows, rectangles and &quot;highlights&quot;
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 915.0536548023896px;
+          top: 247.333542965981px;
+          width: 323.88143222501753px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 275.299px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Press a and drag to draw an arrow
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 933.909194315939px;
+          top: 288.0211730116492px;
+          width: 339.22175248924447px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 288.338px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          R for rectangles
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 963.1152849937845px;
+          top: 351.04385192924235px;
+          width: 345.6385074943791px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 293.793px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 49.513075924130035%;
+            top: -24.53264961447457px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          You can switch colors by pressing c and then
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 996.8073261358296px;
+          top: 335.43022163588495px;
+          width: 87.31462659095894px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 74.2174px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          r for red
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1038.1887048354595px;
+          top: 316.2531837912073px;
+          width: 102.13026015096357px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 86.8107px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          b for blue
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1085.7742546224058px;
+          top: 294.20099708791054px;
+          width: 111.97699919591857px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 95.1804px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          g for green
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1142.8580363818166px;
+          top: 267.74712151591723px;
+          width: 118.31264673544115px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 100.566px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          I&#039;ll add more
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1030.9675573465788px;
+          top: 497.45961230908017px;
+          width: 392.62917877903067px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 333.735px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 48.66251071679291%;
+            top: -26.225061161873054px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          To select a drawn element, press s and click
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1053.2954448551525px;
+          top: 487.1123798775166px;
+          width: 89.34703420834134px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 75.945px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 53.22379753506791%;
+            top: -26.362813641484024px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          not great I know
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1144.531652924042px;
+          top: 444.83152143532004px;
+          width: 125.2438548988831px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 106.457px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 49.359196375839765%;
+            top: -25.076114399225816px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Backspace to delete
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1094.3654902990054px;
+          top: 634.2635281967583px;
+          width: 372.6932181679691px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 316.789px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Esc to dismiss
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1452.5335560562569px;
+          top: 560.3620154525797px;
+          width: 534.3668745812558px;
+          transform: rotate(-114.8640400778072deg) scaleX(-1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 400px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(-1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          File handling
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1478.8882358261467px;
+          top: 617.2317464766525px;
+          width: 327.06840605993943px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 278.008px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Saves as .pnt
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1524.3251857924022px;
+          top: 596.175268021105px;
+          width: 151.59543141135816px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 128.856px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          It&#039;s just JSON
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1585.985649860638px;
+          top: 567.6004575601011px;
+          width: 230.01443445085627px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 195.512px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 59.04946363706771%;
+            top: -15.824372974423211px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Saving is proportional
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1605.4142062742471px;
+          top: 609.5245783263234px;
+          width: 411.7236748330316px;
+          transform: rotate(155.1359599221928deg) scaleX(-1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 349.965px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50.049950655582784%;
+            top: -18.370827010205034px;
+            transform: translateX(-50%) translateY(-50%) scaleX(-1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          So should look good in different screens…
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1606.1420239002814px;
+          top: 891.8277105618829px;
+          width: 359.7680056120332px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 305.803px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 49.01714257979613%;
+            top: -23.311906113925524px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Remembers last saved and saves to the opened one
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1637.843489219629px;
+          top: 960.2350606614284px;
+          width: 358.7496164597729px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 304.937px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 49.414337105741375%;
+            top: -30px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Should be able to open .pnt when installed as a Progressive Web App
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1669.3190764981005px;
+          top: 1028.154997385398px;
+          width: 356.50205568290255px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 303.027px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50.0844251426513%;
+            top: -26.286834951133606px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Cmd/Ctrl e to export a standalone .html (fixed proportions)
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1867.5054142130418px;
+          top: 368.05496144859933px;
+          width: 263.30916919921117px;
+          transform: rotate(-114.8640400778072deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 223.813px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Almost forgot…
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1771.8001069009597px;
+          top: 161.53622807993744px;
+          width: 244.93935635487722px;
+          transform: rotate(-24.864040077807203deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 208.198px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 51.63834218742088%;
+            top: -26.056267976107932px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Press q to switch to a light theme (and back)
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1012.9346217830483px;
+          top: 458.54704710143596px;
+          width: 245.5947223714288px;
+          transform: rotate(-24.864040077807203deg) scaleX(-1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 208.756px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(-1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          H for highlights
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 808.3181587996224px;
+          top: 553.3708006249585px;
+          width: 235.99496842262897px;
+          transform: rotate(65.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 200.596px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 55.38220932608737%;
+            top: -29.912362960624005px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Shouldn&#039;t recangles and highlights slope as the lines?
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 826.3780577831085px;
+          top: 592.3415491402257px;
+          width: 112.15432104213139px;
+          transform: rotate(155.1359599221928deg) scaleX(1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 95.3312px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Yes, TODO
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          position: absolute;
+          left: 1954.56998752872px;
+          top: 447.71813684918357px;
+          width: 566.2293423465658px;
+          transform: rotate(245.1359599221928deg) scaleX(-1);
+          transform-origin: 0 0;
+        "
+      >
+        <div
+          class="line-visual"
+          style="
+            width: 100%;
+            background-color: var(--theme-schema-line-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            border-radius: 2px;
+            background-clip: padding-box;
+            border-top: 0.5em solid transparent;
+            border-bottom: 0.5em solid transparent;
+          "
+        ></div>
+        <div
+          class="line-text"
+          style="
+            position: absolute;
+            white-space: normal;
+            width: 400px;
+            color: var(--theme-schema-text-color);
+            font-size: 16px;
+            padding: 1px 2px;
+            left: 48.69454709082241%;
+            top: 28.576770924720467px;
+            transform: translateX(-50%) translateY(-50%) scaleX(-1)
+              rotate(180deg);
+            font-weight: normal;
+            text-align: center;
+          "
+        >
+          Although drawing elements don&#039;t respond well. I&#039;ll try but
+          might be impossible
+        </div>
+      </div>
+      <div
+        class="post-it postit-color-yellow"
+        style="
+          position: absolute;
+          left: 1286.65px;
+          top: 712.207px;
+          z-index: 500;
+          padding: 20px 8px 8px 8px;
+          border-radius: 3px;
+          box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+          min-width: 100px;
+          min-height: 50px;
+          font-family: &quot;Inter&quot;, sans-serif;
+          font-size: 11px;
+          word-wrap: break-word;
+          overflow: hidden;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <div
+          class="postit-drag-handle"
+          style="
+            height: 18px;
+            padding-left: 5px;
+            font-size: 10px;
+            box-sizing: border-box;
+          "
+        ></div>
+        <div
+          class="postit-content-area"
+          style="
+            flex-grow: 1;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 2px;
+            overflow-y: auto;
+            color: inherit;
+          "
+        >
+          Hello!
+        </div>
+      </div>
+      <div
+        class="post-it postit-color-transp"
+        style="
+          position: absolute;
+          left: 1317.92px;
+          top: 972.582px;
+          z-index: 500;
+          padding: 20px 8px 8px 8px;
+          border-radius: 3px;
+          box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+          min-width: 100px;
+          min-height: 50px;
+          font-family: &quot;Inter&quot;, sans-serif;
+          font-size: 11px;
+          word-wrap: break-word;
+          overflow: hidden;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <div
+          class="postit-drag-handle"
+          style="
+            height: 18px;
+            padding-left: 5px;
+            font-size: 10px;
+            box-sizing: border-box;
+          "
+        ></div>
+        <div
+          class="postit-content-area"
+          style="
+            flex-grow: 1;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 2px;
+            overflow-y: auto;
+            color: inherit;
+          "
+        >
+          I particularly like this one
+        </div>
+      </div>
+      <div
+        class="post-it postit-color-blue"
+        style="
+          position: absolute;
+          left: 1392.54px;
+          top: 1045.7499999999998px;
+          z-index: 500;
+          padding: 20px 8px 8px 8px;
+          border-radius: 3px;
+          box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+          min-width: 100px;
+          min-height: 50px;
+          font-family: &quot;Inter&quot;, sans-serif;
+          font-size: 22px;
+          word-wrap: break-word;
+          overflow: hidden;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <div
+          class="postit-drag-handle"
+          style="
+            height: 18px;
+            padding-left: 5px;
+            font-size: 10px;
+            box-sizing: border-box;
+          "
+        ></div>
+        <div
+          class="postit-content-area"
+          style="
+            flex-grow: 1;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 2px;
+            overflow-y: auto;
+            color: inherit;
+          "
+        >
+          Big!
+        </div>
+      </div>
+      <svg
+        id="drawingCanvas"
+        width="100%"
+        height="100%"
+        style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        "
+      >
+        <defs>
+          <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur
+              in="SourceAlpha"
+              stdDeviation="2"
+              result="blur"
+            ></feGaussianBlur>
+            <feOffset dx="1" dy="1" result="offsetBlur"></feOffset>
+            <feMerge>
+              <feMergeNode in="offsetBlur"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+          </filter>
+          <marker
+            id="arrowhead-red"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--red)"></polygon>
+          </marker>
+          <marker
+            id="arrowhead-orange"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--orange)"></polygon>
+          </marker>
+          <marker
+            id="arrowhead-yellow"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--yellow)"></polygon>
+          </marker>
+          <marker
+            id="arrowhead-green"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--green)"></polygon>
+          </marker>
+          <marker
+            id="arrowhead-blue"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--blue)"></polygon>
+          </marker>
+          <marker
+            id="arrowhead-cyan"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--cyan)"></polygon>
+          </marker>
+          <marker
+            id="arrowhead-violet"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--violet)"></polygon>
+          </marker>
+          <marker
+            id="arrowhead-magenta"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--magenta)"></polygon>
+          </marker>
+          <marker
+            id="arrowhead-print"
+            markerWidth="10"
+            markerHeight="7"
+            refX="8"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="black"></polygon>
+          </marker>
+        </defs>
+        <rect
+          x="1015.40625"
+          y="203.71875"
+          width="39"
+          height="49"
+          stroke="var(--red)"
+          stroke-width="2"
+          fill="none"
+          rx="2"
+          id="rect-1"
+          _kind="rect"
+          transform="rotate(-24.864040077807203 1034.90625 228.21875)"
+          style="pointer-events: all"
+        ></rect>
+        <line
+          x1="1335.4062499999998"
+          y1="101.71875"
+          x2="1193.40625"
+          y2="111.71875"
+          stroke="var(--red)"
+          stroke-width="2"
+          marker-end="url(#arrowhead-red)"
+          id="arrow-2"
+          _kind="arrow"
+          style="pointer-events: all"
+        ></line>
+        <rect
+          x="835.4062500000001"
+          y="464.71874999999994"
+          width="118"
+          height="74"
+          stroke-width="0"
+          fill="var(--green)"
+          fill-opacity="0.2"
+          rx="2"
+          id="highlight-5"
+          _kind="highlight"
+          transform="rotate(-24.864040077807203 894.4062500000001 501.71874999999994)"
+          style="pointer-events: all"
+        ></rect>
+      </svg>
+    </div>
+  </body>
+</html>

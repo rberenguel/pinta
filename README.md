@@ -15,6 +15,8 @@ It also has a light mode.
 
 ![](https://raw.githubusercontent.com/rberenguel/pinta/gh-pages/media/pinta-example-light.png)
 
+You can see how the HTML export looks (for light mode) [here](http://mostlymaths.net/pinta/media/pinta-example-light.html).
+
 ---
 
 Press `?` to get help (on how to use this, I'm a doctor

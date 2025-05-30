@@ -491,6 +491,10 @@ async function exportToStaticHTML(loadedCSSText) {
       const absLength = Math.abs(line.length);
       const groupScaleX = line.length < 0 ? -1 : 1;
       const normAngleForText = ((displayAngle % 360) + 360) % 360;
+      const lineElementGroup = document.getElementById(line.id);
+      const textElement = lineElementGroup
+        ? lineElementGroup.querySelector(".line-text")
+        : null;
       const textInternalRotation =
         normAngleForText > 90 && normAngleForText < 270 ? 180 : 0;
       const textScaleX = groupScaleX;
@@ -509,8 +513,50 @@ async function exportToStaticHTML(loadedCSSText) {
       } else {
         textContentHtml = escapeHtml(rawLineText);
       }
+      let whiteSpaceStyle = "";
+      let widthStyle = "";
+      // let widthStyle = 'width: auto;'; // 'width: auto' is often default for block/inline-block if maxWidth is used
 
-      const textStyle = `position:absolute; white-space:pre-wrap; color:var(--theme-schema-text-color); font-size:${line.fontSize || 16}px; padding:1px 2px; left:${line.textPosRatio * 100}%; top:${line.textPerpOffset}px; transform:translateX(-50%) translateY(-50%) scaleX(${textScaleX}) rotate(${textInternalRotation}deg); font-weight:${line.isBold ? "bold" : "normal"}; text-align:${line.isCentered ? "center" : "left"};`;
+      if (textElement && textElement.style) {
+        if (textElement.style.whiteSpace) {
+          whiteSpaceStyle = `white-space: ${textElement.style.whiteSpace};`;
+        } else {
+          // Fallback if not explicitly set (though renderLine should set it)
+          whiteSpaceStyle = "white-space: pre-wrap;"; // Default to pre-wrap if somehow not set
+        }
+
+        if (
+          textElement.style.maxWidth &&
+          textElement.style.maxWidth !== "none" &&
+          textElement.style.maxWidth !== ""
+        ) {
+          widthStyle = `width: ${textElement.style.width};`;
+        }
+        // If 'renderLine' also sets 'element.style.width' explicitly (other than 'auto'), fetch it:
+        // if (textElement.style.width && textElement.style.width !== 'auto') {
+        //   widthStyle = `width: ${textElement.style.width};`;
+        // }
+      } else {
+        // Fallback logic if the DOM element isn't found or styles aren't set.
+        // This indicates an issue, but we can provide a graceful degradation.
+        console.warn(
+          `HTML Export: Text element for line ${line.id} not found or styles missing. Using default export text styles.`,
+        );
+        const hasExplicitNewlinesFallback =
+          line.text && line.text.includes("\n");
+        whiteSpaceStyle = hasExplicitNewlinesFallback
+          ? "white-space: pre-wrap;"
+          : "white-space: normal;";
+      }
+      // *** END FETCHING STYLES ***
+
+      const textStyle = `position:absolute; ${whiteSpaceStyle} ${widthStyle} color:var(--theme-schema-text-color); font-size:${
+        line.fontSize || 16
+      }px; padding:1px 2px; left:${line.textPosRatio * 100}%; top:${
+        line.textPerpOffset
+      }px; transform:translateX(-50%) translateY(-50%) scaleX(${textScaleX}) rotate(${textInternalRotation}deg); font-weight:${
+        line.isBold ? "bold" : "normal"
+      }; text-align:${line.isCentered ? "center" : "left"};`;
 
       return `<div class="line-element-group" style="${groupStyle}"><div class="line-visual" style="${visualStyle}"></div><div class="line-text" style="${textStyle}">${textContentHtml}</div></div>`;
     })
