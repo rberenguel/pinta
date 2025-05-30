@@ -588,8 +588,9 @@ async function exportToStaticHTML(loadedCSSText) {
           ? `class="${contentArea.className}"`
           : "";
         // Capture inline styles of content area, e.g., dynamically set font-size
+        // For some reason we need to add the white-space: normal to handle new lines in post its
         const contentStyle = contentArea.style.cssText
-          ? `style="${contentArea.style.cssText}"`
+          ? `style="${contentArea.style.cssText} white-space: normal;"`
           : "";
         contentAreaHtml = `<div ${contentClass} ${contentStyle}>${postIt.content}</div>`; // postIt.content is already HTML
       }
