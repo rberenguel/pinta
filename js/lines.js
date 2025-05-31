@@ -10,13 +10,17 @@ export const MAIN_LINE_DEFAULT_THICKNESS = 4;
 export const CHILD_LINE_DEFAULT_THICKNESS = 2;
 export const MIN_LINE_LENGTH = 10;
 export const SCHEMA_LINE_VISUAL_COLORS = {
-  r: "red",
-  y: "yellow",
   b: "blue",
-  k: "black",
-  w: "white",
-  g: "green",
+  c: "cyan",
   d: "default",
+  g: "green",
+  k: "black",
+  m: "magenta",
+  o: "orange",
+  r: "red",
+  v: "violet",
+  w: "white",
+  y: "yellow",
 };
 export const DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR =
   "var(--theme-schema-line-color)";

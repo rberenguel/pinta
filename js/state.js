@@ -66,6 +66,8 @@ export const drawingColorNames = {
   b: "blue",
   v: "violet",
   m: "magenta",
+  k: "black",
+  w: "white",
 };
 
 export const SCHEMA_LINE_COLORS = {
