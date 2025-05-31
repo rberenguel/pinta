@@ -1,3 +1,5 @@
+export { init, createNewDiagram };
+
 import {
   state,
   SVG_NS,
@@ -141,7 +143,7 @@ async function fetchAppStyles() {
       loadedCSSText = await response.text();
       console.log("App styles fetched for export.");
     } else {
-      console.error(
+      console.warn(
         "Failed to fetch style.css for export:",
         response.statusText,
       );

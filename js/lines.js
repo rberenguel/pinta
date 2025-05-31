@@ -386,6 +386,7 @@ function setupRootDraggable(handle, childLine) {
     .draggable({
       listeners: {
         start(event) {
+          console.debug("Start drag event");
           event.target.classList.add("dragging");
           if (state.activeTextEditElement) state.activeTextEditElement.blur();
         },
@@ -627,7 +628,6 @@ function deleteLineRecursive(lineId) {
 
 function handleLineVisualMouseEnter(event) {
   const lineId = event.target.dataset.lineId;
-  console.log(lineId);
   if (lineId) {
     state.hoveredLineIdForVisualColorChange = lineId;
     document.addEventListener("keydown", handleLineVisualColorKeydown);

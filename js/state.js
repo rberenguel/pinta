@@ -58,16 +58,16 @@ export const POSTIT_VALID_COLORS = [
 ];
 
 export const drawingColorNames = {
-  r: "red",
-  o: "orange",
-  y: "yellow",
-  g: "green",
-  c: "cyan",
   b: "blue",
-  v: "violet",
-  m: "magenta",
+  c: "cyan",
+  g: "green",
   k: "black",
+  m: "magenta",
+  o: "orange",
+  r: "red",
+  v: "violet",
   w: "white",
+  y: "yellow",
 };
 
 export const SCHEMA_LINE_COLORS = {
