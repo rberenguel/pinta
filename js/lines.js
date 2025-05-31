@@ -21,9 +21,9 @@ export const SCHEMA_LINE_VISUAL_COLORS = {
 export const DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR =
   "var(--theme-schema-line-color)";
 
-export const LINE_THICKNESS_STEP = 0.5; // Or 1, as you prefer
+export const LINE_THICKNESS_STEP = 0.5;
 export const MIN_LINE_THICKNESS = 0.5;
-export const MAX_LINE_THICKNESS = 20; // Example max
+export const MAX_LINE_THICKNESS = 20;
 
 import { getLinkPrefix, setupTextDraggable, handleTextClick } from "./text.js";
 import { DEFAULT_SCHEMA_TEXT_COLOR_VAR } from "./text.js";
@@ -48,8 +48,8 @@ function createLineObject(params) {
         ? CHILD_LINE_DEFAULT_THICKNESS
         : MAIN_LINE_DEFAULT_THICKNESS,
     color: "var(--theme-schema-line-color)", // Kind of deprecated with visualColor
-    visualColor: "default", // New property
-    textColor: "default", // Placeholder if you plan to add text color later
+    visualColor: "default",
+    textColor: "default",
     children: [],
     offsetRatioOnParent: 0.5,
     fontSize: 16,
@@ -97,16 +97,16 @@ function renderLine(line, isUpdate = false) {
     group.style.transform = `rotate(${displayAngle}deg) scaleX(${groupScaleX})`;
     if (visual) {
       visual.style.height = `${line.thickness}px`;
-      const currentVisualColor = line.visualColor || "default"; // Ensure fallback
+      const currentVisualColor = line.visualColor || "default";
       visual.style.backgroundColor =
         currentVisualColor === "default"
-          ? DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR // Use constant from state.js
-          : `var(--${currentVisualColor})`; // Assumes SCHEMA_LINE_VISUAL_COLORS maps 'red' to 'red', etc.
+          ? DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR
+          : `var(--${currentVisualColor})`;
 
-      visual.removeEventListener("mouseenter", handleLineVisualMouseEnter); // Prevent multiple listeners
+      visual.removeEventListener("mouseenter", handleLineVisualMouseEnter);
       visual.addEventListener("mouseenter", handleLineVisualMouseEnter);
 
-      visual.removeEventListener("mouseleave", handleLineVisualMouseLeave); // Prevent multiple listeners
+      visual.removeEventListener("mouseleave", handleLineVisualMouseLeave);
       visual.addEventListener("mouseleave", handleLineVisualMouseLeave);
     }
   } else {
@@ -123,17 +123,17 @@ function renderLine(line, isUpdate = false) {
     visual = document.createElement("div");
     visual.className = "line-visual";
     visual.style.height = `${line.thickness}px`;
-    const currentVisualColor = line.visualColor || "default"; // Ensure fallback
+    const currentVisualColor = line.visualColor || "default";
     visual.style.backgroundColor =
       currentVisualColor === "default"
-        ? DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR // Use constant from state.js
-        : `var(--${currentVisualColor})`; // Assumes SCHEMA_LINE_VISUAL_COLORS maps 'red' to 'red', etc.
+        ? DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR
+        : `var(--${currentVisualColor})`;
     visual.dataset.lineId = line.id;
     visual.addEventListener("click", handleVisualClick);
-    visual.removeEventListener("mouseenter", handleLineVisualMouseEnter); // Prevent multiple listeners
+    visual.removeEventListener("mouseenter", handleLineVisualMouseEnter);
     visual.addEventListener("mouseenter", handleLineVisualMouseEnter);
 
-    visual.removeEventListener("mouseleave", handleLineVisualMouseLeave); // Prevent multiple listeners
+    visual.removeEventListener("mouseleave", handleLineVisualMouseLeave);
     visual.addEventListener("mouseleave", handleLineVisualMouseLeave);
 
     textElement = document.createElement("div");
@@ -188,44 +188,34 @@ function renderLine(line, isUpdate = false) {
     textElement.appendChild(textNode);
     const hasExplicitNewlines = line.text && line.text.includes("\n");
 
-    // Reset potentially conflicting styles that might be set by other parts or previous states
-
     if (hasExplicitNewlines) {
-      // User has formatted with Shift+Enter, respect their newlines.
       textElement.style.whiteSpace = "pre-wrap";
-      // Allow width to be determined by the content.
-      // No explicit max-width, or you could set a very large one if you want a global cap.
     } else {
       console.debug("Resizing proportionally to line");
       textElement.style.removeProperty("max-width");
-      textElement.style.removeProperty("width"); // If 'width' was ever explicitly set elsewhere
-      // No explicit newlines, make width proportional to line length.
+      textElement.style.removeProperty("width");
       textElement.style.whiteSpace = "pre-wrap";
 
-      // Adjust these factors as needed for your desired look and feel
-      const proportionalityFactor = 0.85; // Text box can use up to 85% of the line's visual length.
-      const minPixelWidth = 50; // Minimum width in pixels for very short lines or default text.
-      const maxPixelWidthConsideration = 400; // A general sensible upper cap for auto-proportional width
+      const proportionalityFactor = 0.85;
+      const minPixelWidth = 50;
+      const maxPixelWidthConsideration = 400;
 
       let calculatedMaxWidth = absLength * proportionalityFactor;
       calculatedMaxWidth = Math.max(minPixelWidth, calculatedMaxWidth);
       calculatedMaxWidth = Math.min(
         calculatedMaxWidth,
         maxPixelWidthConsideration,
-      ); // Apply the upper cap
+      );
 
       textElement.style.maxWidth = `${calculatedMaxWidth}px`;
       textElement.style.width = `${calculatedMaxWidth}px`;
-      // 'width: auto;' is the default and will make the element use space up to its maxWidth.
     }
     const currentTextColor = line.textColor || "default";
     textElement.style.color =
       currentTextColor === "default"
-        ? DEFAULT_SCHEMA_TEXT_COLOR_VAR // Use constant from state.js
-        : `var(--${currentTextColor})`; // Assumes color names map to CSS variables like var(--red)
+        ? DEFAULT_SCHEMA_TEXT_COLOR_VAR
+        : `var(--${currentTextColor})`;
   }
-
-  //
 
   textElement.style.left = `${line.textPosRatio * 100}%`;
   textElement.style.top = `${line.textPerpOffset}px`;
@@ -365,9 +355,8 @@ function setupLineResizable(handle, line) {
         move(event) {
           const currentLine = state.linesStore[line.id];
           if (!currentLine) return;
-          //const angleRad = (currentLine.angle * Math.PI) / 180;
-          const displayAngle = getLineDisplayAngle(line.id, state.linesStore); // NEW
-          const angleRad = (displayAngle * Math.PI) / 180; // NEW
+          const displayAngle = getLineDisplayAngle(line.id, state.linesStore);
+          const angleRad = (displayAngle * Math.PI) / 180;
           const editorRect = editorContainer.getBoundingClientRect();
           const mouseVecX =
             event.pageX - (editorRect.left + currentLine.startX);
@@ -444,50 +433,36 @@ function setupRootDraggable(handle, childLine) {
 }
 
 function segmentIntersection(p1, p2, p3, p4) {
-  const d12x = p2.x - p1.x; // (x2 - x1)
-  const d12y = p2.y - p1.y; // (y2 - y1)
-  const d34x = p4.x - p3.x; // (x4 - x3)
-  const d34y = p4.y - p3.y; // (y4 - y3)
+  const d12x = p2.x - p1.x;
+  const d12y = p2.y - p1.y;
+  const d34x = p4.x - p3.x;
+  const d34y = p4.y - p3.y;
 
-  const denominator = d12x * d34y - d12y * d34x; // (x2-x1)(y4-y3) - (y2-y1)(x4-x3)
+  const denominator = d12x * d34y - d12y * d34x;
 
-  // Check if lines are parallel or collinear (denominator is zero)
-  const epsilon = 1e-9; // Small epsilon for floating point comparisons
+  const epsilon = 1e-9;
   if (Math.abs(denominator) < epsilon) {
     return null;
   }
 
-  const t13x = p1.x - p3.x; // (x1 - x3)
-  const t13y = p1.y - p3.y; // (y1 - y3)
+  const t13x = p1.x - p3.x;
+  const t13y = p1.y - p3.y;
 
-  // Calculate t (parameter for segment p1-p2)
-  // Standard formula for t's numerator: (x1-x3)(y3-y4) - (y1-y3)(x3-x4)
-  // In our variables: t13x * (-d34y) - t13y * (-d34x) = -t13x*d34y + t13y*d34x
-  // Or, ( (x4-x3)*(y1-y3) - (y4-y3)*(x1-x3) ) / denominator  <-- This is Bourke's ua
   const tNumerator = d34x * t13y - d34y * t13x;
   const t = tNumerator / denominator;
 
-  // Calculate u (parameter for segment p3-p4)
-  // Standard formula for u's numerator: -((x1-x2)(y1-y3) - (y1-y2)(x1-x3))
-  // In our variables: - ( (-d12x)*t13y - (-d12y)*t13x ) = d12x*t13y - d12y*t13x
-  // Or, ( (x2-x1)*(y1-y3) - (y2-y1)*(x1-x3) ) / denominator  <-- This is Bourke's ub
   const uNumerator = d12x * t13y - d12y * t13x;
   const u = uNumerator / denominator;
 
-  // Check if intersection point lies within both line segments
-  // Allow for small floating point inaccuracies by using epsilon in checks
   if (
     t >= -epsilon &&
     t <= 1.0 + epsilon &&
     u >= -epsilon &&
     u <= 1.0 + epsilon
   ) {
-    // Intersection point
     const intersectX = p1.x + t * d12x;
     const intersectY = p1.y + t * d12y;
 
-    // Clamp t to be strictly within [0, 1] for the returned parameter,
-    // useful for distance calculations if t was slightly outside due to epsilon.
     const clampedT = Math.max(0, Math.min(1, t));
 
     return {
@@ -497,7 +472,7 @@ function segmentIntersection(p1, p2, p3, p4) {
     };
   }
 
-  return null; // No intersection within the segments
+  return null;
 }
 
 function addNewChildLine(parentId, clickOffsetRatioOnParent) {
@@ -530,7 +505,6 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
   const initialSign = Math.sign(initialSignedChildLength) || 1;
   let absLenAfterScreenClip = Math.abs(initialSignedChildLength);
 
-  // --- Screen Edge Clipping (from previous step, slightly condensed) ---
   const childDisplayAngle = parentDisplayAngle + sign * 90;
   const childDisplayAngleRad = (childDisplayAngle * Math.PI) / 180;
   const cosA = Math.cos(childDisplayAngleRad);
@@ -554,15 +528,13 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
     if (len >= 0) maxLen = Math.min(maxLen, len);
   }
   absLenAfterScreenClip = Math.max(MIN_LINE_LENGTH, maxLen);
-  // --- End Screen Edge Clipping ---
 
-  // --- START Collision Detection with other lines ---
   let finalAbsoluteLength = absLenAfterScreenClip;
   const newChildP1 = { x: childStartX, y: childStartY };
-  const collisionPadding = 10; // Stop Npx before hitting another line
+  const collisionPadding = 10;
 
   for (const existingLineId in state.linesStore) {
-    if (existingLineId === parentId) continue; // Don't check against own parent
+    if (existingLineId === parentId) continue;
 
     const existingLine = state.linesStore[existingLineId];
     const exL_angle = getLineDisplayAngle(existingLineId, state.linesStore);
@@ -574,9 +546,8 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
       y: existingLine.startY + existingLine.length * Math.sin(exL_angleRad),
     };
 
-    // Candidate new child line segment using its current best length (after screen clip, before this collision)
     const newChildP2_candidate = {
-      x: newChildP1.x + finalAbsoluteLength * cosA, // Use current `finalAbsoluteLength` for the end of segment
+      x: newChildP1.x + finalAbsoluteLength * cosA,
       y: newChildP1.y + finalAbsoluteLength * sinA,
     };
 
@@ -588,24 +559,18 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
     );
     console.log(intersectData);
     if (intersectData) {
-      // An intersection occurred with `existingLine`
-      // The intersection is at `t_param_on_first_segment` ratio along the `newChildP1` to `newChildP2_candidate` segment.
       let distToCollision =
         intersectData.t_param_on_first_segment * finalAbsoluteLength;
 
-      distToCollision -= collisionPadding; // Apply padding
+      distToCollision -= collisionPadding;
 
-      // If this collision is closer than previous ones (or the screen-clipped length)
-      // and results in a valid positive length.
       if (distToCollision > 0 && distToCollision < finalAbsoluteLength) {
         finalAbsoluteLength = distToCollision;
       }
     }
   }
-  // Ensure final length is still at least MIN_LINE_LENGTH after all collision checks
   finalAbsoluteLength = Math.max(finalAbsoluteLength, MIN_LINE_LENGTH);
   const finalSignedLength = initialSign * finalAbsoluteLength;
-  // --- END Collision Detection ---
   const childLine = createLineObject({
     parentId: parentId,
     startX: childStartX,
@@ -657,7 +622,7 @@ function deleteLineRecursive(lineId) {
 }
 
 function handleLineVisualMouseEnter(event) {
-  const lineId = event.target.dataset.lineId; // Assuming lineId is on visual's dataset
+  const lineId = event.target.dataset.lineId;
   console.log(lineId);
   if (lineId) {
     state.hoveredLineIdForVisualColorChange = lineId;
@@ -683,7 +648,7 @@ function handleLineVisualColorKeydown(event) {
     if (lineToUpdate) {
       const newColorName = SCHEMA_LINE_VISUAL_COLORS[key];
       lineToUpdate.visualColor = newColorName;
-      renderLine(lineToUpdate, true); // Re-render to apply the new color
+      renderLine(lineToUpdate, true);
     }
     return;
   }
@@ -692,7 +657,6 @@ function handleLineVisualColorKeydown(event) {
   const maxThickness = MAX_LINE_THICKNESS;
 
   if (key === "." || key === ">") {
-    // Increase thickness
     event.preventDefault();
     event.stopPropagation();
     let newThickness =
@@ -703,7 +667,6 @@ function handleLineVisualColorKeydown(event) {
     );
     renderLine(lineToUpdate, true);
   } else if (key === "," || key === "<") {
-    // Decrease thickness
     event.preventDefault();
     event.stopPropagation();
     let newThickness =

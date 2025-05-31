@@ -35,5 +35,5 @@ TODO:
 - [ ] Better UX of shape selection
 - [ ] Better README
 - [x] Export has some quirks still
-- [ ] Export still has quirks, dammit
+- [x] Export still has quirks, dammit
 - [x] Bolding / color switching for text conflict

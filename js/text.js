@@ -239,28 +239,16 @@ function makeEditable(textEl) {
               newColorName === "default"
                 ? DEFAULT_SCHEMA_TEXT_COLOR_VAR
                 : `var(--${newColorName})`;
-            // Visual cue can be removed here if one was added
-            // textEl.style.outline = "";
           }
         } else if (e.key === "Escape") {
           e.preventDefault();
-          // console.log("Text color change cancelled by Escape.");
-          // Visual cue can be removed here
-          // textEl.style.outline = "";
         } else {
-          // Any other key pressed cancels the mode.
-          // Optionally, you could choose to only let Escape cancel, and ignore other keys.
-          // But cancelling on any other key press is often more user-friendly.
-          e.preventDefault(); // Prevent the default action of the unexpected key
-          // console.log("Text color change cancelled by other key.");
-          // Visual cue can be removed here
-          // textEl.style.outline = "";
+          e.preventDefault();
         }
 
-        // Reset the waiting state regardless of what key (color, Escape, other) was pressed
         state.isWaitingForColorKey = false;
         state.targetLineIdForTextColorChange = null;
-        return; // Exit onKeydown after handling the modal key press
+        return;
       }
       if (e.ctrlKey) {
         if (e.key.toLowerCase() === "k") {

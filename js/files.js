@@ -14,7 +14,6 @@ import { Rect, Arrow } from "./drawing.js";
 import {
   renderLine,
   updateChildrenPositions,
-  getLineDisplayAngle,
   MAIN_LINE_DEFAULT_THICKNESS,
   CHILD_LINE_DEFAULT_THICKNESS,
   MIN_LINE_LENGTH,
@@ -47,7 +46,6 @@ async function verifyPermission(fileHandle) {
     }
   } catch (error) {
     console.error("Pinta: Error verifying file permission:", error);
-    // An error during permission request (e.g. user dismissed prompt quickly) can occur.
     return false;
   }
   // The user didn't grant permission
@@ -66,19 +64,12 @@ async function clearLastFileHandle() {
   }
 }
 
-// Add this new function within js/files.js
-
 function getCurrentDiagramDataForSave() {
-  // Ensure Post-it data in state is current with what's in the DOM
-  // This is important because content/title/position might have been updated
-  // without necessarily blurring each element to trigger individual state saves.
   for (const id in state.postItsStore) {
     const postItElement = document.getElementById(id);
     if (postItElement) {
       const editorRect = editorContainer.getBoundingClientRect();
       if (editorRect.width > 0) {
-        // Use the current visual position to update xPercent/yPercent
-        // This assumes that drag operations have concluded and style.left/top are accurate
         state.postItsStore[id].xPercent =
           (parseFloat(postItElement.style.left) / editorRect.width) * 100;
       }
@@ -86,7 +77,6 @@ function getCurrentDiagramDataForSave() {
         state.postItsStore[id].yPercent =
           (parseFloat(postItElement.style.top) / editorRect.height) * 100;
       }
-      // Sync content and title from DOM to state object just before saving
       const contentArea = postItElement.querySelector(".postit-content-area");
       if (contentArea) {
         state.postItsStore[id].content = contentArea.innerHTML;
@@ -95,8 +85,6 @@ function getCurrentDiagramDataForSave() {
       if (dragHandle) {
         state.postItsStore[id].title = dragHandle.textContent || "";
       }
-      // Color and fontSizePercent should already be up-to-date in state.postItsStore[id]
-      // due to the direct state updates in their respective handlers.
     }
   }
 
@@ -109,8 +97,8 @@ function getCurrentDiagramDataForSave() {
     .filter((d) => d !== null);
 
   const diagramData = {
-    lines: state.linesStore, // Assumes line data (visualColor, textColor, thickness) is already up-to-date in state
-    postIts: state.postItsStore, // Now synced with latest DOM content/title/position
+    lines: state.linesStore,
+    postIts: state.postItsStore,
     drawings: drawingsToSave,
     mainLineReference:
       mainLineId && state.linesStore[mainLineId]
@@ -124,8 +112,8 @@ function getCurrentDiagramDataForSave() {
 }
 
 async function triggerSaveDiagram() {
-  const dataToSave = getCurrentDiagramDataForSave(); // Use the new helper
-  const diagramData = JSON.stringify(dataToSave, null, 2); // Pretty print for .pnt files
+  const dataToSave = getCurrentDiagramDataForSave();
+  const diagramData = JSON.stringify(dataToSave, null, 2);
   const blob = new Blob([diagramData], { type: "application/json" });
   let fileHandle = null;
 
@@ -133,10 +121,8 @@ async function triggerSaveDiagram() {
     const existingHandle = await get("pintaLastFileHandle");
     if (existingHandle && (await verifyPermission(existingHandle))) {
       fileHandle = existingHandle;
-      // console.log("Pinta: Using existing file handle for saving.");
     } else {
       if (window.showSaveFilePicker) {
-        // console.log("Pinta: No valid existing handle, prompting for new file location (Save As).");
         fileHandle = await window.showSaveFilePicker({
           suggestedName: "diagram.pnt",
           types: [
@@ -168,17 +154,18 @@ async function triggerSaveDiagram() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
-      // console.log("Pinta: Diagram download initiated (fallback). No handle stored.");
+      console.log(
+        "Pinta: Diagram download initiated (fallback). No handle stored.",
+      );
     }
   } catch (err) {
     if (err.name !== "AbortError") {
       console.error("Pinta: Error saving diagram:", err);
     } else {
-      // console.log("Pinta: Save diagram aborted by user.");
+      console.log("Pinta: Save diagram aborted by user.");
     }
   }
 }
-// js/files.js (continued)
 
 async function triggerLoadDiagram() {
   if (window.showOpenFilePicker) {
@@ -201,17 +188,13 @@ async function triggerLoadDiagram() {
           !file.name.toLowerCase().endsWith(".html") &&
           !file.name.toLowerCase().endsWith(".htm")
         ) {
-          // If it's a .pnt file (or other non-HTML), store its handle
           await set("pintaLastFileHandle", fileHandle);
           console.log("Pinta: .pnt diagram loaded and handle stored.");
         } else {
-          // If it's an HTML file, do NOT store its handle.
-          // Instead, clear any existing last file handle to ensure
-          // the next "Save" acts like "Save As".
           console.log(
             "Pinta: Diagram loaded from HTML file. Handle NOT stored; will prompt for .pnt on next save.",
           );
-          await clearLastFileHandle(); // Ensures next save is a "Save As" for a .pnt
+          await clearLastFileHandle();
         }
         loadDataFromFile(file);
         console.log("Pinta: Diagram loaded and handle stored.");
@@ -236,14 +219,13 @@ function _processLoadedDiagramData(fileContentString) {
 
   const trimmedContent = fileContentString.trim();
 
-  // Check if it's likely an HTML file and contains our start marker
   if (
     (trimmedContent.toLowerCase().startsWith("<html") ||
       trimmedContent.toLowerCase().startsWith("<!doctype html")) &&
     trimmedContent.includes(EXPORT_START_MARKER)
   ) {
     const startIndex = trimmedContent.indexOf(EXPORT_START_MARKER);
-    const endIndex = trimmedContent.lastIndexOf(EXPORT_END_MARKER); // Use lastIndexOf for safety
+    const endIndex = trimmedContent.lastIndexOf(EXPORT_END_MARKER);
 
     if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
       jsonToParse = trimmedContent
@@ -257,7 +239,7 @@ function _processLoadedDiagramData(fileContentString) {
       alert(
         "Error: This HTML file does not appear to contain valid Pinta diagram data.",
       );
-      return; // Stop processing if it's HTML but data is missing/wrong
+      return;
     }
   }
   try {
@@ -265,15 +247,13 @@ function _processLoadedDiagramData(fileContentString) {
     if (
       typeof savedData === "object" &&
       savedData !== null &&
-      savedData.lines // Basic check for valid structure
+      savedData.lines
     ) {
-      // This is the core logic from your existing loadDataFromFile's reader.onload
-      editorContainer.innerHTML = ""; // Clear existing diagram
+      editorContainer.innerHTML = "";
       const newdrawingCanvas = document.createElementNS(SVG_NS, "svg");
       newdrawingCanvas.id = "drawingCanvas";
       newdrawingCanvas.setAttribute("width", "100%");
       newdrawingCanvas.setAttribute("height", "100%");
-      // Copy your full <defs> content here
       newdrawingCanvas.innerHTML = `<defs>
                           <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
                               <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
@@ -339,7 +319,7 @@ function _processLoadedDiagramData(fileContentString) {
           : 1;
 
       let maxLineIdNum = -1;
-      const tempLinesArray = Object.values(loadedLinesPart); // Simpler way to get array
+      const tempLinesArray = Object.values(loadedLinesPart);
       tempLinesArray.sort((a, b) =>
         a.parentId === null ? -1 : b.parentId === null ? 1 : 0,
       );
@@ -376,9 +356,6 @@ function _processLoadedDiagramData(fileContentString) {
           );
           newLineData.textPerpOffset =
             (loadedLine.textPerpOffset || -15) * scaleFactor;
-          // Ensure startX and startY are present if they are somehow missing for child lines
-          // This part might need more sophisticated repositioning based on parent if they are not absolute in save file
-          // For now, assuming saved child lines have absolute startX/startY or are correctly recalculated
         }
         state.linesStore[newLineData.id] = newLineData;
       });
@@ -399,9 +376,6 @@ function _processLoadedDiagramData(fileContentString) {
         console.log(
           "Pinta: No lines in loaded file/data. Initializing fresh (or this might be an error if data was expected).",
         );
-        // init(); // Calling init() here might be too drastic, implies an empty file.
-        // If called from openExample, and example is empty, init() would be correct.
-        // For now, let's assume if we reach here with no lines, the file was "empty" of lines.
       }
 
       let maxPostItIdNum = -1;
@@ -435,14 +409,13 @@ function _processLoadedDiagramData(fileContentString) {
           shape.width = w;
           shape.height = h;
           if (shape.element) {
-            // Check if element exists before setting attributes
             shape.element.setAttribute("x", x);
             shape.element.setAttribute("y", y);
             shape.element.setAttribute("width", w);
             shape.element.setAttribute("height", h);
           }
           if (typeof shape._applyRotation === "function") {
-            shape._applyRotation(); // Apply rotation based on current main line angle
+            shape._applyRotation();
           }
         } else if (shapeData.kind === "arrow") {
           const x1 = (shapeData.x1Percent / 100) * currentEditorRect.width;
@@ -453,7 +426,6 @@ function _processLoadedDiagramData(fileContentString) {
           shape.x2 = x2;
           shape.y2 = y2;
           if (shape.element) {
-            // Check if element exists
             shape.element.setAttribute("x2", x2);
             shape.element.setAttribute("y2", y2);
           }
@@ -481,11 +453,9 @@ function _processLoadedDiagramData(fileContentString) {
 
 function loadDataFromFile(fileOrJsonString) {
   if (typeof fileOrJsonString === "string") {
-    // If it's a string, process it directly
     console.log("Pinta: Loading diagram from JSON string.");
     _processLoadedDiagramData(fileOrJsonString);
   } else if (fileOrJsonString instanceof File) {
-    // If it's a File object, use FileReader
     console.log(
       `Pinta: Loading diagram from File object: ${fileOrJsonString.name}`,
     );
@@ -507,7 +477,6 @@ function loadDataFromFile(fileOrJsonString) {
   }
 }
 
-/* HTML export */
 function escapeHtml(unsafe) {
   if (unsafe === null || unsafe === undefined) return "";
   return unsafe
@@ -519,23 +488,6 @@ function escapeHtml(unsafe) {
 }
 
 async function exportToStaticHTML(loadedCSSText) {
-  // If loadedCSSText is not passed, try to fetch it.
-  if (!loadedCSSText) {
-    // This is a simplified version. In your actual code,
-    // ensure loadedCSSText is properly populated before this function is called,
-    // or pass it as an argument after fetching.
-    // For demonstration, we'll try a conceptual fetch.
-    const styleResponse = await fetch("./style.css");
-    if (styleResponse.ok) {
-      loadedCSSText = await styleResponse.text();
-    } else {
-      alert(
-        "Styles could not be loaded for export. The diagram might not look correct.",
-      );
-      loadedCSSText = "/* Stylesheet could not be loaded */";
-    }
-  }
-
   const currentThemeClass = document.body.classList.contains("light-theme")
     ? "light-theme"
     : "";
@@ -558,11 +510,8 @@ async function exportToStaticHTML(loadedCSSText) {
   const pintaSaveData = getCurrentDiagramDataForSave();
   const pintaJsonString = JSON.stringify(pintaSaveData);
 
-  // G. Embed JSON data into an HTML comment
-
   const jsonComment = `\n${EXPORT_START_MARKER}\n${pintaJsonString}\n${EXPORT_END_MARKER}\n`;
 
-  // B. Serialize Schema Lines
   const linesHtml = Object.values(state.linesStore)
     .map((line) => {
       const lineElementGroup = document.getElementById(line.id);
@@ -571,35 +520,47 @@ async function exportToStaticHTML(loadedCSSText) {
       const groupClassAttr = lineElementGroup.className
         ? `class="${lineElementGroup.className}"`
         : "";
-      // Styles for the group are set directly by renderLine (left, top, width, transform, transform-origin)
-      // So, lineElementGroup.style.cssText should capture them.
       const groupStyle = lineElementGroup.style.cssText || "";
 
       let visualHtml = "";
+      let whiteSpaceStyle = "";
       const visualElement = lineElementGroup.querySelector(".line-visual");
       if (visualElement) {
         const visualClassAttr = visualElement.className
           ? `class="${visualElement.className}"`
           : "";
-        // Styles for visual (height, background-color) are set by renderLine
         const visualStyle = visualElement.style.cssText || "";
         visualHtml = `<div ${visualClassAttr} style="${visualStyle}"></div>`;
       }
 
       let textHtml = "";
       const textElement = lineElementGroup.querySelector(".line-text");
-      if (textElement) {
+      if (textElement && textElement.style) {
+        if (textElement.style.whiteSpace) {
+          whiteSpaceStyle = `white-space: ${textElement.style.whiteSpace};`;
+        } else {
+          whiteSpaceStyle = "white-space: pre-wrap;";
+          textHtml = escapeHtml(rawLineText);
+        }
         const textClassAttr = textElement.className
           ? `class="${textElement.className}"`
           : "";
-        // Styles for text (left, top, transform, font-size, font-weight, text-align, white-space, width, max-width etc.) are set by renderLine
-        const textStyle = textElement.style.cssText || "";
+        const hasExplicitNewlinesFallback =
+          line.text && line.text.includes("\n");
+        whiteSpaceStyle = hasExplicitNewlinesFallback
+          ? "white-space: pre-wrap;"
+          : "white-space: normal;";
+        const textStyle = textElement.style.cssText + whiteSpaceStyle || "";
 
         let textContentHtml;
-        const rawLineText = line.text || "..."; // Use stored text
+        const rawLineText = line.text || "...";
         if (line.linkUrl) {
           const prefix = getLinkPrefix(line.linkUrl);
-          textContentHtml = `<a href="${escapeHtml(line.linkUrl)}" target="_blank" style="text-decoration:none; color:inherit;">${escapeHtml(prefix)}${escapeHtml(rawLineText)}</a>`;
+          textContentHtml = `<a href="${escapeHtml(
+            line.linkUrl,
+          )}" target="_blank" style="text-decoration:none; color:inherit;">${escapeHtml(
+            prefix,
+          )}${escapeHtml(rawLineText)}</a>`;
         } else {
           textContentHtml = escapeHtml(rawLineText);
         }
@@ -611,7 +572,6 @@ async function exportToStaticHTML(loadedCSSText) {
     .join("");
   diagramContentHTML += linesHtml;
 
-  // C. Serialize Post-it Notes
   const postItsHtml = Object.values(state.postItsStore)
     .map((postIt) => {
       const postItElement = document.getElementById(postIt.id);
@@ -622,22 +582,15 @@ async function exportToStaticHTML(loadedCSSText) {
         elemRect.left - liveEditorRectForRelativePositioning.left;
       const exportTop = elemRect.top - liveEditorRectForRelativePositioning.top;
 
-      // Base geometric styles from getBoundingClientRect
       let postItGeneratedStyle = `position:absolute; left:${exportLeft}px; top:${exportTop}px; width:${elemRect.width}px; height:${elemRect.height}px;`;
 
-      // Append other relevant inline styles from the element if they exist and aren't geometry
-      // This is a simple concatenation; a more robust method would parse and merge.
-      // For post-its, other styles like padding, box-shadow, etc., mostly come from CSS classes.
-      // We need to be careful not to duplicate or override the geometry.
-      // A common dynamic style for post-its via JS might be 'transform', if used.
       if (postItElement.style.transform) {
         postItGeneratedStyle += ` transform: ${postItElement.style.transform};`;
       }
-      // Add other specific inline styles if necessary.
 
       const classAttr = postItElement.className
         ? `class="${postItElement.className}"`
-        : ""; // This includes "post-it" and "postit-color-..."
+        : "";
 
       let titleHtml = "";
       const titleHandle = postItElement.querySelector(".postit-drag-handle");
@@ -645,11 +598,12 @@ async function exportToStaticHTML(loadedCSSText) {
         const titleClass = titleHandle.className
           ? `class="${titleHandle.className}"`
           : "";
-        // Capture inline styles of the handle, if any are dynamically set by JS
         const titleStyle = titleHandle.style.cssText
           ? `style="${titleHandle.style.cssText}"`
           : "";
-        titleHtml = `<div ${titleClass} ${titleStyle}>${escapeHtml(postIt.title || "")}</div>`;
+        titleHtml = `<div ${titleClass} ${titleStyle}>${escapeHtml(
+          postIt.title || "",
+        )}</div>`;
       }
 
       let contentAreaHtml = "";
@@ -658,7 +612,6 @@ async function exportToStaticHTML(loadedCSSText) {
         const contentClass = contentArea.className
           ? `class="${contentArea.className}"`
           : "";
-        // Capture inline styles of content area, e.g., dynamically set font-size
         // For some reason we need to add the white-space: normal to handle new lines in post its
         const contentStyle = contentArea.style.cssText
           ? `style="${contentArea.style.cssText} white-space: normal;"`
@@ -671,10 +624,8 @@ async function exportToStaticHTML(loadedCSSText) {
     .join("");
   diagramContentHTML += postItsHtml;
 
-  // D. Serialize SVG Drawings
   if (state.drawingCanvas) {
     const svgClone = state.drawingCanvas.cloneNode(true);
-    // The style ensures it overlays correctly within the #editor-container-export
     svgClone.setAttribute(
       "style",
       "position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;",
@@ -682,7 +633,6 @@ async function exportToStaticHTML(loadedCSSText) {
     diagramContentHTML += svgClone.outerHTML;
   }
 
-  // E. Assemble Full HTML
   const finalHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -715,7 +665,6 @@ async function exportToStaticHTML(loadedCSSText) {
 </body>
 </html>`;
 
-  // F. Trigger Download
   const blob = new Blob([finalHtml], { type: "text/html" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);

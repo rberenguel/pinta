@@ -212,6 +212,8 @@ body {
   border-radius: 50%;
   z-index: 15;
   display: none;
+  background-clip: padding-box; /* Ensure background does not leak into transparent border*/
+  border: 0.5em solid transparent; /* Increase size of hover area for handle */
 }
 .resize-handle {
   background-color: var(--blue);
