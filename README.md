@@ -4,6 +4,9 @@ Outline editor, written by Gemini with my constant changing requests.
 
 Why? _Reasons_.
 
+You can find an intro video (YouTube) [here](https://www.youtube.com/watch?v=KDMp6_hqPv0). Make sure to switch to HD,
+otherwise it is hard to read.
+
 ## How it looks and what it does
 
 This is the main "example" which also serves as feature list. This is the state of the example
