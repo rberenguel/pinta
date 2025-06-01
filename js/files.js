@@ -19,7 +19,7 @@ import {
   MIN_LINE_LENGTH,
 } from "./lines.js";
 
-import { getLinkPrefix } from "./text.js";
+import { DEFAULT_SCHEMA_TEXT_COLOR_VAR, getLinkPrefix } from "./text.js";
 const EXPORT_START_MARKER = "<!-- PINTA_DIAGRAM_DATA_START ";
 const EXPORT_END_MARKER = "PINTA_DIAGRAM_DATA_END -->";
 
@@ -564,9 +564,23 @@ async function exportToStaticHTML(loadedCSSText) {
         } else {
           textContentHtml = escapeHtml(rawLineText);
         }
+
+        if (line.hasCheckbox) {
+          const currentLineTextColorValue =
+            line.textColor && line.textColor !== "default"
+              ? `var(--${line.textColor})`
+              : DEFAULT_SCHEMA_TEXT_COLOR_VAR;
+          const checkedAttr = line.isCheckboxChecked ? " checked" : "";
+          let checkboxInlineStyle = `border-color: ${currentLineTextColorValue};`;
+          if (line.isCheckboxChecked) {
+            checkboxInlineStyle += ` background-color: ${currentLineTextColorValue};`;
+          } else {
+            checkboxInlineStyle += ` background-color: var(--theme-main-background);`;
+          }
+          textContentHtml = `<input type="checkbox" class="line-label-checkbox" style="${checkboxInlineStyle}"${checkedAttr} disabled>${textContentHtml}`;
+        }
         textHtml = `<div ${textClassAttr} style="${textStyle}">${textContentHtml}</div>`;
       }
-
       return `<div ${groupClassAttr} style="${groupStyle}">${visualHtml}${textHtml}</div>`;
     })
     .join("");

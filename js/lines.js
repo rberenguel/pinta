@@ -60,6 +60,8 @@ function createLineObject(params) {
     isBold: false,
     isCentered: true,
     linkUrl: null,
+    hasCheckbox: false,
+    isCheckboxChecked: false,
   };
 
   let lineData = { ...defaultParams, ...(params || {}), id };
@@ -176,7 +178,50 @@ function renderLine(line, isUpdate = false) {
 
   if (textElement) {
     textElement.innerHTML = "";
+    if (line.hasCheckbox) {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "line-label-checkbox";
+      checkbox.checked = line.isCheckboxChecked || false;
+      checkbox.style.marginRight = "5px";
+      const currentLineTextColorValue =
+        line.textColor && line.textColor !== "default"
+          ? `var(--${line.textColor})`
+          : DEFAULT_SCHEMA_TEXT_COLOR_VAR;
+      checkbox.style.borderColor = currentLineTextColorValue;
+      if (checkbox.checked) {
+        checkbox.style.backgroundColor = currentLineTextColorValue;
+      } else {
+        checkbox.style.backgroundColor = "var(--theme-main-background)";
+      }
+      checkbox.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const currentLineData = state.linesStore[line.id];
+        if (currentLineData) {
+          currentLineData.isCheckboxChecked = e.target.checked;
+          if (e.target.checked) {
+            textElement.classList.add("checkbox-checked");
+          } else {
+            textElement.classList.remove("checkbox-checked");
+          }
+          const currentLineTextColorValue =
+            line.textColor && line.textColor !== "default"
+              ? `var(--${line.textColor})`
+              : DEFAULT_SCHEMA_TEXT_COLOR_VAR;
+          checkbox.style.borderColor = currentLineTextColorValue;
+          if (checkbox.checked) {
+            checkbox.style.backgroundColor = currentLineTextColorValue;
+          } else {
+            checkbox.style.backgroundColor = "var(--theme-main-background)";
+          }
+        }
+      });
 
+      checkbox.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+      });
+      textElement.appendChild(checkbox);
+    }
     if (line.linkUrl) {
       const prefixSymbol = getLinkPrefix(line.linkUrl);
       const linkIconSpan = document.createElement("span");
@@ -187,7 +232,11 @@ function renderLine(line, isUpdate = false) {
       linkIconSpan.style.cursor = "pointer";
       textElement.appendChild(linkIconSpan);
     }
-
+    if (line.hasCheckbox && line.isCheckboxChecked) {
+      textElement.classList.add("checkbox-checked");
+    } else {
+      textElement.classList.remove("checkbox-checked");
+    }
     const textNode = document.createTextNode(line.text || "...");
     textElement.appendChild(textNode);
     const hasExplicitNewlines = line.text && line.text.includes("\n");
@@ -505,6 +554,25 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
   initialSignedChildLength =
     Math.sign(initialSignedChildLength) *
     Math.max(Math.abs(initialSignedChildLength), MIN_LINE_LENGTH);
+  let newSign = 1;
+  let sibling = undefined;
+  let hasCheckbox = false;
+  if (parentLine.children && parentLine.children.length > 0) {
+    sibling =
+      state.linesStore[parentLine.children[parentLine.children.length - 1]];
+  }
+  if (sibling) {
+    newSign = Math.sign(
+      state.linesStore[parentLine.children[parentLine.children.length - 1]]
+        .length,
+    );
+    initialSignedChildLength *= newSign;
+  }
+  if (sibling) {
+    if (sibling.hasCheckbox) {
+      hasCheckbox = true;
+    }
+  }
   const childTextPerpOffset = -15;
 
   const initialSign = Math.sign(initialSignedChildLength) || 1;
@@ -516,7 +584,7 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
   const sinA = Math.sin(childDisplayAngleRad);
   const editorRect = editorContainer.getBoundingClientRect();
   const screenPadding = 25;
-
+  // TODO clipping after preferred sign direction is broken
   let maxLen = absLenAfterScreenClip;
   if (cosA > 1e-6) {
     const len = (editorRect.width - screenPadding - childStartX) / cosA;
@@ -587,6 +655,8 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
     color: "var(--theme-schema-line-color)",
     textPerpOffset: childTextPerpOffset,
     offsetRatioOnParent: clickOffsetRatioOnParent,
+    hasCheckbox: hasCheckbox,
+    isCheckboxChecked: false,
   });
   parentLine.children.push(childLine.id);
   renderLine(childLine);
@@ -639,9 +709,15 @@ function handleLineVisualMouseLeave(event) {
   document.removeEventListener("keydown", handleLineVisualColorKeydown);
 }
 
+const isEditingLineText = () => {
+  return Array.from(document.querySelectorAll(".line-text")).some(
+    (l) => l.contentEditable === "true",
+  );
+};
+
 function handleLineVisualColorKeydown(event) {
   if (!state.hoveredLineIdForVisualColorChange) return;
-
+  if (isEditingLineText()) return;
   const key = event.key.toLowerCase();
   const lineId = state.hoveredLineIdForVisualColorChange;
   const lineToUpdate = state.linesStore[lineId];
@@ -655,6 +731,16 @@ function handleLineVisualColorKeydown(event) {
       renderLine(lineToUpdate, true);
     }
     return;
+  } else if (key === "t") {
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate) {
+      lineToUpdate.hasCheckbox = !lineToUpdate.hasCheckbox;
+      if (!lineToUpdate.hasCheckbox) {
+        lineToUpdate.isCheckboxChecked = false;
+      }
+      renderLine(lineToUpdate, true);
+    }
   }
   const step = LINE_THICKNESS_STEP;
   const minThickness = MIN_LINE_THICKNESS;

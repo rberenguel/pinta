@@ -590,3 +590,48 @@ body {
   background-color: var(--theme-modal-background);
   border-top: 1px solid var(--theme-border-color);
 }
+
+.line-label-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  width: 1em;
+  height: 1em;
+  font-size: inherit;
+
+  border: 1.5px solid var(--theme-schema-text-color);
+  border-radius: 2px;
+
+  background-color: var(--theme-main-background);
+
+  margin-right: 5px;
+  vertical-align: middle;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+}
+
+.line-label-checkbox:checked {
+  background-color: var(--theme-schema-text-color);
+  border-color: var(--theme-schema-text-color);
+}
+
+.line-label-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.25em;
+  top: 0.05em;
+  width: 0.3em;
+  height: 0.6em;
+  border: solid var(--theme-main-background);
+  border-width: 0 0.15em 0.15em 0;
+  transform: rotate(45deg);
+}
+
+.line-text.checkbox-checked {
+  text-decoration: line-through;
+  opacity: 0.7;
+  text-decoration-line: line-through;
+  text-decoration-thickness: 0.15em !important;
+}

@@ -220,6 +220,8 @@
         border-radius: 50%;
         z-index: 15;
         display: none;
+        background-clip: padding-box; /* Ensure background does not leak into transparent border*/
+        border: 0.5em solid transparent; /* Increase size of hover area for handle */
       }
       .resize-handle {
         background-color: var(--blue);
@@ -597,6 +599,51 @@
         border-top: 1px solid var(--theme-border-color);
       }
 
+      .line-label-checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+
+        width: 1em;
+        height: 1em;
+        font-size: inherit;
+
+        border: 1.5px solid var(--theme-schema-text-color);
+        border-radius: 2px;
+
+        background-color: var(--theme-main-background);
+
+        margin-right: 5px;
+        vertical-align: middle;
+        cursor: pointer;
+        display: inline-block;
+        position: relative;
+      }
+
+      .line-label-checkbox:checked {
+        background-color: var(--theme-schema-text-color);
+        border-color: var(--theme-schema-text-color);
+      }
+
+      .line-label-checkbox:checked::after {
+        content: "";
+        position: absolute;
+        left: 0.25em;
+        top: 0.05em;
+        width: 0.3em;
+        height: 0.6em;
+        border: solid var(--theme-main-background);
+        border-width: 0 0.15em 0.15em 0;
+        transform: rotate(45deg);
+      }
+
+      .line-text.checkbox-checked {
+        text-decoration: line-through;
+        opacity: 0.7;
+        text-decoration-line: line-through;
+        text-decoration-thickness: 0.15em !important;
+      }
+
       /* Additional styles for static export if needed */
       body {
         margin: 0;
@@ -749,8 +796,8 @@
       <div
         class="line-element-group"
         style="
-          left: 214.332px;
-          top: 797.187px;
+          left: 206.413px;
+          top: 780.114px;
           width: 387.218px;
           transform: rotate(-24.8832deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -767,8 +814,6 @@
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 329.136px;
-            width: 329.136px;
             color: var(--theme-schema-text-color);
             left: 49.3613%;
             top: -27.2264px;
@@ -776,6 +821,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 329.136px;
+            width: 329.136px;
             white-space: normal;
           "
         >
@@ -785,8 +832,8 @@
       <div
         class="line-element-group"
         style="
-          left: 237.782px;
-          top: 847.744px;
+          left: 226.926px;
+          top: 824.34px;
           width: 387.218px;
           transform: rotate(-24.8832deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -803,8 +850,6 @@
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 329.136px;
-            width: 329.136px;
             color: var(--theme-schema-text-color);
             left: 49.4417%;
             top: -28.3254px;
@@ -812,6 +857,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 329.136px;
+            width: 329.136px;
             white-space: normal;
           "
         >
@@ -821,8 +868,8 @@
       <div
         class="line-element-group"
         style="
-          left: 260.509px;
-          top: 896.742px;
+          left: 253.09px;
+          top: 880.748px;
           width: 387.218px;
           transform: rotate(-24.8832deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -839,8 +886,6 @@
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 329.136px;
-            width: 329.136px;
             color: var(--theme-schema-text-color);
             left: 48.5374%;
             top: -24.8071px;
@@ -848,6 +893,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 329.136px;
+            width: 329.136px;
             white-space: normal;
           "
         >
@@ -2620,7 +2667,7 @@
         style="
           left: 280.616px;
           top: 940.093px;
-          width: 387.815px;
+          width: 443.133px;
           transform: rotate(-24.8832deg) scaleX(1);
           transform-origin: 0px 0px;
         "
@@ -2633,8 +2680,6 @@
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 329.643px;
-            width: 329.643px;
             color: var(--theme-schema-text-color);
             left: 50%;
             top: -15px;
@@ -2642,6 +2687,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 376.663px;
+            width: 376.663px;
             white-space: normal;
           "
         >
@@ -2651,8 +2698,8 @@
       <div
         class="line-element-group"
         style="
-          left: 319.743px;
-          top: 921.944px;
+          left: 295.452px;
+          top: 933.211px;
           width: 138.141px;
           transform: rotate(65.1168deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -2660,14 +2707,12 @@
       >
         <div
           class="line-visual"
-          style="height: 2px; background-color: var(--theme-schema-line-color)"
+          style="height: 3px; background-color: var(--red)"
         ></div>
         <div
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 117.42px;
-            width: 117.42px;
             color: var(--theme-schema-text-color);
             left: 50%;
             top: -15px;
@@ -2675,6 +2720,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
             white-space: normal;
           "
         >
@@ -2684,8 +2731,8 @@
       <div
         class="line-element-group"
         style="
-          left: 367.965px;
-          top: 899.578px;
+          left: 320.269px;
+          top: 921.7px;
           width: 138.141px;
           transform: rotate(65.1168deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -2693,14 +2740,12 @@
       >
         <div
           class="line-visual"
-          style="height: 2px; background-color: var(--theme-schema-line-color)"
+          style="height: 2.5px; background-color: var(--blue)"
         ></div>
         <div
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 117.42px;
-            width: 117.42px;
             color: var(--theme-schema-text-color);
             left: 50%;
             top: -15px;
@@ -2708,6 +2753,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
             white-space: normal;
           "
         >
@@ -2717,8 +2764,8 @@
       <div
         class="line-element-group"
         style="
-          left: 420.301px;
-          top: 875.303px;
+          left: 347.448px;
+          top: 909.094px;
           width: 138.141px;
           transform: rotate(65.1168deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -2726,14 +2773,12 @@
       >
         <div
           class="line-visual"
-          style="height: 2px; background-color: var(--theme-schema-line-color)"
+          style="height: 2.5px; background-color: var(--yellow)"
         ></div>
         <div
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 117.42px;
-            width: 117.42px;
             color: var(--theme-schema-text-color);
             left: 50%;
             top: -15px;
@@ -2741,6 +2786,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
             white-space: normal;
           "
         >
@@ -2750,8 +2797,8 @@
       <div
         class="line-element-group"
         style="
-          left: 465.791px;
-          top: 854.203px;
+          left: 376.589px;
+          top: 895.578px;
           width: 138.141px;
           transform: rotate(65.1168deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -2759,14 +2806,12 @@
       >
         <div
           class="line-visual"
-          style="height: 2px; background-color: var(--theme-schema-line-color)"
+          style="height: 2.5px; background-color: var(--black)"
         ></div>
         <div
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 117.42px;
-            width: 117.42px;
             color: var(--theme-schema-text-color);
             left: 48.225%;
             top: -11.4309px;
@@ -2774,6 +2819,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
             white-space: normal;
           "
         >
@@ -2783,8 +2830,8 @@
       <div
         class="line-element-group"
         style="
-          left: 514.454px;
-          top: 831.632px;
+          left: 400.884px;
+          top: 884.309px;
           width: 138.141px;
           transform: rotate(65.1168deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -2792,14 +2839,15 @@
       >
         <div
           class="line-visual"
-          style="height: 2px; background-color: var(--theme-schema-line-color)"
+          style="
+            height: 2.5px;
+            background-color: var(--theme-schema-line-color);
+          "
         ></div>
         <div
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 117.42px;
-            width: 117.42px;
             color: var(--theme-schema-text-color);
             left: 50%;
             top: -15px;
@@ -2807,6 +2855,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
             white-space: normal;
           "
         >
@@ -2816,8 +2866,8 @@
       <div
         class="line-element-group"
         style="
-          left: 563.236px;
-          top: 809.006px;
+          left: 441.891px;
+          top: 865.289px;
           width: 138.141px;
           transform: rotate(65.1168deg) scaleX(1);
           transform-origin: 0px 0px;
@@ -2825,14 +2875,12 @@
       >
         <div
           class="line-visual"
-          style="height: 2px; background-color: var(--theme-schema-line-color)"
+          style="height: 2.5px; background-color: var(--green)"
         ></div>
         <div
           class="line-text"
           style="
             white-space: pre-wrap;
-            max-width: 117.42px;
-            width: 117.42px;
             color: var(--theme-schema-text-color);
             left: 50%;
             top: -15px;
@@ -2840,6 +2888,8 @@
             font-size: 16px;
             font-weight: normal;
             text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
             white-space: normal;
           "
         >
@@ -2910,6 +2960,223 @@
           "
         >
           This export can be opened as a native &quot;Pinta&quot; file, too
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          left: 585.876px;
+          top: 798.505px;
+          width: 138.141px;
+          transform: rotate(65.1168deg) scaleX(1);
+          transform-origin: 0px 0px;
+        "
+      >
+        <div
+          class="line-visual"
+          style="height: 2px; background-color: var(--theme-schema-line-color)"
+        ></div>
+        <div
+          class="line-text"
+          style="
+            white-space: pre-wrap;
+            color: var(--theme-schema-text-color);
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-size: 16px;
+            font-weight: normal;
+            text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
+            white-space: normal;
+          "
+        >
+          <input
+            type="checkbox"
+            class="line-label-checkbox"
+            style="
+              border-color: var(--theme-schema-text-color);
+              background-color: var(--theme-main-background);
+            "
+            disabled
+          />t for task
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          left: 472.005px;
+          top: 851.321px;
+          width: 138.141px;
+          transform: rotate(65.1168deg) scaleX(1);
+          transform-origin: 0px 0px;
+        "
+      >
+        <div
+          class="line-visual"
+          style="height: 2.5px; background-color: var(--violet)"
+        ></div>
+        <div
+          class="line-text"
+          style="
+            white-space: pre-wrap;
+            color: var(--theme-schema-text-color);
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-size: 16px;
+            font-weight: normal;
+            text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
+            white-space: normal;
+          "
+        >
+          v for violet
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          left: 507.469px;
+          top: 834.872px;
+          width: 138.141px;
+          transform: rotate(65.1168deg) scaleX(1);
+          transform-origin: 0px 0px;
+        "
+      >
+        <div
+          class="line-visual"
+          style="height: 2.5px; background-color: var(--cyan)"
+        ></div>
+        <div
+          class="line-text"
+          style="
+            white-space: pre-wrap;
+            color: var(--theme-schema-text-color);
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-size: 16px;
+            font-weight: normal;
+            text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
+            white-space: normal;
+          "
+        >
+          c for cyan
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          left: 542.826px;
+          top: 818.472px;
+          width: 138.141px;
+          transform: rotate(65.1168deg) scaleX(1);
+          transform-origin: 0px 0px;
+        "
+      >
+        <div
+          class="line-visual"
+          style="height: 2.5px; background-color: var(--magenta)"
+        ></div>
+        <div
+          class="line-text"
+          style="
+            white-space: pre-wrap;
+            color: var(--theme-schema-text-color);
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-size: 16px;
+            font-weight: normal;
+            text-align: center;
+            max-width: 117.42px;
+            width: 117.42px;
+            white-space: normal;
+          "
+        >
+          m for magenta
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          left: 626.032px;
+          top: 779.879px;
+          width: 138.141px;
+          transform: rotate(65.1168deg) scaleX(1);
+          transform-origin: 0px 0px;
+        "
+      >
+        <div
+          class="line-visual"
+          style="height: 2px; background-color: var(--theme-schema-line-color)"
+        ></div>
+        <div
+          class="line-text checkbox-checked"
+          style="
+            white-space: pre-wrap;
+            color: var(--theme-schema-text-color);
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%) translateY(-50%) scaleX(1) rotate(0deg);
+            font-size: 16px;
+            font-weight: normal;
+            text-align: center;
+            cursor: grab;
+            max-width: 117.42px;
+            width: 117.42px;
+            white-space: normal;
+          "
+        >
+          <input
+            type="checkbox"
+            class="line-label-checkbox"
+            style="
+              border-color: var(--theme-schema-text-color);
+              background-color: var(--theme-schema-text-color);
+            "
+            checked
+            disabled
+          />done task
+        </div>
+      </div>
+      <div
+        class="line-element-group"
+        style="
+          left: 324.871px;
+          top: 1035.51px;
+          width: 242.535px;
+          transform: rotate(-24.8832deg) scaleX(-1);
+          transform-origin: 0px 0px;
+        "
+      >
+        <div
+          class="line-visual"
+          style="height: 2px; background-color: var(--theme-schema-line-color)"
+        ></div>
+        <div
+          class="line-text"
+          style="
+            white-space: pre-wrap;
+            color: var(--theme-schema-text-color);
+            left: 50.1761%;
+            top: -26.7511px;
+            transform: translateX(-50%) translateY(-50%) scaleX(-1) rotate(0deg);
+            font-size: 16px;
+            font-weight: normal;
+            text-align: center;
+            cursor: grab;
+            max-width: 206.155px;
+            width: 206.155px;
+            white-space: normal;
+          "
+        >
+          Ctrl , / Ctrl . while hovering to change thickness
         </div>
       </div>
       <div
@@ -3130,7 +3397,7 @@
     </div>
 
     <!-- PINTA_DIAGRAM_DATA_START 
-{"lines":{"line-0":{"parentId":null,"startX":130.34375,"startY":1173.09375,"length":2478.1976983839263,"text":"Pinta 🪮","textPosRatio":0.6448177861260128,"textPerpOffset":-29.499831474863456,"thickness":4,"color":"var(--theme-schema-line-color)","children":["line-1","line-6","line-11","line-13","line-23","line-36","line-45"],"offsetRatioOnParent":0.5,"fontSize":54,"isBold":false,"isCentered":true,"linkUrl":null,"angle":-24.883178609379634,"id":"line-0"},"line-1":{"parentId":"line-0","startX":342.94907190329013,"startY":1074.48150263907,"length":411.3443460043535,"relativeDirection":-1,"text":"Structured outline editor","textPosRatio":0.5,"textPerpOffset":-27.868850224579045,"thickness":3.7158466966105395,"color":"var(--theme-schema-line-color)","children":["line-2","line-3","line-4","line-5","line-57"],"offsetRatioOnParent":0.0945694052849964,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-1"},"line-2":{"parentId":"line-1","startX":189.6384506605256,"startY":743.9479750822757,"length":387.21839037248844,"relativeDirection":1,"text":"Click on lines to add new child lines","textPosRatio":0.4730027186052752,"textPerpOffset":-27.100013798423625,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8857730489014157,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-2"},"line-3":{"parentId":"line-1","startX":214.33199292873013,"startY":797.1865802592647,"length":387.21839037248844,"relativeDirection":1,"text":"Hover on lines to resize (top)","textPosRatio":0.49361314692695923,"textPerpOffset":-27.226405247637334,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.7431027365265919,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-3"},"line-4":{"parentId":"line-1","startX":237.78198103206336,"startY":847.7441164960138,"length":387.21839037248844,"relativeDirection":1,"text":"Hover on lines to drag on parent line (bottom)","textPosRatio":0.4944173722616064,"textPerpOffset":-28.32543147496039,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.6076172281474933,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-4"},"line-5":{"parentId":"line-1","startX":260.50854241551133,"startY":896.7419644103612,"length":387.21839037248844,"relativeDirection":1,"text":"Hover on lines to delete it and any children (X)","textPosRatio":0.48537359927810647,"textPerpOffset":-24.80714591639184,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.4763114164269503,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-5"},"line-6":{"parentId":"line-0","startX":762.0900153673067,"startY":880.0723033492777,"length":619.5494245959816,"relativeDirection":-1,"text":"Text stuff","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-7","line-8","line-9","line-10","line-51"],"offsetRatioOnParent":0.281008340110978,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-6"},"line-7":{"parentId":"line-6","startX":513.7934727773192,"startY":344.75171409625045,"length":387.21839037248844,"relativeDirection":1,"text":"While editing text you can add/remove links with Cmd/Ctrl k","textPosRatio":0.5371780453760537,"textPerpOffset":-29.94454032543688,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.9524681566626237,"fontSize":16,"isBold":false,"isCentered":false,"linkUrl":"https://mostlymaths.net/","id":"line-7","visualColor":"default"},"line-8":{"parentId":"line-6","startX":541.5441150437721,"startY":404.58134368057557,"length":387.21839037248844,"relativeDirection":1,"text":"You can add new lines with shift enter. And (un)center with Ctrl-c","textPosRatio":0.5038688074206374,"textPerpOffset":-23.4113554401166,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8460164001861799,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-8"},"line-9":{"parentId":"line-6","startX":581.1463617767727,"startY":489.96270999247406,"length":387.21839037248844,"relativeDirection":1,"text":"You can resize the font with Ctrl , and Ctrl .","textPosRatio":0.5084526219996743,"textPerpOffset":-29.978393513822255,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.6941017639531399,"fontSize":24,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-9"},"line-10":{"parentId":"line-6","startX":603.7408026298532,"startY":538.6757096385733,"length":387.21839037248844,"relativeDirection":1,"text":"And bold with Ctrl b","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.607429250491311,"fontSize":16,"isBold":true,"isCentered":true,"linkUrl":null,"id":"line-10"},"line-11":{"parentId":"line-0","startX":299.7102267284313,"startY":1094.5368787595403,"length":-161.19365063690222,"relativeDirection":-1,"text":"Press ? to get help","textPosRatio":0.49388039788819227,"textPerpOffset":-23.996936708522146,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-12"],"offsetRatioOnParent":0.07533624669427931,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-11"},"line-12":{"parentId":"line-11","startX":338.2584233785114,"startY":1177.6457417751567,"length":214.64716674756934,"relativeDirection":1,"text":"You can resize in reverse to swap direction","textPosRatio":0.47321541535049927,"textPerpOffset":-29.978393513822255,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.5683447930461545,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-12"},"line-13":{"parentId":"line-0","startX":964.8237757736907,"startY":786.0387601122941,"length":-539.4529373884895,"relativeDirection":-1,"text":"Post its","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-14","line-15","line-21","line-22"],"offsetRatioOnParent":0.37118675606588925,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-13"},"line-14":{"parentId":"line-13","startX":997.2134273656201,"startY":855.869967567017,"length":276.74622478508155,"relativeDirection":1,"text":"Hold on an empty space to add a Post it","textPosRatio":0.4860731801967486,"textPerpOffset":-29.708883556106727,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.14269490444411342,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-14"},"line-15":{"parentId":"line-13","startX":1022.5528009703859,"startY":910.5009675314637,"length":290.0917011316858,"relativeDirection":1,"text":"Change its color while editing. Ctrl g and then…","textPosRatio":0.516028313644664,"textPerpOffset":-25.078767079519896,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-16","line-17","line-18","line-19","line-20"],"offsetRatioOnParent":0.2543293098017402,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-15"},"line-16":{"parentId":"line-15","startX":1059.584148811203,"startY":893.3248009110985,"length":217.56877584876435,"relativeDirection":1,"text":"y: yellow","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.14071703976264746,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-16"},"line-17":{"parentId":"line-15","startX":1113.9687835198863,"startY":868.0996983477393,"length":217.56877584876435,"relativeDirection":1,"text":"r: red","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.34737559396044,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-17"},"line-18":{"parentId":"line-15","startX":1157.7212482985726,"startY":847.8060912038467,"length":217.56877584876435,"relativeDirection":1,"text":"b: blue","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.5136325002021859,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-18"},"line-19":{"parentId":"line-15","startX":1199.4340022400045,"startY":828.4585585411921,"length":217.56877584876435,"relativeDirection":1,"text":"g: green","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.6721386199420735,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-19"},"line-20":{"parentId":"line-15","startX":1246.9914933289383,"startY":806.4000746182901,"length":217.56877584876435,"relativeDirection":1,"text":"t: translucent","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8528544122308146,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-20"},"line-21":{"parentId":"line-13","startX":1147.7690276699982,"startY":1180.4637449494526,"length":252.25450156134747,"relativeDirection":1,"text":"Ctrl . and Ctrl , also resize the font on post its","textPosRatio":0.47112335168021285,"textPerpOffset":-28.736486358011504,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.805978266353213,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-21"},"line-22":{"parentId":"line-13","startX":1177.4446439125697,"startY":1244.4435660444758,"length":231.76662851464582,"relativeDirection":1,"text":"Post its can be dragged","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.9367162958141131,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-22"},"line-23":{"parentId":"line-0","startX":1128.619657452106,"startY":710.0656854207732,"length":595.87967755585,"relativeDirection":-1,"text":"Drawing","textPosRatio":0.23914684972289754,"textPerpOffset":-27.34414761255249,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-24","line-25","line-26","line-27","line-32","line-35","line-47"],"offsetRatioOnParent":0.44404513505560006,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-23"},"line-24":{"parentId":"line-23","startX":891.7679916586585,"startY":199.41993910653463,"length":273.374710754778,"relativeDirection":1,"text":"You can draw arrows, rectangles and \"highlights\"","textPosRatio":0.494724168681538,"textPerpOffset":-28.91382643130544,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.9446558539147284,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-24"},"line-25":{"parentId":"line-23","startX":914.1794409427489,"startY":247.73841390940277,"length":323.6481675687309,"relativeDirection":1,"text":"Press a and drag to draw an arrow","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8552703446762508,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-25"},"line-26":{"parentId":"line-23","startX":933.0349804562983,"startY":288.3904440093338,"length":338.97743948569945,"relativeDirection":1,"text":"R for rectangles","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.7800671759734885,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-26"},"line-27":{"parentId":"line-23","startX":962.2410711341438,"startY":351.35798076339603,"length":345.38957303988997,"relativeDirection":1,"text":"You can switch colors by pressing c and then","textPosRatio":0.49513075924130034,"textPerpOffset":-24.514980802647948,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-28","line-29","line-30","line-64"],"offsetRatioOnParent":0.6635820145271196,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-27"},"line-28":{"parentId":"line-27","startX":995.9036331732016,"startY":335.7443504700386,"length":87.25174118187385,"relativeDirection":1,"text":"r for red","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.10743614581659562,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-28"},"line-29":{"parentId":"line-27","startX":1037.2488049265291,"startY":316.56731262536096,"length":102.05670428248752,"relativeDirection":1,"text":"b for blue","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.239391815030032,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-29"},"line-30":{"parentId":"line-27","startX":1084.7927193813516,"startY":294.5151259220642,"length":111.89635154640683,"relativeDirection":1,"text":"g for green","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.3911311544223655,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-30"},"line-32":{"parentId":"line-23","startX":1030.093343486938,"startY":497.6456335803524,"length":392.34640088155504,"relativeDirection":1,"text":"To select a drawn element, press s and click","textPosRatio":0.48662510716792906,"textPerpOffset":-26.206173447822902,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-33","line-34"],"offsetRatioOnParent":0.39296096542130027,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-32"},"line-33":{"parentId":"line-32","startX":1052.401695043606,"startY":487.29840114878886,"length":89.28268502635316,"relativeDirection":1,"text":"not great I know","textPosRatio":0.5322379753506791,"textPerpOffset":-26.34382671586565,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.06267730040512377,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-33"},"line-34":{"parentId":"line-32","startX":1143.5580753109534,"startY":445.0175427065923,"length":125.15365224489241,"relativeDirection":1,"text":"Backspace to delete","textPosRatio":0.49359196375839764,"textPerpOffset":-25.058054175253865,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.318789268846489,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-34"},"line-35":{"parentId":"line-23","startX":1093.4912764393646,"startY":634.3298518602626,"length":372.4247984724062,"relativeDirection":1,"text":"Esc to dismiss","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.14010554095563021,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-35"},"line-36":{"parentId":"line-0","startX":1451.3766962122,"startY":560.3620154525798,"length":-533.982014898273,"relativeDirection":-1,"text":"File handling","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-37","line-42","line-43","line-44"],"offsetRatioOnParent":0.5876113493621868,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-36"},"line-37":{"parentId":"line-36","startX":1477.7313759820897,"startY":617.1819878808271,"length":326.83284609344906,"relativeDirection":1,"text":"Saves as .pnt","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-38","line-39"],"offsetRatioOnParent":0.11729698916451882,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-37"},"line-38":{"parentId":"line-37","startX":1523.128570549679,"startY":596.1255094252797,"length":151.48624992491153,"relativeDirection":1,"text":"It's just JSON","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.15311431481319404,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-38"},"line-39":{"parentId":"line-37","startX":1584.7350843344382,"startY":567.5506989642757,"length":229.84877432756812,"relativeDirection":1,"text":"Saving is proportional","textPosRatio":0.5904946363706771,"textPerpOffset":-15.81297600455843,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-40"],"offsetRatioOnParent":0.36089894194778616,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-39"},"line-40":{"parentId":"line-39","startX":1604.1636407480473,"startY":609.4381379079717,"length":-411.4271447700539,"relativeDirection":1,"text":"So should look good in different screens…","textPosRatio":0.5004995065558279,"textPerpOffset":-18.35759604287604,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-50"],"offsetRatioOnParent":0.2008880445200739,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-40"},"line-42":{"parentId":"line-36","startX":1604.9851640562244,"startY":891.5376921767784,"length":359.50889486401815,"relativeDirection":1,"text":"Remembers last saved and saves to the opened one","textPosRatio":0.4901714257979613,"textPerpOffset":-23.295116501351274,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.6836664662821756,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-42"},"line-43":{"parentId":"line-36","startX":1636.686629375572,"startY":959.885188754533,"length":358.4912391721292,"relativeDirection":1,"text":"Should be able to open .pnt when installed as a Progressive Web App","textPosRatio":0.49414337105741374,"textPerpOffset":-29.978393513822255,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8247604376956035,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-43"},"line-44":{"parentId":"line-36","startX":1668.1622166540433,"startY":1027.7456984226844,"length":356.24529712495416,"relativeDirection":1,"text":"Cmd/Ctrl e to export a standalone .html (fixed proportions)","textPosRatio":0.500844251426513,"textPerpOffset":-26.267902746599326,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-65"],"offsetRatioOnParent":0.9648490918619815,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-44"},"line-45":{"parentId":"line-0","startX":1865.9854716429525,"startY":368.05496144859944,"length":263.11952966838527,"relativeDirection":-1,"text":"Almost forgot…","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-46"],"offsetRatioOnParent":0.7720343213151769,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-45"},"line-46":{"parentId":"line-45","startX":1770.2801643308703,"startY":161.71692318784517,"length":244.76294706096164,"relativeDirection":1,"text":"Press q to switch to a light theme (and back)","textPosRatio":0.5163834218742088,"textPerpOffset":-26.037501829645617,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8644476315461268,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-46"},"line-47":{"parentId":"line-23","startX":1012.0604079234075,"startY":458.76711521221023,"length":-245.41784107228727,"relativeDirection":1,"text":"H for highlights","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-48"],"offsetRatioOnParent":0.4648832720949293,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-47"},"line-48":{"parentId":"line-47","startX":807.6229756422108,"startY":553.5908687357328,"length":235.82500102185426,"relativeDirection":1,"text":"Shouldn't recangles and highlights slope as the lines?","textPosRatio":0.5538220932608737,"textPerpOffset":-29.890819592062257,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-49"],"offsetRatioOnParent":0.9182623160840919,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-48"},"line-49":{"parentId":"line-48","startX":825.6828746256967,"startY":592.5275195035784,"length":112.07354568255234,"relativeDirection":1,"text":"Yes, TODO","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.18200412143400652,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-49"},"line-50":{"parentId":"line-40","startX":1953.0139255444446,"startY":447.6316964308318,"length":-565.8215347979376,"relativeDirection":1,"text":"Although drawing elements and post-its don't respond well. I'll try but might be impossible","textPosRatio":0.4869454709082241,"textPerpOffset":28.55618947118748,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.9346706722322757,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-50"},"line-51":{"parentId":"line-6","startX":529.1994592124721,"startY":377.96660162736185,"length":-254.94569343146205,"relativeDirection":1,"text":"Press Ctrl g and then…","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":["line-52","line-53","line-54","line-55","line-56"],"offsetRatioOnParent":0.893370630179179,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-51"},"line-52":{"parentId":"line-51","startX":320.0724926913029,"startY":474.9654912497355,"length":136.66855649543382,"relativeDirection":1,"text":"r for red","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.9042215086284787,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-52"},"line-53":{"parentId":"line-51","startX":356.18784541397065,"startY":458.2141885808636,"length":140.76716340227938,"relativeDirection":1,"text":"b for blue","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.7480662347927889,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-53"},"line-54":{"parentId":"line-51","startX":401.2961453361222,"startY":437.2917074776971,"length":140.36838815641056,"relativeDirection":1,"text":"y for yellow","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.553027327636141,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-54"},"line-55":{"parentId":"line-51","startX":444.6990030669764,"startY":417.1602577829752,"length":142.33197252731367,"relativeDirection":1,"text":"k for black ","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.36536239781367597,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-55"},"line-56":{"parentId":"line-51","startX":492.216625948131,"startY":395.12026584104586,"length":-269.63686359998724,"relativeDirection":1,"text":"g for green…","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.1599060792776952,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-56"},"line-57":{"parentId":"line-1","startX":280.6157867703408,"startY":940.0926360870757,"length":387.81541299085035,"relativeDirection":1,"text":"Hover on a line and press…","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":["line-58","line-59","line-60","line-61","line-62","line-63"],"offsetRatioOnParent":0.36013906650880256,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-57"},"line-58":{"parentId":"line-57","startX":319.7434506257608,"startY":921.9441399336204,"length":138.14116878368176,"relativeDirection":1,"text":"r for red","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.11121703920649521,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-58"},"line-59":{"parentId":"line-57","startX":367.9649542746212,"startY":899.5776685613728,"length":138.14116878368188,"relativeDirection":1,"text":"b for blue","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.24828254052874113,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-59"},"line-60":{"parentId":"line-57","startX":420.301223073782,"startY":875.3026549419178,"length":138.1411687836819,"relativeDirection":1,"text":"y for yellow","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.3970439099901497,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-60"},"line-61":{"parentId":"line-57","startX":465.791231445375,"startY":854.2031268688114,"length":138.1411687836818,"relativeDirection":1,"text":"k for black","textPosRatio":0.4822496156216029,"textPerpOffset":-11.430891347404417,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.5263453695217399,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-61"},"line-62":{"parentId":"line-57","startX":514.453979674854,"startY":831.6319940170623,"length":138.1411687836818,"relativeDirection":1,"text":"d for default","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.6646650708392537,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-62"},"line-63":{"parentId":"line-57","startX":563.2358001666873,"startY":809.00563214619,"length":138.14116878368168,"relativeDirection":1,"text":"g for green…","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.803323224882174,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-63"},"line-64":{"parentId":"line-27","startX":1146.1802674222429,"startY":266.0418778486083,"length":109.0909821265611,"relativeDirection":1,"text":"Before drawing!","textPosRatio":0.5145408474937521,"textPerpOffset":-24.00868549125885,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.5870533054158689,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-64"},"line-65":{"parentId":"line-44","startX":1942.2927569016174,"startY":900.5963476817103,"length":267.18397284371565,"relativeDirection":1,"text":"This export can be opened as a native \"Pinta\" file, too","textPosRatio":0.5168065945542513,"textPerpOffset":-28.905325664534733,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.8482439247237331,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-65"}},"postIts":{"postit-0":{"id":"postit-0","title":"","content":"Hello!","xPercent":51.244642356677986,"yPercent":54.640671301846076,"color":"yellow","fontSizePercent":100},"postit-1":{"id":"postit-1","title":"","content":"I particularly\nlike this one","xPercent":52.49024382648771,"yPercent":74.61669623591465,"color":"transp","fontSizePercent":100},"postit-2":{"id":"postit-2","title":"","content":"Big!","xPercent":55.46214928533616,"yPercent":80.23016063294173,"color":"blue","fontSizePercent":200}},"drawings":[{"id":"rect-1","kind":"rect","type":"rect","colorName":"red","xPercent":40.44159287078928,"yPercent":15.62934548070007,"widthPercent":1.5532917213782977,"heightPercent":3.7592903380484293},{"id":"arrow-2","kind":"arrow","colorName":"red","x1Percent":53.186550584662484,"y1Percent":7.803883960680892,"x2Percent":47.53097559913125,"y2Percent":8.571086070486695},{"id":"highlight-5","kind":"highlight","type":"highlight","colorName":"green","xPercent":33.2725541567356,"yPercent":35.6533205466315,"widthPercent":4.699703156990746,"heightPercent":5.677295612562935}],"mainLineReference":{"id":"line-0","length":2478.1976983839263}}
+{"lines":{"line-0":{"parentId":null,"startX":130.34375,"startY":1173.09375,"length":2478.1976983839263,"text":"Pinta 🪮","textPosRatio":0.6448177861260128,"textPerpOffset":-29.499831474863456,"thickness":4,"color":"var(--theme-schema-line-color)","children":["line-1","line-6","line-11","line-13","line-23","line-36","line-45"],"offsetRatioOnParent":0.5,"fontSize":54,"isBold":false,"isCentered":true,"linkUrl":null,"angle":-24.883178609379634,"id":"line-0"},"line-1":{"parentId":"line-0","startX":342.94907190329013,"startY":1074.48150263907,"length":411.3443460043535,"relativeDirection":-1,"text":"Structured outline editor","textPosRatio":0.5,"textPerpOffset":-27.868850224579045,"thickness":3.7158466966105395,"color":"var(--theme-schema-line-color)","children":["line-2","line-3","line-4","line-5","line-57","line-73"],"offsetRatioOnParent":0.0945694052849964,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-1"},"line-2":{"parentId":"line-1","startX":189.6384506605256,"startY":743.9479750822757,"length":387.21839037248844,"relativeDirection":1,"text":"Click on lines to add new child lines","textPosRatio":0.4730027186052752,"textPerpOffset":-27.100013798423625,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8857730489014157,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-2"},"line-3":{"parentId":"line-1","startX":206.41312413139948,"startY":780.1137146181006,"length":387.21839037248844,"relativeDirection":1,"text":"Hover on lines to resize (top)","textPosRatio":0.49361314692695923,"textPerpOffset":-27.226405247637334,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.7888550823301799,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-3"},"line-4":{"parentId":"line-1","startX":226.92635947005866,"startY":824.3396918082472,"length":387.21839037248844,"relativeDirection":1,"text":"Hover on lines to drag on parent line (bottom)","textPosRatio":0.4944173722616064,"textPerpOffset":-28.32543147496039,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.6703370640646061,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-4"},"line-5":{"parentId":"line-1","startX":253.0902845764329,"startY":880.7484023727137,"length":387.21839037248844,"relativeDirection":1,"text":"Hover on lines to delete it and any children (X)","textPosRatio":0.48537359927810647,"textPerpOffset":-24.80714591639184,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.5191714140604635,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-5"},"line-6":{"parentId":"line-0","startX":762.0900153673067,"startY":880.0723033492777,"length":619.5494245959816,"relativeDirection":-1,"text":"Text stuff","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-7","line-8","line-9","line-10","line-51"],"offsetRatioOnParent":0.281008340110978,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-6"},"line-7":{"parentId":"line-6","startX":513.7934727773192,"startY":344.75171409625045,"length":387.21839037248844,"relativeDirection":1,"text":"While editing text you can add/remove links with Cmd/Ctrl k","textPosRatio":0.5371780453760537,"textPerpOffset":-29.94454032543688,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.9524681566626237,"fontSize":16,"isBold":false,"isCentered":false,"linkUrl":"https://mostlymaths.net/","id":"line-7","visualColor":"default"},"line-8":{"parentId":"line-6","startX":541.5441150437721,"startY":404.58134368057557,"length":387.21839037248844,"relativeDirection":1,"text":"You can add new lines with shift enter. And (un)center with Ctrl-c","textPosRatio":0.5038688074206374,"textPerpOffset":-23.4113554401166,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8460164001861799,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-8"},"line-9":{"parentId":"line-6","startX":581.1463617767727,"startY":489.96270999247406,"length":387.21839037248844,"relativeDirection":1,"text":"You can resize the font with Ctrl , and Ctrl .","textPosRatio":0.5084526219996743,"textPerpOffset":-29.978393513822255,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.6941017639531399,"fontSize":24,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-9"},"line-10":{"parentId":"line-6","startX":603.7408026298532,"startY":538.6757096385733,"length":387.21839037248844,"relativeDirection":1,"text":"And bold with Ctrl b","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.607429250491311,"fontSize":16,"isBold":true,"isCentered":true,"linkUrl":null,"id":"line-10"},"line-11":{"parentId":"line-0","startX":299.7102267284313,"startY":1094.5368787595403,"length":-161.19365063690222,"relativeDirection":-1,"text":"Press ? to get help","textPosRatio":0.49388039788819227,"textPerpOffset":-23.996936708522146,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-12"],"offsetRatioOnParent":0.07533624669427931,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-11"},"line-12":{"parentId":"line-11","startX":338.2584233785114,"startY":1177.6457417751567,"length":214.64716674756934,"relativeDirection":1,"text":"You can resize in reverse to swap direction","textPosRatio":0.47321541535049927,"textPerpOffset":-29.978393513822255,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.5683447930461545,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-12"},"line-13":{"parentId":"line-0","startX":964.8237757736907,"startY":786.0387601122941,"length":-539.4529373884895,"relativeDirection":-1,"text":"Post its","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-14","line-15","line-21","line-22"],"offsetRatioOnParent":0.37118675606588925,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-13"},"line-14":{"parentId":"line-13","startX":997.2134273656201,"startY":855.869967567017,"length":276.74622478508155,"relativeDirection":1,"text":"Hold on an empty space to add a Post it","textPosRatio":0.4860731801967486,"textPerpOffset":-29.708883556106727,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.14269490444411342,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-14"},"line-15":{"parentId":"line-13","startX":1022.5528009703859,"startY":910.5009675314637,"length":290.0917011316858,"relativeDirection":1,"text":"Change its color while editing. Ctrl g and then…","textPosRatio":0.516028313644664,"textPerpOffset":-25.078767079519896,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-16","line-17","line-18","line-19","line-20"],"offsetRatioOnParent":0.2543293098017402,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-15"},"line-16":{"parentId":"line-15","startX":1059.584148811203,"startY":893.3248009110985,"length":217.56877584876435,"relativeDirection":1,"text":"y: yellow","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.14071703976264746,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-16"},"line-17":{"parentId":"line-15","startX":1113.9687835198863,"startY":868.0996983477393,"length":217.56877584876435,"relativeDirection":1,"text":"r: red","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.34737559396044,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-17"},"line-18":{"parentId":"line-15","startX":1157.7212482985726,"startY":847.8060912038467,"length":217.56877584876435,"relativeDirection":1,"text":"b: blue","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.5136325002021859,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-18"},"line-19":{"parentId":"line-15","startX":1199.4340022400045,"startY":828.4585585411921,"length":217.56877584876435,"relativeDirection":1,"text":"g: green","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.6721386199420735,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-19"},"line-20":{"parentId":"line-15","startX":1246.9914933289383,"startY":806.4000746182901,"length":217.56877584876435,"relativeDirection":1,"text":"t: translucent","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8528544122308146,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-20"},"line-21":{"parentId":"line-13","startX":1147.7690276699982,"startY":1180.4637449494526,"length":252.25450156134747,"relativeDirection":1,"text":"Ctrl . and Ctrl , also resize the font on post its","textPosRatio":0.47112335168021285,"textPerpOffset":-28.736486358011504,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.805978266353213,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-21"},"line-22":{"parentId":"line-13","startX":1177.4446439125697,"startY":1244.4435660444758,"length":231.76662851464582,"relativeDirection":1,"text":"Post its can be dragged","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.9367162958141131,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-22"},"line-23":{"parentId":"line-0","startX":1128.619657452106,"startY":710.0656854207732,"length":595.87967755585,"relativeDirection":-1,"text":"Drawing","textPosRatio":0.23914684972289754,"textPerpOffset":-27.34414761255249,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-24","line-25","line-26","line-27","line-32","line-35","line-47"],"offsetRatioOnParent":0.44404513505560006,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-23"},"line-24":{"parentId":"line-23","startX":891.7679916586585,"startY":199.41993910653463,"length":273.374710754778,"relativeDirection":1,"text":"You can draw arrows, rectangles and \"highlights\"","textPosRatio":0.494724168681538,"textPerpOffset":-28.91382643130544,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.9446558539147284,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-24"},"line-25":{"parentId":"line-23","startX":914.1794409427489,"startY":247.73841390940277,"length":323.6481675687309,"relativeDirection":1,"text":"Press a and drag to draw an arrow","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8552703446762508,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-25"},"line-26":{"parentId":"line-23","startX":933.0349804562983,"startY":288.3904440093338,"length":338.97743948569945,"relativeDirection":1,"text":"R for rectangles","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.7800671759734885,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-26"},"line-27":{"parentId":"line-23","startX":962.2410711341438,"startY":351.35798076339603,"length":345.38957303988997,"relativeDirection":1,"text":"You can switch colors by pressing c and then","textPosRatio":0.49513075924130034,"textPerpOffset":-24.514980802647948,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-28","line-29","line-30","line-64"],"offsetRatioOnParent":0.6635820145271196,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-27"},"line-28":{"parentId":"line-27","startX":995.9036331732016,"startY":335.7443504700386,"length":87.25174118187385,"relativeDirection":1,"text":"r for red","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.10743614581659562,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-28"},"line-29":{"parentId":"line-27","startX":1037.2488049265291,"startY":316.56731262536096,"length":102.05670428248752,"relativeDirection":1,"text":"b for blue","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.239391815030032,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-29"},"line-30":{"parentId":"line-27","startX":1084.7927193813516,"startY":294.5151259220642,"length":111.89635154640683,"relativeDirection":1,"text":"g for green","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.3911311544223655,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-30"},"line-32":{"parentId":"line-23","startX":1030.093343486938,"startY":497.6456335803524,"length":392.34640088155504,"relativeDirection":1,"text":"To select a drawn element, press s and click","textPosRatio":0.48662510716792906,"textPerpOffset":-26.206173447822902,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-33","line-34"],"offsetRatioOnParent":0.39296096542130027,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-32"},"line-33":{"parentId":"line-32","startX":1052.401695043606,"startY":487.29840114878886,"length":89.28268502635316,"relativeDirection":1,"text":"not great I know","textPosRatio":0.5322379753506791,"textPerpOffset":-26.34382671586565,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.06267730040512377,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-33"},"line-34":{"parentId":"line-32","startX":1143.5580753109534,"startY":445.0175427065923,"length":125.15365224489241,"relativeDirection":1,"text":"Backspace to delete","textPosRatio":0.49359196375839764,"textPerpOffset":-25.058054175253865,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.318789268846489,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-34"},"line-35":{"parentId":"line-23","startX":1093.4912764393646,"startY":634.3298518602626,"length":372.4247984724062,"relativeDirection":1,"text":"Esc to dismiss","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.14010554095563021,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-35"},"line-36":{"parentId":"line-0","startX":1451.3766962122,"startY":560.3620154525798,"length":-533.982014898273,"relativeDirection":-1,"text":"File handling","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-37","line-42","line-43","line-44"],"offsetRatioOnParent":0.5876113493621868,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-36"},"line-37":{"parentId":"line-36","startX":1477.7313759820897,"startY":617.1819878808271,"length":326.83284609344906,"relativeDirection":1,"text":"Saves as .pnt","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-38","line-39"],"offsetRatioOnParent":0.11729698916451882,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-37"},"line-38":{"parentId":"line-37","startX":1523.128570549679,"startY":596.1255094252797,"length":151.48624992491153,"relativeDirection":1,"text":"It's just JSON","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.15311431481319404,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-38"},"line-39":{"parentId":"line-37","startX":1584.7350843344382,"startY":567.5506989642757,"length":229.84877432756812,"relativeDirection":1,"text":"Saving is proportional","textPosRatio":0.5904946363706771,"textPerpOffset":-15.81297600455843,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-40"],"offsetRatioOnParent":0.36089894194778616,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-39"},"line-40":{"parentId":"line-39","startX":1604.1636407480473,"startY":609.4381379079717,"length":-411.4271447700539,"relativeDirection":1,"text":"So should look good in different screens…","textPosRatio":0.5004995065558279,"textPerpOffset":-18.35759604287604,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-50"],"offsetRatioOnParent":0.2008880445200739,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-40"},"line-42":{"parentId":"line-36","startX":1604.9851640562244,"startY":891.5376921767784,"length":359.50889486401815,"relativeDirection":1,"text":"Remembers last saved and saves to the opened one","textPosRatio":0.4901714257979613,"textPerpOffset":-23.295116501351274,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.6836664662821756,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-42"},"line-43":{"parentId":"line-36","startX":1636.686629375572,"startY":959.885188754533,"length":358.4912391721292,"relativeDirection":1,"text":"Should be able to open .pnt when installed as a Progressive Web App","textPosRatio":0.49414337105741374,"textPerpOffset":-29.978393513822255,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8247604376956035,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-43"},"line-44":{"parentId":"line-36","startX":1668.1622166540433,"startY":1027.7456984226844,"length":356.24529712495416,"relativeDirection":1,"text":"Cmd/Ctrl e to export a standalone .html (fixed proportions)","textPosRatio":0.500844251426513,"textPerpOffset":-26.267902746599326,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-65"],"offsetRatioOnParent":0.9648490918619815,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-44"},"line-45":{"parentId":"line-0","startX":1865.9854716429525,"startY":368.05496144859944,"length":263.11952966838527,"relativeDirection":-1,"text":"Almost forgot…","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-46"],"offsetRatioOnParent":0.7720343213151769,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-45"},"line-46":{"parentId":"line-45","startX":1770.2801643308703,"startY":161.71692318784517,"length":244.76294706096164,"relativeDirection":1,"text":"Press q to switch to a light theme (and back)","textPosRatio":0.5163834218742088,"textPerpOffset":-26.037501829645617,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.8644476315461268,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-46"},"line-47":{"parentId":"line-23","startX":1012.0604079234075,"startY":458.76711521221023,"length":-245.41784107228727,"relativeDirection":1,"text":"H for highlights","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-48"],"offsetRatioOnParent":0.4648832720949293,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-47"},"line-48":{"parentId":"line-47","startX":807.6229756422108,"startY":553.5908687357328,"length":235.82500102185426,"relativeDirection":1,"text":"Shouldn't recangles and highlights slope as the lines?","textPosRatio":0.5538220932608737,"textPerpOffset":-29.890819592062257,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":["line-49"],"offsetRatioOnParent":0.9182623160840919,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-48"},"line-49":{"parentId":"line-48","startX":825.6828746256967,"startY":592.5275195035784,"length":112.07354568255234,"relativeDirection":1,"text":"Yes, TODO","textPosRatio":0.5,"textPerpOffset":-14.989196756911127,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.18200412143400652,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-49"},"line-50":{"parentId":"line-40","startX":1953.0139255444446,"startY":447.6316964308318,"length":-565.8215347979376,"relativeDirection":1,"text":"Although drawing elements and post-its don't respond well. I'll try but might be impossible","textPosRatio":0.4869454709082241,"textPerpOffset":28.55618947118748,"thickness":1.9985595675881502,"color":"var(--theme-schema-line-color)","children":[],"offsetRatioOnParent":0.9346706722322757,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-50"},"line-51":{"parentId":"line-6","startX":529.1994592124721,"startY":377.96660162736185,"length":-254.94569343146205,"relativeDirection":1,"text":"Press Ctrl g and then…","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":["line-52","line-53","line-54","line-55","line-56"],"offsetRatioOnParent":0.893370630179179,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-51"},"line-52":{"parentId":"line-51","startX":320.0724926913029,"startY":474.9654912497355,"length":136.66855649543382,"relativeDirection":1,"text":"r for red","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.9042215086284787,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-52"},"line-53":{"parentId":"line-51","startX":356.18784541397065,"startY":458.2141885808636,"length":140.76716340227938,"relativeDirection":1,"text":"b for blue","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.7480662347927889,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-53"},"line-54":{"parentId":"line-51","startX":401.2961453361222,"startY":437.2917074776971,"length":140.36838815641056,"relativeDirection":1,"text":"y for yellow","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.553027327636141,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-54"},"line-55":{"parentId":"line-51","startX":444.6990030669764,"startY":417.1602577829752,"length":142.33197252731367,"relativeDirection":1,"text":"k for black ","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.36536239781367597,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-55"},"line-56":{"parentId":"line-51","startX":492.216625948131,"startY":395.12026584104586,"length":-269.63686359998724,"relativeDirection":1,"text":"g for green…","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.1599060792776952,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-56"},"line-57":{"parentId":"line-1","startX":280.6157867703408,"startY":940.0926360870757,"length":443.1326206922526,"relativeDirection":1,"text":"Hover on a line and press…","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":["line-58","line-59","line-60","line-61","line-62","line-63","line-66","line-68","line-69","line-70","line-71"],"offsetRatioOnParent":0.36013906650880256,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-57"},"line-58":{"parentId":"line-57","startX":295.45188998500737,"startY":933.211239765574,"length":138.14116878368176,"relativeDirection":1,"text":"r for red","textPosRatio":0.5,"textPerpOffset":-15,"thickness":3,"color":"var(--theme-schema-line-color)","visualColor":"red","textColor":"default","children":[],"offsetRatioOnParent":0.036906137925204245,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-58"},"line-59":{"parentId":"line-57","startX":320.2692829028165,"startY":921.7002443334953,"length":138.14116878368188,"relativeDirection":1,"text":"b for blue","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2.5,"color":"var(--theme-schema-line-color)","visualColor":"blue","textColor":"default","children":[],"offsetRatioOnParent":0.09864162956449149,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-59"},"line-60":{"parentId":"line-57","startX":347.44800373037594,"startY":909.0939994981939,"length":138.1411687836819,"relativeDirection":1,"text":"y for yellow","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2.5,"color":"var(--theme-schema-line-color)","visualColor":"yellow","textColor":"default","children":[],"offsetRatioOnParent":0.16625113625091897,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-60"},"line-61":{"parentId":"line-57","startX":376.58901442082185,"startY":895.5775901777304,"length":138.1411687836818,"relativeDirection":1,"text":"k for black","textPosRatio":0.4822496156216029,"textPerpOffset":-11.430891347404417,"thickness":2.5,"color":"var(--theme-schema-line-color)","visualColor":"black","textColor":"default","children":[],"offsetRatioOnParent":0.2387420150389727,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-61"},"line-62":{"parentId":"line-57","startX":400.8837773887926,"startY":884.3090050175599,"length":138.1411687836818,"relativeDirection":1,"text":"d for default","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2.5,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.29917741778473506,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-62"},"line-63":{"parentId":"line-57","startX":441.89082020864777,"startY":865.2888007541349,"length":138.14116878368168,"relativeDirection":1,"text":"g for green…","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2.5,"color":"var(--theme-schema-line-color)","visualColor":"green","textColor":"default","children":[],"offsetRatioOnParent":0.40118611618191324,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-63"},"line-64":{"parentId":"line-27","startX":1146.1802674222429,"startY":266.0418778486083,"length":109.0909821265611,"relativeDirection":1,"text":"Before drawing!","textPosRatio":0.5145408474937521,"textPerpOffset":-24.00868549125885,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.5870533054158689,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-64"},"line-65":{"parentId":"line-44","startX":1942.2927569016174,"startY":900.5963476817103,"length":267.18397284371565,"relativeDirection":1,"text":"This export can be opened as a native \"Pinta\" file, too","textPosRatio":0.5168065945542513,"textPerpOffset":-28.905325664534733,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.8482439247237331,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"id":"line-65"},"line-66":{"parentId":"line-57","startX":585.8756779169466,"startY":798.5046286673338,"length":138.14116878368185,"relativeDirection":1,"text":"t for task","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.7593613688635054,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"hasCheckbox":true,"isCheckboxChecked":false,"id":"line-66"},"line-68":{"parentId":"line-57","startX":472.00484858104255,"startY":851.321078834909,"length":138.1411687836817,"relativeDirection":1,"text":"v for violet","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2.5,"color":"var(--theme-schema-line-color)","visualColor":"violet","textColor":"default","children":[],"offsetRatioOnParent":0.4760974637584402,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"hasCheckbox":false,"isCheckboxChecked":false,"id":"line-68"},"line-69":{"parentId":"line-57","startX":507.4688293051171,"startY":834.8719005723042,"length":138.14116878368185,"relativeDirection":1,"text":"c for cyan","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2.5,"color":"var(--theme-schema-line-color)","visualColor":"cyan","textColor":"default","children":[],"offsetRatioOnParent":0.5643172978376204,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"hasCheckbox":false,"isCheckboxChecked":false,"id":"line-69"},"line-70":{"parentId":"line-57","startX":542.8264180478081,"startY":818.4720698626745,"length":138.14116878368176,"relativeDirection":1,"text":"m for magenta","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2.5,"color":"var(--theme-schema-line-color)","visualColor":"magenta","textColor":"default","children":[],"offsetRatioOnParent":0.6522724723170219,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"hasCheckbox":false,"isCheckboxChecked":false,"id":"line-70"},"line-71":{"parentId":"line-57","startX":626.0323138319205,"startY":779.8788667222424,"length":138.14116878368176,"relativeDirection":1,"text":"done task","textPosRatio":0.5,"textPerpOffset":-15,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.8592546037814957,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"hasCheckbox":true,"isCheckboxChecked":true,"id":"line-71"},"line-73":{"parentId":"line-1","startX":324.87089110901553,"startY":1035.505436784643,"length":-242.5347988471819,"relativeDirection":1,"text":"Ctrl , / Ctrl . while hovering to change thickness","textPosRatio":0.5017613322046907,"textPerpOffset":-26.75109765086382,"thickness":2,"color":"var(--theme-schema-line-color)","visualColor":"default","textColor":"default","children":[],"offsetRatioOnParent":0.10444915812700993,"fontSize":16,"isBold":false,"isCentered":true,"linkUrl":null,"hasCheckbox":false,"isCheckboxChecked":false,"id":"line-73"}},"postIts":{"postit-0":{"id":"postit-0","title":"","content":"Hello!","xPercent":51.244642356677986,"yPercent":54.640671301846076,"color":"yellow","fontSizePercent":100},"postit-1":{"id":"postit-1","title":"","content":"I particularly\nlike this one","xPercent":52.49024382648771,"yPercent":74.61669623591465,"color":"transp","fontSizePercent":100},"postit-2":{"id":"postit-2","title":"","content":"Big!","xPercent":55.46214928533616,"yPercent":80.23016063294173,"color":"blue","fontSizePercent":200}},"drawings":[{"id":"rect-1","kind":"rect","type":"rect","colorName":"red","xPercent":40.44159287078928,"yPercent":15.62934548070007,"widthPercent":1.5532917213782977,"heightPercent":3.7592903380484293},{"id":"arrow-2","kind":"arrow","colorName":"red","x1Percent":53.186550584662484,"y1Percent":7.803883960680892,"x2Percent":47.53097559913125,"y2Percent":8.571086070486695},{"id":"highlight-5","kind":"highlight","type":"highlight","colorName":"green","xPercent":33.2725541567356,"yPercent":35.6533205466315,"widthPercent":4.699703156990746,"heightPercent":5.677295612562935}],"mainLineReference":{"id":"line-0","length":2478.1976983839263}}
 PINTA_DIAGRAM_DATA_END -->
   </body>
 </html>
