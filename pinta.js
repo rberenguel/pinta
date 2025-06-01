@@ -37,6 +37,7 @@ let launchHandledByQueue = false;
 let helpModal;
 let closeHelpModalButton;
 
+let version = "";
 let loadedCSSText = "";
 
 async function handleLaunchQueueFiles(launchParams) {
@@ -150,6 +151,21 @@ async function fetchAppStyles() {
     }
   } catch (error) {
     console.error("Error fetching style.css for export:", error);
+  }
+}
+
+async function fetchSelfManifest() {
+  try {
+    const response = await fetch("./manifest.json"); // Assumes style.css is in the same directory as index.html
+    if (response.ok) {
+      let loadedManifest = await response.text();
+      version = JSON.parse(loadedManifest).version;
+      console.log("Version fetched.");
+    } else {
+      console.warn("Failed to fetch manifest", response.statusText);
+    }
+  } catch (error) {
+    console.error("Error fetching manifest: ", error);
   }
 }
 
@@ -392,6 +408,9 @@ function handleKeyDown(event) {
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     fetchAppStyles();
+    try {
+      fetchSelfManifest();
+    } catch (e) {}
     helpModal = document.getElementById("helpModal");
     closeHelpModalButton = document.getElementById("closeHelpModalButton");
     if (closeHelpModalButton) {
@@ -792,6 +811,14 @@ const commands = [
     title: "Export to static HTML",
     lambda: () => exportToStaticHTML(loadedCSSText),
   },
+  {
+    title: "Version",
+    lambda: () => {
+      info.innerHTML = `v${version}`;
+      info.classList.add("fades");
+    },
+  },
 ];
 
+metaP.maxCommands = 10;
 metaP.bind(commands);
