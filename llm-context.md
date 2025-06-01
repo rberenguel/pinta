@@ -37,7 +37,47 @@ Pinta's functionality, primarily managed in `pinta.js` and `style.css`, revolves
 
 ## 3. What We Have Been Doing Recently
 
-Recent efforts focused on feature enhancements, core logic refactoring, and codebase modularization:
+To make Post-it note positions relative to the main line, the following changes were implemented:
+
+### 1. Data Storage for Post-it Notes:
+
+- **Previous method:** Post-it positions were stored as `xPercent` and `yPercent`, representing their top-left corner's percentage-based offset within the main editor container.
+- **New method (on save):**
+  - The Post-it's center coordinates are now calculated relative to the main line's start point and orientation.
+  - Two new ratios are stored in the `postIts` object within the saved JSON data:
+    - `offsetRatioOnMainLine`: The projected distance of the Post-it's center along the main line's axis, normalized by the main line's current length.
+    - `perpDistRatioFromMainLine`: The perpendicular distance of the Post-it's center from the main line, also normalized by the main line's current length.
+  - The Post-it's actual `offsetWidth` and `offsetHeight` at the time of saving are stored as `savedWidth` and `savedHeight`.
+  - The old `xPercent` and `yPercent` properties are removed from the saved data for Post-its if the new relative positioning is successful.
+
+### 2. Saving Process (`js/files.js` - `getCurrentDiagramDataForSave`):
+
+- When a diagram is saved, for each Post-it note:
+  1.  Its current absolute center pixel coordinates (cx, cy) are determined, taking into account its `style.left`, `style.top`, `offsetWidth`, `offsetHeight`, and any active drag translations (`data-x`, `data-y`).
+  2.  The main line's current geometry (start coordinates, angle, and length) is retrieved from `state.linesStore`.
+  3.  A vector from the main line's start to the Post-it's center is calculated.
+  4.  This vector is projected onto the main line's axis and its perpendicular axis.
+  5.  These projected distances are then divided by the main line's length to get `offsetRatioOnMainLine` and `perpDistRatioFromMainLine`.
+  6.  The Post-it's current `offsetWidth` and `offsetHeight` are also saved.
+
+### 3. Loading Process (`js/files.js` - `_processLoadedDiagramData`):
+
+- When a diagram is loaded:
+  1.  The main line is reconstructed first, based on the current viewport dimensions. Its new `startX`, `startY`, `length`, and `angle` are determined.
+  2.  For each Post-it note from the saved data:
+      - The saved `offsetRatioOnMainLine`, `perpDistRatioFromMainLine`, `savedWidth`, and `savedHeight` are used.
+      - The absolute distance along the _current_ main line and the perpendicular distance are calculated by multiplying the ratios with the _current_ main line's length.
+      - These distances are used to determine the target center coordinates (`targetCenterX`, `targetCenterY`) of the Post-it relative to the current main line.
+      - The top-left coordinates (`styleLeft`, `styleTop`) for the Post-it are then calculated using `targetCenterX - savedWidth / 2` and `targetCenterY - savedHeight / 2`.
+      - This `noteData` (now including `styleLeft` and `styleTop`) is passed to `createPostIt`.
+
+### 4. Post-it Creation (`js/postit.js` - `createPostIt`):
+
+- The `createPostIt` function was updated to prioritize using `noteData.styleLeft` and `noteData.styleTop` (pixel values) for positioning if they are provided (which they will be during the loading process).
+- If these direct style properties are not available (e.g., when a new Post-it is created via user interaction, or for backward compatibility with old files), it falls back to using `noteData.xPercent`/`yPercent` or default pixel values.
+- When a Post-it is loaded, `_processLoadedDiagramData` populates `state.postItsStore` with the original loaded data (including the relative ratios and saved dimensions) before `createPostIt` is called. `createPostIt` then uses the calculated `styleLeft`/`styleTop` for DOM positioning but ensures the core data in `state.postItsStore` retains the relative positioning information for subsequent saves.
+
+This ensures that Post-it notes maintain their position relative to the diagram's main structural element (the main line) when a file is saved and reloaded, regardless of changes in viewport size between sessions.
 
 - **Feature Enhancements & Additions:**
 

@@ -65,49 +65,104 @@ async function clearLastFileHandle() {
 }
 
 function getCurrentDiagramDataForSave() {
-  for (const id in state.postItsStore) {
-    const postItElement = document.getElementById(id);
-    if (postItElement) {
-      const editorRect = editorContainer.getBoundingClientRect();
-      if (editorRect.width > 0) {
-        state.postItsStore[id].xPercent =
-          (parseFloat(postItElement.style.left) / editorRect.width) * 100;
-      }
-      if (editorRect.height > 0) {
-        state.postItsStore[id].yPercent =
-          (parseFloat(postItElement.style.top) / editorRect.height) * 100;
-      }
-      const contentArea = postItElement.querySelector(".postit-content-area");
-      if (contentArea) {
-        state.postItsStore[id].content = contentArea.innerHTML;
-      }
-      const dragHandle = postItElement.querySelector(".postit-drag-handle");
-      if (dragHandle) {
-        state.postItsStore[id].title = dragHandle.textContent || "";
-      }
-    }
-  }
-
   const mainLineId = Object.keys(state.linesStore).find(
-    (id) => state.linesStore[id].parentId === null,
+    (id) => state.linesStore[id] && state.linesStore[id].parentId === null,
   );
-
-  const drawingsToSave = Object.values(state.drawingElementsStore)
-    .map((el) => el.toSaveData())
-    .filter((d) => d !== null);
+  const mainLineRef =
+    mainLineId && state.linesStore[mainLineId]
+      ? {
+          id: mainLineId,
+          length: state.linesStore[mainLineId].length,
+        }
+      : null;
 
   const diagramData = {
     lines: state.linesStore,
-    postIts: state.postItsStore,
-    drawings: drawingsToSave,
-    mainLineReference:
-      mainLineId && state.linesStore[mainLineId]
-        ? {
-            id: mainLineId,
-            length: state.linesStore[mainLineId].length,
-          }
-        : null,
+    postIts: {},
+    drawings: [],
+    mainLineReference: mainLineRef,
   };
+
+  for (const id in state.postItsStore) {
+    const postItElement = document.getElementById(id);
+    const postItData = { ...state.postItsStore[id] };
+
+    if (postItElement) {
+      const contentArea = postItElement.querySelector(".postit-content-area");
+      if (contentArea) {
+        postItData.content = contentArea.innerHTML;
+      }
+      const dragHandle = postItElement.querySelector(".postit-drag-handle");
+      if (dragHandle) {
+        postItData.title = dragHandle.textContent || "";
+      }
+
+      const currentX =
+        (parseFloat(postItElement.style.left) || 0) +
+        (parseFloat(postItElement.getAttribute("data-x")) || 0);
+      const currentY =
+        (parseFloat(postItElement.style.top) || 0) +
+        (parseFloat(postItElement.getAttribute("data-y")) || 0);
+
+      const postItCenterX = currentX + postItElement.offsetWidth / 2;
+      const postItCenterY = currentY + postItElement.offsetHeight / 2;
+
+      postItData.savedWidth = postItElement.offsetWidth;
+      postItData.savedHeight = postItElement.offsetHeight;
+
+      if (mainLineRef && state.linesStore[mainLineRef.id]) {
+        const mainLine = state.linesStore[mainLineRef.id];
+        const mainLineStartX = mainLine.startX;
+        const mainLineStartY = mainLine.startY;
+        const mainLineAngleRad = mainLine.angle * (Math.PI / 180);
+        const mainLineLength = mainLine.length;
+
+        if (Math.abs(mainLineLength) > 1e-6) {
+          const vecX = postItCenterX - mainLineStartX;
+          const vecY = postItCenterY - mainLineStartY;
+
+          const mainLineDirX = Math.cos(mainLineAngleRad);
+          const mainLineDirY = Math.sin(mainLineAngleRad);
+
+          const distAlongMainLine = vecX * mainLineDirX + vecY * mainLineDirY;
+          postItData.offsetRatioOnMainLine = distAlongMainLine / mainLineLength;
+
+          const perpDirX = -mainLineDirY;
+          const perpDirY = mainLineDirX;
+          const perpDistFromMainLine = vecX * perpDirX + vecY * perpDirY;
+          postItData.perpDistRatioFromMainLine =
+            perpDistFromMainLine / mainLineLength;
+
+          delete postItData.xPercent;
+          delete postItData.yPercent;
+        } else {
+          const editorRect = editorContainer.getBoundingClientRect();
+          if (editorRect.width > 0)
+            postItData.xPercent = (currentX / editorRect.width) * 100;
+          if (editorRect.height > 0)
+            postItData.yPercent = (currentY / editorRect.height) * 100;
+          console.warn(
+            "Main line has zero length during save, PostIt saved with editor %",
+          );
+        }
+      } else {
+        const editorRect = editorContainer.getBoundingClientRect();
+        if (editorRect.width > 0)
+          postItData.xPercent = (currentX / editorRect.width) * 100;
+        if (editorRect.height > 0)
+          postItData.yPercent = (currentY / editorRect.height) * 100;
+        console.warn(
+          "No main line reference during save, PostIt saved with editor %",
+        );
+      }
+    }
+    diagramData.postIts[id] = postItData;
+  }
+
+  diagramData.drawings = Object.values(state.drawingElementsStore)
+    .map((el) => el.toSaveData())
+    .filter((d) => d !== null);
+
   return diagramData;
 }
 
@@ -216,7 +271,6 @@ async function triggerLoadDiagram() {
 
 function _processLoadedDiagramData(fileContentString) {
   let jsonToParse = fileContentString;
-
   const trimmedContent = fileContentString.trim();
 
   if (
@@ -249,17 +303,14 @@ function _processLoadedDiagramData(fileContentString) {
       savedData !== null &&
       savedData.lines
     ) {
-      editorContainer.innerHTML = "";
+      editorContainer.innerHTML = ""; // Clear existing content
       const newdrawingCanvas = document.createElementNS(SVG_NS, "svg");
       newdrawingCanvas.id = "drawingCanvas";
       newdrawingCanvas.setAttribute("width", "100%");
       newdrawingCanvas.setAttribute("height", "100%");
       newdrawingCanvas.innerHTML = `<defs>
                           <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                              <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
-                              <feOffset dx="1" dy="1" result="offsetBlur"/>
-                              <feMerge><feMergeNode in="offsetBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                          </filter>
+                              <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/><feOffset dx="1" dy="1" result="offsetBlur"/><feMerge><feMergeNode in="offsetBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                           <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--red)" /></marker>
                           <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--orange)" /></marker>
                           <marker id="arrowhead-yellow" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--yellow)" /></marker>
@@ -286,16 +337,11 @@ function _processLoadedDiagramData(fileContentString) {
       const loadedDrawingsPart = savedData.drawings || [];
 
       const containerRect = editorContainer.getBoundingClientRect();
-      if (
-        !editorContainer ||
-        containerRect.width === 0 ||
-        containerRect.height === 0
-      ) {
-        console.error(
-          "Pinta: Editor container not ready during data processing.",
-        );
+      if (containerRect.width === 0 || containerRect.height === 0) {
+        console.error("Editor container has zero dimensions during load.");
         return;
       }
+
       const safeMargin = Math.max(
         50,
         Math.min(containerRect.width, containerRect.height) * 0.1,
@@ -304,14 +350,12 @@ function _processLoadedDiagramData(fileContentString) {
       const p1y = containerRect.height - safeMargin;
       const p2x = containerRect.width - safeMargin;
       const p2y = safeMargin;
-      const dx = p2x - p1x;
-      const dy = p2y - p1y;
-      const currentDisplayMainLength = Math.sqrt(dx * dx + dy * dy);
-      const currentDisplayMainAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      const currentDisplayMainLength = Math.sqrt(
+        (p2x - p1x) ** 2 + (p2y - p1y) ** 2,
+      );
+      const currentDisplayMainAngle =
+        (Math.atan2(p2y - p1y, p2x - p1x) * 180) / Math.PI;
       state.currentMainLineAngle = currentDisplayMainAngle;
-      const currentDisplayMainStartX = p1x;
-      const currentDisplayMainStartY = p1y;
-      const currentDisplayMainThickness = MAIN_LINE_DEFAULT_THICKNESS;
 
       const scaleFactor =
         mainLineRef && mainLineRef.length !== 0 && currentDisplayMainLength > 0
@@ -324,24 +368,32 @@ function _processLoadedDiagramData(fileContentString) {
         a.parentId === null ? -1 : b.parentId === null ? 1 : 0,
       );
 
-      const mainLineLoadedId = mainLineRef
-        ? mainLineRef.id
-        : tempLinesArray.find((l) => l.parentId === null)?.id;
+      const mainLineLoadedData = mainLineRef
+        ? loadedLinesPart[mainLineRef.id]
+        : tempLinesArray.find((l) => l.parentId === null);
+
+      if (!mainLineLoadedData) {
+        console.error(
+          "Pinta: Main line data not found in loaded file. Cannot proceed with relative positioning for Post-its.",
+        );
+        return;
+      }
+      const mainLineCurrentId = mainLineLoadedData.id;
 
       tempLinesArray.forEach((loadedLine) => {
         const numId = parseInt(loadedLine.id.split("-")[1]);
         if (!isNaN(numId) && numId > maxLineIdNum) maxLineIdNum = numId;
 
         let newLineData = { ...loadedLine };
-        if (mainLineLoadedId && loadedLine.id === mainLineLoadedId) {
-          newLineData.startX = currentDisplayMainStartX;
-          newLineData.startY = currentDisplayMainStartY;
+        if (loadedLine.id === mainLineCurrentId) {
+          newLineData.startX = p1x;
+          newLineData.startY = p1y;
           newLineData.length = Math.max(
             currentDisplayMainLength,
             MIN_LINE_LENGTH,
           );
-          newLineData.angle = currentDisplayMainAngle;
-          newLineData.thickness = currentDisplayMainThickness;
+          newLineData.angle = currentDisplayMainAngle; // Crucial: use current display angle
+          newLineData.thickness = MAIN_LINE_DEFAULT_THICKNESS;
         } else {
           let newScaledLength =
             (loadedLine.length || CHILD_LINE_DEFAULT_THICKNESS * 10) *
@@ -361,29 +413,77 @@ function _processLoadedDiagramData(fileContentString) {
       });
       state.lineIdCounter = maxLineIdNum + 1;
 
-      const mainLineToRender = mainLineLoadedId
-        ? state.linesStore[mainLineLoadedId]
-        : null;
-      if (mainLineToRender) {
-        renderLine(mainLineToRender);
-        updateChildrenPositions(mainLineLoadedId);
-      } else if (Object.keys(state.linesStore).length > 0) {
+      if (state.linesStore[mainLineCurrentId]) {
+        renderLine(state.linesStore[mainLineCurrentId]);
+        updateChildrenPositions(mainLineCurrentId);
+      } else {
         console.warn(
-          "Pinta: Main line could not be identified, rendering all loaded lines directly. This might lead to incorrect initial positions for child lines if they rely on dynamic parent positioning.",
+          "Pinta: Main line not found after processing lines. Rendering all as is.",
         );
         for (const id in state.linesStore) renderLine(state.linesStore[id]);
-      } else {
-        console.log(
-          "Pinta: No lines in loaded file/data. Initializing fresh (or this might be an error if data was expected).",
-        );
       }
 
       let maxPostItIdNum = -1;
+      const currentMainLineForPostIts = state.linesStore[mainLineCurrentId];
+
       for (const id in loadedPostItsPart) {
-        const noteData = loadedPostItsPart[id];
+        const originalNoteData = loadedPostItsPart[id];
         const numId = parseInt(id.split("-")[1]);
         if (!isNaN(numId) && numId > maxPostItIdNum) maxPostItIdNum = numId;
-        createPostIt(noteData);
+
+        state.postItsStore[id] = { ...originalNoteData };
+
+        const noteDataForCreate = { ...originalNoteData };
+
+        if (
+          currentMainLineForPostIts &&
+          noteDataForCreate.offsetRatioOnMainLine !== undefined &&
+          noteDataForCreate.perpDistRatioFromMainLine !== undefined &&
+          noteDataForCreate.savedWidth !== undefined &&
+          noteDataForCreate.savedHeight !== undefined &&
+          Math.abs(currentMainLineForPostIts.length) > 1e-6
+        ) {
+          const cmLineStartX = currentMainLineForPostIts.startX;
+          const cmLineStartY = currentMainLineForPostIts.startY;
+          const cmLineAngleRad =
+            currentMainLineForPostIts.angle * (Math.PI / 180);
+          const cmLineLength = currentMainLineForPostIts.length;
+
+          const distAlongCurrentMain =
+            noteDataForCreate.offsetRatioOnMainLine * cmLineLength;
+          const perpDistFromCurrentMain =
+            noteDataForCreate.perpDistRatioFromMainLine * cmLineLength;
+
+          const pointOnMainLineX =
+            cmLineStartX + distAlongCurrentMain * Math.cos(cmLineAngleRad);
+          const pointOnMainLineY =
+            cmLineStartY + distAlongCurrentMain * Math.sin(cmLineAngleRad);
+
+          const perpDirX = -Math.sin(cmLineAngleRad);
+          const perpDirY = Math.cos(cmLineAngleRad);
+
+          const targetCenterX =
+            pointOnMainLineX + perpDistFromCurrentMain * perpDirX;
+          const targetCenterY =
+            pointOnMainLineY + perpDistFromCurrentMain * perpDirY;
+
+          noteDataForCreate.styleLeft = `${targetCenterX - noteDataForCreate.savedWidth / 2}px`;
+          noteDataForCreate.styleTop = `${targetCenterY - noteDataForCreate.savedHeight / 2}px`;
+        } else if (
+          noteDataForCreate.xPercent !== undefined &&
+          noteDataForCreate.yPercent !== undefined
+        ) {
+          if (containerRect.width > 0)
+            noteDataForCreate.styleLeft = `${(noteDataForCreate.xPercent / 100) * containerRect.width}px`;
+          else noteDataForCreate.styleLeft = "10px";
+          if (containerRect.height > 0)
+            noteDataForCreate.styleTop = `${(noteDataForCreate.yPercent / 100) * containerRect.height}px`;
+          else noteDataForCreate.styleTop = "10px";
+        } else {
+          noteDataForCreate.styleLeft = "10px";
+          noteDataForCreate.styleTop = "10px";
+        }
+        createPostIt(noteDataForCreate);
       }
       state.postItIdCounter = maxPostItIdNum + 1;
 
@@ -392,7 +492,7 @@ function _processLoadedDiagramData(fileContentString) {
         const numId = parseInt(shapeData.id.split("-")[1]);
         if (!isNaN(numId) && numId > maxDrawingIdNum) maxDrawingIdNum = numId;
 
-        const currentEditorRect = editorContainer.getBoundingClientRect(); // Use current rect
+        const currentEditorRect = editorContainer.getBoundingClientRect();
         let shape;
         if (shapeData.kind === "rect" || shapeData.kind === "highlight") {
           const x = (shapeData.xPercent / 100) * currentEditorRect.width;

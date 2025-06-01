@@ -10,7 +10,6 @@ import {
 
 export { createPostIt, deletePostIt };
 
-// --- Post-it Functions ---
 function createPostIt(noteData = {}) {
   const id = noteData.id || `postit-${state.postItIdCounter++}`;
   const postItElement = document.createElement("div");
@@ -25,14 +24,19 @@ function createPostIt(noteData = {}) {
   postItElement.dataset.color = initialColor;
 
   const editorRect = editorContainer.getBoundingClientRect();
-  if (noteData.xPercent !== undefined && editorRect.width > 0) {
+  if (noteData.styleLeft !== undefined) {
+    postItElement.style.left = noteData.styleLeft;
+  } else if (noteData.xPercent !== undefined && editorRect.width > 0) {
     postItElement.style.left = `${
       (noteData.xPercent / 100) * editorRect.width
     }px`;
   } else {
     postItElement.style.left = noteData.left || "10px";
   }
-  if (noteData.yPercent !== undefined && editorRect.height > 0) {
+
+  if (noteData.styleTop !== undefined) {
+    postItElement.style.top = noteData.styleTop;
+  } else if (noteData.yPercent !== undefined && editorRect.height > 0) {
     postItElement.style.top = `${
       (noteData.yPercent / 100) * editorRect.height
     }px`;
@@ -69,7 +73,6 @@ function createPostIt(noteData = {}) {
     if (state.postItsStore[id])
       state.postItsStore[id].content = contentArea.innerHTML;
   });
-  //contentArea.addEventListener("click", (e) => handlePostItClick(e));
   contentArea.addEventListener("keydown", (e) =>
     handlePostItKeyDown(e, postItElement, contentArea),
   );
@@ -110,15 +113,18 @@ function createPostIt(noteData = {}) {
           target.style.transform = "translate(0px, 0px)";
           target.setAttribute("data-x", "0");
           target.setAttribute("data-y", "0");
+
           const noteId = target.id;
           if (state.postItsStore[noteId]) {
             const currentEditorRect = editorContainer.getBoundingClientRect();
-            if (currentEditorRect.width > 0)
+            if (currentEditorRect.width > 0) {
               state.postItsStore[noteId].xPercent =
                 (parseFloat(target.style.left) / currentEditorRect.width) * 100;
-            if (currentEditorRect.height > 0)
+            }
+            if (currentEditorRect.height > 0) {
               state.postItsStore[noteId].yPercent =
                 (parseFloat(target.style.top) / currentEditorRect.height) * 100;
+            }
           }
         },
       },
@@ -144,7 +150,14 @@ function createPostIt(noteData = {}) {
       color: initialColor,
       fontSizePercent: fontSizePercent,
     };
+  } else {
+    state.postItsStore[id].title = dragHandle.textContent || "";
+    state.postItsStore[id].content = contentArea.innerHTML;
+    state.postItsStore[id].color = postItElement.dataset.color;
+    state.postItsStore[id].fontSizePercent =
+      parseFloat(contentArea.dataset.fontSizePercent) || 100;
   }
+
   const numId = parseInt(id.split("-")[1]);
   if (!isNaN(numId) && numId >= state.postItIdCounter) {
     state.postItIdCounter = numId + 1;
@@ -187,22 +200,20 @@ function handlePostItKeyDown(e, postItElement, contentArea) {
       if (state.postItsStore[postItElement.id])
         state.postItsStore[postItElement.id].color = newColor;
     }
-    if (isCtrlOrCmd) {
-      if (e.key === "." || e.key === ",") {
-        preventDefault = true;
-        let currentPercent =
-          parseFloat(contentArea.dataset.fontSizePercent) || 100;
-        let increment = 10;
-        let newPercent =
-          e.key === "."
-            ? currentPercent + increment
-            : currentPercent - increment;
-        newPercent = Math.max(50, Math.min(200, newPercent));
-        contentArea.style.fontSize = newPercent + "%";
-        contentArea.dataset.fontSizePercent = newPercent;
-        if (state.postItsStore[postItElement.id])
-          state.postItsStore[postItElement.id].fontSizePercent = newPercent;
-      }
+  }
+  if (isCtrlOrCmd) {
+    if (e.key === "." || e.key === ",") {
+      preventDefault = true;
+      let currentPercent =
+        parseFloat(contentArea.dataset.fontSizePercent) || 100;
+      let increment = 10;
+      let newPercent =
+        e.key === "." ? currentPercent + increment : currentPercent - increment;
+      newPercent = Math.max(50, Math.min(200, newPercent));
+      contentArea.style.fontSize = newPercent + "%";
+      contentArea.dataset.fontSizePercent = newPercent;
+      if (state.postItsStore[postItElement.id])
+        state.postItsStore[postItElement.id].fontSizePercent = newPercent;
     }
   }
 
@@ -253,6 +264,7 @@ function handlePostItPaste(e, contentArea) {
       }
     } catch (domError) {
       console.error("Error creating link on paste:", domError);
+      document.execCommand("insertText", false, pastedText);
     }
   }
 }
@@ -276,6 +288,6 @@ function handleDeletePostIt(event) {
   message += " This action cannot be undone.";
   deleteModalMessage.textContent = message;
   deleteModal.style.display = "flex";
-  // Get out of drawing modes
+
   resetDrawing(state);
 }

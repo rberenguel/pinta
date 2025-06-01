@@ -124,11 +124,15 @@ but I'm not your doctor or that kind of doctor).
 
 - [ ] Better UX of shape selection (e.g. explicit selection state).
 - [ ] Add the ellipse tool.
-- [ ] Better positioning of post its / drawn elements
+- [ ] Better positioning of drawn elements
 
 ---
 
 ## Changelog
+
+### 0.3.5
+
+- Post it positioning is now relative to the mainline, making it scale to different screens.
 
 ### 0.3.4
 
