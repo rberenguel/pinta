@@ -366,9 +366,21 @@ body {
   color: #333;
 }
 
-.postit-color-transp {
+.postit-color-transp-0 {
   background-color: var(--postit-transp-bg);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(1px);
+  color: var(--theme-postit-transp-text);
+}
+
+.postit-color-transp-1 {
+  background-color: var(--postit-transp-bg);
+  backdrop-filter: blur(2px);
+  color: var(--theme-postit-transp-text);
+}
+
+.postit-color-transp-2 {
+  background-color: var(--postit-transp-bg);
+  backdrop-filter: blur(4px);
   color: var(--theme-postit-transp-text);
 }
 

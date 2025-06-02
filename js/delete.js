@@ -1,4 +1,4 @@
-export { handleDeleteItemClick };
+export { handleDeleteItemClick, deleteItem };
 
 import {
   state,
@@ -12,9 +12,7 @@ import { deleteDrawingElement } from "./drawing.js";
 import { deletePostIt } from "./postit.js";
 import { deleteLineRecursive } from "./lines.js";
 
-function handleDeleteItemClick(event) {
-  state.itemToDeleteId = event.target.dataset.itemId;
-  state.itemTypeToDelete = event.target.dataset.itemType;
+function deleteItem() {
   let itemName = "this item";
   let descendantCount = 0;
   if (state.itemTypeToDelete === "line") {
@@ -45,6 +43,12 @@ function handleDeleteItemClick(event) {
   state.drawingCanvas.style.pointerEvents = "none";
   state.drawingCanvas.style.cursor = "default";
   state.colorChangeModeActive = false;
+}
+
+function handleDeleteItemClick(event) {
+  state.itemToDeleteId = event.target.dataset.itemId;
+  state.itemTypeToDelete = event.target.dataset.itemType;
+  deleteItem();
 }
 confirmDeleteButton.onclick = () => {
   if (state.itemToDeleteId && state.itemTypeToDelete === "line")

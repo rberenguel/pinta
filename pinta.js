@@ -242,6 +242,21 @@ function handleKeyDown(event) {
     deleteModal.style.display === "flex" ||
     state.linkModal?.style.display === "flex";
 
+  if (deleteModal.style.display === "flex") {
+    console.log(event.key);
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      document.getElementById("confirmDeleteButton").click();
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      document.getElementById("cancelDeleteButton").click();
+      return;
+    }
+  }
+
   if (
     isEditingText &&
     !event.target.classList.contains("postit-content-area")
@@ -512,45 +527,160 @@ document.addEventListener("DOMContentLoaded", async () => {
 let resizeTimeout;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimeout);
-  Object.values(state.postItsStore).forEach((noteData) => {
-    const el = document.getElementById(noteData.id);
-    if (el) {
-      const editorRect = editorContainer.getBoundingClientRect();
-      if (editorRect.width > 0)
-        el.style.left = `${(noteData.xPercent / 100) * editorRect.width}px`;
-      if (editorRect.height > 0)
-        el.style.top = `${(noteData.yPercent / 100) * editorRect.height}px`;
-    }
-  });
+  resizeTimeout = setTimeout(() => {
+    const editorRect = editorContainer.getBoundingClientRect();
+    if (editorRect.width === 0 || editorRect.height === 0) return;
 
-  Object.values(state.drawingElementsStore).forEach((shape) => {
-    if (shape.toSaveData) {
-      const saved = shape.toSaveData();
-      if (!saved) return;
-      const editorRect = editorContainer.getBoundingClientRect();
-      if (editorRect.width === 0 || editorRect.height === 0) return;
+    const mainLineId = Object.keys(state.linesStore).find(
+      (id) => state.linesStore[id] && state.linesStore[id].parentId === null,
+    );
+    const mainLine = mainLineId ? state.linesStore[mainLineId] : null;
 
-      if (shape.kind === "rect" || shape.kind === "highlight") {
-        shape.x = (saved.xPercent / 100) * editorRect.width;
-        shape.y = (saved.yPercent / 100) * editorRect.height;
-        shape.width = (saved.widthPercent / 100) * editorRect.width;
-        shape.height = (saved.heightPercent / 100) * editorRect.height;
-        shape.element.setAttribute("x", shape.x);
-        shape.element.setAttribute("y", shape.y);
-        shape.element.setAttribute("width", shape.width);
-        shape.element.setAttribute("height", shape.height);
-      } else if (shape.kind === "arrow") {
-        shape.x1 = (saved.x1Percent / 100) * editorRect.width;
-        shape.y1 = (saved.y1Percent / 100) * editorRect.height;
-        shape.x2 = (saved.x2Percent / 100) * editorRect.width;
-        shape.y2 = (saved.y2Percent / 100) * editorRect.height;
-        shape.element.setAttribute("x1", shape.x1);
-        shape.element.setAttribute("y1", shape.y1);
-        shape.element.setAttribute("x2", shape.x2);
-        shape.element.setAttribute("y2", shape.y2);
+    Object.values(state.postItsStore).forEach((noteData) => {
+      const el = document.getElementById(noteData.id);
+      if (el) {
+        if (
+          mainLine &&
+          noteData.offsetRatioOnMainLine !== undefined &&
+          noteData.perpDistRatioFromMainLine !== undefined &&
+          noteData.savedWidth !== undefined &&
+          noteData.savedHeight !== undefined &&
+          Math.abs(mainLine.length) > 1e-6
+        ) {
+          const cmLineStartX = mainLine.startX;
+          const cmLineStartY = mainLine.startY;
+          const cmLineAngleRad = mainLine.angle * (Math.PI / 180);
+          const cmLineLength = mainLine.length;
+          const distAlongCurrentMain =
+            noteData.offsetRatioOnMainLine * cmLineLength;
+          const perpDistFromCurrentMain =
+            noteData.perpDistRatioFromMainLine * cmLineLength;
+          const pointOnMainLineX =
+            cmLineStartX + distAlongCurrentMain * Math.cos(cmLineAngleRad);
+          const pointOnMainLineY =
+            cmLineStartY + distAlongCurrentMain * Math.sin(cmLineAngleRad);
+          const perpDirX = -Math.sin(cmLineAngleRad);
+          const perpDirY = Math.cos(cmLineAngleRad);
+          const targetCenterX =
+            pointOnMainLineX + perpDistFromCurrentMain * perpDirX;
+          const targetCenterY =
+            pointOnMainLineY + perpDistFromCurrentMain * perpDirY;
+          el.style.left = `${targetCenterX - noteData.savedWidth / 2}px`;
+          el.style.top = `${targetCenterY - noteData.savedHeight / 2}px`;
+        } else if (
+          noteData.xPercent !== undefined &&
+          noteData.yPercent !== undefined
+        ) {
+          el.style.left = `${(noteData.xPercent / 100) * editorRect.width}px`;
+          el.style.top = `${(noteData.yPercent / 100) * editorRect.height}px`;
+        }
       }
-    }
-  });
+    });
+
+    Object.values(state.drawingElementsStore).forEach((shape) => {
+      if (shape.toSaveData) {
+        const saved = shape.toSaveData();
+        if (!saved) return;
+
+        let absoluteX, absoluteY, absoluteWidth, absoluteHeight;
+        let x1, y1, x2, y2;
+
+        if (shape.kind === "rect" || shape.kind === "highlight") {
+          if (
+            mainLine &&
+            saved.xOffsetRatio !== undefined &&
+            Math.abs(mainLine.length) > 1e-6
+          ) {
+            const cmLineStartX = mainLine.startX;
+            const cmLineStartY = mainLine.startY;
+            const cmLineAngleRad = mainLine.angle * (Math.PI / 180);
+            const cmLineLength = mainLine.length;
+            const cosA = Math.cos(cmLineAngleRad);
+            const sinA = Math.sin(cmLineAngleRad);
+            const perpDirX = -sinA;
+            const perpDirY = cosA;
+
+            const distAlongMain = saved.xOffsetRatio * cmLineLength;
+            const perpDist = saved.yPerpDistRatio * cmLineLength;
+            absoluteX =
+              cmLineStartX + distAlongMain * cosA + perpDist * perpDirX;
+            absoluteY =
+              cmLineStartY + distAlongMain * sinA + perpDist * perpDirY;
+            absoluteWidth = saved.widthRatio * Math.abs(cmLineLength);
+            absoluteHeight = saved.heightRatio * Math.abs(cmLineLength);
+          } else if (saved.xPercent !== undefined) {
+            absoluteX = (saved.xPercent / 100) * editorRect.width;
+            absoluteY = (saved.yPercent / 100) * editorRect.height;
+            absoluteWidth = (saved.widthPercent / 100) * editorRect.width;
+            absoluteHeight = (saved.heightPercent / 100) * editorRect.height;
+          } else {
+            return;
+          }
+
+          shape.x = absoluteX;
+          shape.y = absoluteY;
+          shape.width = absoluteWidth;
+          shape.height = absoluteHeight;
+          if (shape.element) {
+            shape.element.setAttribute("x", shape.x);
+            shape.element.setAttribute("y", shape.y);
+            shape.element.setAttribute("width", shape.width);
+            shape.element.setAttribute("height", shape.height);
+          }
+          if (typeof shape._applyRotation === "function") {
+            shape._applyRotation();
+          }
+        } else if (shape.kind === "arrow") {
+          if (
+            mainLine &&
+            saved.x1OffsetRatio !== undefined &&
+            Math.abs(mainLine.length) > 1e-6
+          ) {
+            const cmLineStartX = mainLine.startX;
+            const cmLineStartY = mainLine.startY;
+            const cmLineAngleRad = mainLine.angle * (Math.PI / 180);
+            const cmLineLength = mainLine.length;
+            const cosA = Math.cos(cmLineAngleRad);
+            const sinA = Math.sin(cmLineAngleRad);
+            const perpDirX = -sinA;
+            const perpDirY = cosA;
+
+            const distAlongMain1 = saved.x1OffsetRatio * cmLineLength;
+            const perpDist1 = saved.y1PerpDistRatio * cmLineLength;
+            const pointOnMainLine1X = cmLineStartX + distAlongMain1 * cosA;
+            const pointOnMainLine1Y = cmLineStartY + distAlongMain1 * sinA;
+            x1 = pointOnMainLine1X + perpDist1 * perpDirX;
+            y1 = pointOnMainLine1Y + perpDist1 * perpDirY;
+
+            const distAlongMain2 = saved.x2OffsetRatio * cmLineLength;
+            const perpDist2 = saved.y2PerpDistRatio * cmLineLength;
+            const pointOnMainLine2X = cmLineStartX + distAlongMain2 * cosA;
+            const pointOnMainLine2Y = cmLineStartY + distAlongMain2 * sinA;
+            x2 = pointOnMainLine2X + perpDist2 * perpDirX;
+            y2 = pointOnMainLine2Y + perpDist2 * perpDirY;
+          } else if (saved.x1Percent !== undefined) {
+            x1 = (saved.x1Percent / 100) * editorRect.width;
+            y1 = (saved.y1Percent / 100) * editorRect.height;
+            x2 = (saved.x2Percent / 100) * editorRect.width;
+            y2 = (saved.y2Percent / 100) * editorRect.height;
+          } else {
+            return;
+          }
+
+          shape.x1 = x1;
+          shape.y1 = y1;
+          shape.x2 = x2;
+          shape.y2 = y2;
+          if (shape.element) {
+            shape.element.setAttribute("x1", shape.x1);
+            shape.element.setAttribute("y1", shape.y1);
+            shape.element.setAttribute("x2", shape.x2);
+            shape.element.setAttribute("y2", shape.y2);
+          }
+        }
+      }
+    });
+  }, 100);
 });
 
 let drawingStartX, drawingStartY;
@@ -782,7 +912,9 @@ async function openExample(filePath = "./example.pnt") {
       error,
     );
     alert(
-      `Failed to load the example diagram "${filePath.split("/").pop()}":\n${error.message}`,
+      `Failed to load the example diagram "${filePath.split("/").pop()}":\n${
+        error.message
+      }`,
     );
     // Optionally, initialize a blank diagram if example loading fails and the canvas is empty
     if (
@@ -816,6 +948,9 @@ const commands = [
     lambda: () => {
       info.innerHTML = `v${version}`;
       info.classList.add("fades");
+      setTimeout(() => {
+        info.classList.remove("fades");
+      }, 2500);
     },
   },
 ];

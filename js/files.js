@@ -5,6 +5,8 @@ export {
   exportToStaticHTML,
   clearLastFileHandle,
   verifyPermission,
+  pintaJsonToMarkdown,
+  pintaMarkdownToJson,
 };
 
 import { del, set, get } from "../lib/idb-keyval.js";
@@ -17,6 +19,7 @@ import {
   MAIN_LINE_DEFAULT_THICKNESS,
   CHILD_LINE_DEFAULT_THICKNESS,
   MIN_LINE_LENGTH,
+  getLineDepth,
 } from "./lines.js";
 
 import { DEFAULT_SCHEMA_TEXT_COLOR_VAR, getLinkPrefix } from "./text.js";
@@ -166,51 +169,100 @@ function getCurrentDiagramDataForSave() {
   return diagramData;
 }
 
-async function triggerSaveDiagram() {
+async function triggerSaveDiagram(asMarkdown = false) {
   const dataToSave = getCurrentDiagramDataForSave();
-  const diagramData = JSON.stringify(dataToSave, null, 2);
-  const blob = new Blob([diagramData], { type: "application/json" });
+  let fileContent;
+  let fileExtension = asMarkdown ? ".md" : ".pnt";
+  let suggestedName = `diagram${fileExtension}`;
+  let mimeType = asMarkdown ? "text/markdown" : "application/json";
+
+  if (asMarkdown) {
+    fileContent = pintaJsonToMarkdown(dataToSave);
+  } else {
+    fileContent = JSON.stringify(dataToSave, null, 2);
+  }
+
+  const blob = new Blob([fileContent], { type: mimeType });
   let fileHandle = null;
 
   try {
     const existingHandle = await get("pintaLastFileHandle");
-    if (existingHandle && (await verifyPermission(existingHandle))) {
+    if (
+      existingHandle &&
+      existingHandle.name.endsWith(fileExtension) &&
+      (await verifyPermission(existingHandle))
+    ) {
       fileHandle = existingHandle;
     } else {
+      if (existingHandle) await clearLastFileHandle(); // Clear if extension mismatch or no permission
       if (window.showSaveFilePicker) {
         fileHandle = await window.showSaveFilePicker({
-          suggestedName: "diagram.pnt",
+          suggestedName: suggestedName,
           types: [
             {
-              description: "Pinta JSON Diagram Files (.pnt)",
+              description: `Pinta ${
+                asMarkdown ? "Markdown" : "JSON"
+              } Diagram Files (${fileExtension})`,
+              accept: { [mimeType]: [fileExtension] },
+            },
+            // Optionally offer the other type as well
+            {
+              description: `Pinta ${
+                asMarkdown ? "JSON" : "Markdown"
+              } Diagram Files (${asMarkdown ? ".pnt" : ".md"})`,
               accept: {
-                "application/json": [".pnt"],
-                "text/html": [".html", ".htm"],
+                [asMarkdown ? "application/json" : "text/markdown"]: [
+                  asMarkdown ? ".pnt" : ".md",
+                ],
               },
             },
           ],
         });
+        // Update extension and mimetype if user changed it in the picker
+        if (fileHandle.name.endsWith(".md")) {
+          fileExtension = ".md";
+          mimeType = "text/markdown";
+          if (!asMarkdown) {
+            // User switched to MD in picker
+            fileContent = pintaJsonToMarkdown(dataToSave);
+          }
+        } else if (fileHandle.name.endsWith(".pnt")) {
+          fileExtension = ".pnt";
+          mimeType = "application/json";
+          if (asMarkdown) {
+            // User switched to PNT in picker
+            fileContent = JSON.stringify(dataToSave, null, 2);
+          }
+        }
       }
     }
 
     if (fileHandle) {
       const writable = await fileHandle.createWritable();
-      await writable.write(blob);
+      // Re-create blob if content type changed due to picker interaction
+      const finalBlob = new Blob([fileContent], { type: mimeType });
+      await writable.write(finalBlob);
       await writable.close();
-      await set("pintaLastFileHandle", fileHandle);
+      if (fileExtension === ".pnt") {
+        // Only store handle for .pnt files
+        await set("pintaLastFileHandle", fileHandle);
+      } else {
+        await clearLastFileHandle(); // Clear handle if saved as .md
+      }
       info.innerHTML = "&#x1F4BE;";
       info.classList.add("fades");
-      console.log("Pinta: Diagram saved successfully. Handle stored/updated.");
+      console.log(`Pinta: Diagram saved as ${fileExtension}.`);
     } else {
+      // Fallback for browsers without showSaveFilePicker
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "pinta.pnt";
+      link.download = suggestedName; // Will be diagram.pnt or diagram.md
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
       console.log(
-        "Pinta: Diagram download initiated (fallback). No handle stored.",
+        `Pinta: Diagram download as ${suggestedName} initiated (fallback).`,
       );
     }
   } catch (err) {
@@ -231,6 +283,7 @@ async function triggerLoadDiagram() {
             description: "Pinta JSON Diagram Files (.pnt)",
             accept: {
               "application/json": [".pnt"],
+              "text/markdown": [".md"],
               "text/html": [".html", ".htm"],
             },
           },
@@ -241,7 +294,8 @@ async function triggerLoadDiagram() {
       if (await verifyPermission(fileHandle)) {
         if (
           !file.name.toLowerCase().endsWith(".html") &&
-          !file.name.toLowerCase().endsWith(".htm")
+          !file.name.toLowerCase().endsWith(".htm") &&
+          !file.name.toLowerCase().endsWith(".md")
         ) {
           await set("pintaLastFileHandle", fileHandle);
           console.log("Pinta: .pnt diagram loaded and handle stored.");
@@ -269,46 +323,102 @@ async function triggerLoadDiagram() {
   }
 }
 
-function _processLoadedDiagramData(fileContentString) {
-  let jsonToParse = fileContentString;
-  const trimmedContent = fileContentString.trim();
+function adjustChildrenLayoutForEvenSplit(parentId, linesStore) {
+  const parentLine = linesStore[parentId];
+  if (parentLine && parentLine.children && parentLine.children.length > 0) {
+    const childrenToAutoPosition = parentLine.children.filter((id) => {
+      const child = linesStore[id];
+      return child && child.autoPositionHint === true;
+    });
 
-  if (
-    (trimmedContent.toLowerCase().startsWith("<html") ||
-      trimmedContent.toLowerCase().startsWith("<!doctype html")) &&
-    trimmedContent.includes(EXPORT_START_MARKER)
-  ) {
-    const startIndex = trimmedContent.indexOf(EXPORT_START_MARKER);
-    const endIndex = trimmedContent.lastIndexOf(EXPORT_END_MARKER);
+    const numAutoPositionChildren = childrenToAutoPosition.length;
 
-    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-      jsonToParse = trimmedContent
-        .substring(startIndex + EXPORT_START_MARKER.length, endIndex)
-        .trim();
-      console.log("Pinta: Extracted diagram data from HTML comment.");
+    // Only apply even split if ALL children of this parent were implicitly positioned
+    if (
+      numAutoPositionChildren > 0 &&
+      numAutoPositionChildren === parentLine.children.length
+    ) {
+      childrenToAutoPosition.forEach((childId, index) => {
+        if (linesStore[childId]) {
+          linesStore[childId].offsetRatioOnParent =
+            (index + 1) / (numAutoPositionChildren + 1);
+          // Optional: Alternate relativeDirection if not explicitly set
+          // if (linesStore[childId].relativeDirection === undefined) { // Or check another hint
+          //    linesStore[childId].relativeDirection = (index % 2 === 0) ? 1 : -1;
+          // }
+          delete linesStore[childId].autoPositionHint; // Clean up hint
+        }
+      });
     } else {
-      console.warn(
-        "Pinta: HTML file loaded, but Pinta data comment not found or malformed.",
-      );
+      // If only some children were auto-positioned, they keep their parser default (e.g., 0.5)
+      // or you could implement a more complex logic to insert them among fixed-position siblings.
+      // For now, just remove hints.
+      parentLine.children.forEach((childId) => {
+        if (linesStore[childId] && linesStore[childId].autoPositionHint) {
+          delete linesStore[childId].autoPositionHint;
+        }
+      });
+    }
+  }
+}
+
+function _processLoadedDiagramData(fileContentString, isMarkdown = false) {
+  let jsonData;
+  if (isMarkdown) {
+    try {
+      jsonData = pintaMarkdownToJson(fileContentString);
+      console.log("Pinta: Parsed diagram data from Markdown.");
+      console.debug(JSON.parse(JSON.stringify(jsonData)));
+    } catch (err) {
+      console.error("Pinta: Error parsing Markdown diagram data:", err);
       alert(
-        "Error: This HTML file does not appear to contain valid Pinta diagram data.",
+        "Error: Could not parse Markdown diagram. File may be corrupted or invalid.",
       );
       return;
     }
-  }
-  try {
-    const savedData = JSON.parse(jsonToParse);
+  } else {
+    let jsonToParse = fileContentString;
+    const trimmedContent = fileContentString.trim();
+
     if (
-      typeof savedData === "object" &&
-      savedData !== null &&
-      savedData.lines
+      (trimmedContent.toLowerCase().startsWith("<html") ||
+        trimmedContent.toLowerCase().startsWith("<!doctype html")) &&
+      trimmedContent.includes(EXPORT_START_MARKER)
     ) {
-      editorContainer.innerHTML = ""; // Clear existing content
-      const newdrawingCanvas = document.createElementNS(SVG_NS, "svg");
-      newdrawingCanvas.id = "drawingCanvas";
-      newdrawingCanvas.setAttribute("width", "100%");
-      newdrawingCanvas.setAttribute("height", "100%");
-      newdrawingCanvas.innerHTML = `<defs>
+      const startIndex = trimmedContent.indexOf(EXPORT_START_MARKER);
+      const endIndex = trimmedContent.lastIndexOf(EXPORT_END_MARKER);
+
+      if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+        jsonToParse = trimmedContent
+          .substring(startIndex + EXPORT_START_MARKER.length, endIndex)
+          .trim();
+        console.log("Pinta: Extracted diagram data from HTML comment.");
+      } else {
+        console.warn(
+          "Pinta: HTML file loaded, but Pinta data comment not found or malformed.",
+        );
+        alert(
+          "Error: This HTML file does not appear to contain valid Pinta diagram data.",
+        );
+        return;
+      }
+    }
+    try {
+      jsonData = JSON.parse(jsonToParse);
+    } catch (err) {
+      console.error("Pinta: Error parsing diagram JSON data:", err);
+      alert(
+        "Error: Could not load diagram. File may be corrupted or not valid JSON.",
+      );
+    }
+  }
+  if (typeof jsonData === "object" && jsonData !== null && jsonData.lines) {
+    editorContainer.innerHTML = ""; // Clear existing content
+    const newdrawingCanvas = document.createElementNS(SVG_NS, "svg");
+    newdrawingCanvas.id = "drawingCanvas";
+    newdrawingCanvas.setAttribute("width", "100%");
+    newdrawingCanvas.setAttribute("height", "100%");
+    newdrawingCanvas.innerHTML = `<defs>
                           <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
                               <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/><feOffset dx="1" dy="1" result="offsetBlur"/><feMerge><feMergeNode in="offsetBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                           <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--red)" /></marker>
@@ -321,260 +431,412 @@ function _processLoadedDiagramData(fileContentString) {
                           <marker id="arrowhead-magenta" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--magenta)" /></marker>
                           <marker id="arrowhead-print" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="black" /></marker>
                       </defs>`;
-      editorContainer.appendChild(newdrawingCanvas);
-      state.drawingCanvas = newdrawingCanvas;
+    editorContainer.appendChild(newdrawingCanvas);
+    state.drawingCanvas = newdrawingCanvas;
 
-      state.linesStore = {};
-      state.postItsStore = {};
-      state.drawingElementsStore = {};
-      state.lineIdCounter = 0;
-      state.postItIdCounter = 0;
-      state.drawingElementIdCounter = 0;
+    state.linesStore = {};
+    state.postItsStore = {};
+    state.drawingElementsStore = {};
+    state.lineIdCounter = 0;
+    state.postItIdCounter = 0;
+    state.drawingElementIdCounter = 0;
 
-      const loadedLinesPart = savedData.lines;
-      const mainLineRef = savedData.mainLineReference;
-      const loadedPostItsPart = savedData.postIts || {};
-      const loadedDrawingsPart = savedData.drawings || [];
+    const loadedLinesPart = jsonData.lines;
+    const mainLineRef = jsonData.mainLineReference;
+    const loadedPostItsPart = jsonData.postIts || {};
+    const loadedDrawingsPart = jsonData.drawings || [];
 
-      const containerRect = editorContainer.getBoundingClientRect();
-      if (containerRect.width === 0 || containerRect.height === 0) {
-        console.error("Editor container has zero dimensions during load.");
-        return;
-      }
+    const containerRect = editorContainer.getBoundingClientRect();
+    if (containerRect.width === 0 || containerRect.height === 0) {
+      console.error("Editor container has zero dimensions during load.");
+      return;
+    }
 
-      const safeMargin = Math.max(
-        50,
-        Math.min(containerRect.width, containerRect.height) * 0.1,
+    const safeMargin = Math.max(
+      50,
+      Math.min(containerRect.width, containerRect.height) * 0.1,
+    );
+    const p1x = safeMargin;
+    const p1y = containerRect.height - safeMargin;
+    const p2x = containerRect.width - safeMargin;
+    const p2y = safeMargin;
+    const currentDisplayMainLength = Math.sqrt(
+      (p2x - p1x) ** 2 + (p2y - p1y) ** 2,
+    );
+    const currentDisplayMainAngle =
+      (Math.atan2(p2y - p1y, p2x - p1x) * 180) / Math.PI;
+    state.currentMainLineAngle = currentDisplayMainAngle;
+
+    const scaleFactor =
+      mainLineRef && mainLineRef.length !== 0 && currentDisplayMainLength > 0
+        ? currentDisplayMainLength / mainLineRef.length
+        : 1;
+
+    let maxLineIdNum = -1;
+    const tempLinesArray = Object.values(loadedLinesPart);
+    tempLinesArray.sort((a, b) =>
+      a.parentId === null ? -1 : b.parentId === null ? 1 : 0,
+    );
+
+    const mainLineLoadedData = mainLineRef
+      ? loadedLinesPart[mainLineRef.id]
+      : tempLinesArray.find((l) => l.parentId === null);
+
+    if (!mainLineLoadedData) {
+      console.error(
+        "Pinta: Main line data not found in loaded file. Cannot proceed with relative positioning.",
       );
-      const p1x = safeMargin;
-      const p1y = containerRect.height - safeMargin;
-      const p2x = containerRect.width - safeMargin;
-      const p2y = safeMargin;
-      const currentDisplayMainLength = Math.sqrt(
-        (p2x - p1x) ** 2 + (p2y - p1y) ** 2,
-      );
-      const currentDisplayMainAngle =
-        (Math.atan2(p2y - p1y, p2x - p1x) * 180) / Math.PI;
-      state.currentMainLineAngle = currentDisplayMainAngle;
+      return;
+    }
+    const mainLineCurrentId = mainLineLoadedData.id;
 
-      const scaleFactor =
-        mainLineRef && mainLineRef.length !== 0 && currentDisplayMainLength > 0
-          ? currentDisplayMainLength / mainLineRef.length
-          : 1;
+    tempLinesArray.forEach((loadedLine) => {
+      const numId = parseInt(loadedLine.id.split("-")[1]);
+      if (!isNaN(numId) && numId > maxLineIdNum) maxLineIdNum = numId;
 
-      let maxLineIdNum = -1;
-      const tempLinesArray = Object.values(loadedLinesPart);
-      tempLinesArray.sort((a, b) =>
-        a.parentId === null ? -1 : b.parentId === null ? 1 : 0,
-      );
+      let newLineData = { ...loadedLine };
 
-      const mainLineLoadedData = mainLineRef
-        ? loadedLinesPart[mainLineRef.id]
-        : tempLinesArray.find((l) => l.parentId === null);
-
-      if (!mainLineLoadedData) {
-        console.error(
-          "Pinta: Main line data not found in loaded file. Cannot proceed with relative positioning for Post-its.",
+      if (loadedLine.id === mainLineCurrentId) {
+        newLineData.startX = p1x;
+        newLineData.startY = p1y;
+        newLineData.length = Math.max(
+          currentDisplayMainLength,
+          MIN_LINE_LENGTH,
         );
-        return;
-      }
-      const mainLineCurrentId = mainLineLoadedData.id;
-
-      tempLinesArray.forEach((loadedLine) => {
-        const numId = parseInt(loadedLine.id.split("-")[1]);
-        if (!isNaN(numId) && numId > maxLineIdNum) maxLineIdNum = numId;
-
-        let newLineData = { ...loadedLine };
-        if (loadedLine.id === mainLineCurrentId) {
-          newLineData.startX = p1x;
-          newLineData.startY = p1y;
-          newLineData.length = Math.max(
-            currentDisplayMainLength,
-            MIN_LINE_LENGTH,
-          );
-          newLineData.angle = currentDisplayMainAngle; // Crucial: use current display angle
-          newLineData.thickness = MAIN_LINE_DEFAULT_THICKNESS;
-        } else {
+        newLineData.angle = currentDisplayMainAngle; // Crucial: use current display angle
+        newLineData.thickness = MAIN_LINE_DEFAULT_THICKNESS;
+      } else {
+        if (typeof loadedLine.length === "number") {
           let newScaledLength =
             (loadedLine.length || CHILD_LINE_DEFAULT_THICKNESS * 10) *
             scaleFactor;
           newLineData.length =
             Math.sign(newScaledLength) *
             Math.max(Math.abs(newScaledLength), MIN_LINE_LENGTH);
-          newLineData.thickness = Math.max(
-            1,
-            (loadedLine.thickness || CHILD_LINE_DEFAULT_THICKNESS) *
-              scaleFactor,
-          );
-          newLineData.textPerpOffset =
-            (loadedLine.textPerpOffset || -15) * scaleFactor;
-        }
-        state.linesStore[newLineData.id] = newLineData;
-      });
-      state.lineIdCounter = maxLineIdNum + 1;
-
-      if (state.linesStore[mainLineCurrentId]) {
-        renderLine(state.linesStore[mainLineCurrentId]);
-        updateChildrenPositions(mainLineCurrentId);
-      } else {
-        console.warn(
-          "Pinta: Main line not found after processing lines. Rendering all as is.",
-        );
-        for (const id in state.linesStore) renderLine(state.linesStore[id]);
-      }
-
-      let maxPostItIdNum = -1;
-      const currentMainLineForPostIts = state.linesStore[mainLineCurrentId];
-
-      for (const id in loadedPostItsPart) {
-        const originalNoteData = loadedPostItsPart[id];
-        const numId = parseInt(id.split("-")[1]);
-        if (!isNaN(numId) && numId > maxPostItIdNum) maxPostItIdNum = numId;
-
-        state.postItsStore[id] = { ...originalNoteData };
-
-        const noteDataForCreate = { ...originalNoteData };
-
-        if (
-          currentMainLineForPostIts &&
-          noteDataForCreate.offsetRatioOnMainLine !== undefined &&
-          noteDataForCreate.perpDistRatioFromMainLine !== undefined &&
-          noteDataForCreate.savedWidth !== undefined &&
-          noteDataForCreate.savedHeight !== undefined &&
-          Math.abs(currentMainLineForPostIts.length) > 1e-6
-        ) {
-          const cmLineStartX = currentMainLineForPostIts.startX;
-          const cmLineStartY = currentMainLineForPostIts.startY;
-          const cmLineAngleRad =
-            currentMainLineForPostIts.angle * (Math.PI / 180);
-          const cmLineLength = currentMainLineForPostIts.length;
-
-          const distAlongCurrentMain =
-            noteDataForCreate.offsetRatioOnMainLine * cmLineLength;
-          const perpDistFromCurrentMain =
-            noteDataForCreate.perpDistRatioFromMainLine * cmLineLength;
-
-          const pointOnMainLineX =
-            cmLineStartX + distAlongCurrentMain * Math.cos(cmLineAngleRad);
-          const pointOnMainLineY =
-            cmLineStartY + distAlongCurrentMain * Math.sin(cmLineAngleRad);
-
-          const perpDirX = -Math.sin(cmLineAngleRad);
-          const perpDirY = Math.cos(cmLineAngleRad);
-
-          const targetCenterX =
-            pointOnMainLineX + perpDistFromCurrentMain * perpDirX;
-          const targetCenterY =
-            pointOnMainLineY + perpDistFromCurrentMain * perpDirY;
-
-          noteDataForCreate.styleLeft = `${targetCenterX - noteDataForCreate.savedWidth / 2}px`;
-          noteDataForCreate.styleTop = `${targetCenterY - noteDataForCreate.savedHeight / 2}px`;
-        } else if (
-          noteDataForCreate.xPercent !== undefined &&
-          noteDataForCreate.yPercent !== undefined
-        ) {
-          if (containerRect.width > 0)
-            noteDataForCreate.styleLeft = `${(noteDataForCreate.xPercent / 100) * containerRect.width}px`;
-          else noteDataForCreate.styleLeft = "10px";
-          if (containerRect.height > 0)
-            noteDataForCreate.styleTop = `${(noteDataForCreate.yPercent / 100) * containerRect.height}px`;
-          else noteDataForCreate.styleTop = "10px";
         } else {
-          noteDataForCreate.styleLeft = "10px";
-          noteDataForCreate.styleTop = "10px";
+          // Length was NOT specified (e.g., bare-bones MD from user)
+          // Calculate default length based on parent and depth
+          const parentLine = state.linesStore[loadedLine.parentId]; // Parent MUST be in state.linesStore at this point due to processing order assumption
+
+          if (parentLine && typeof parentLine.length === "number") {
+            const depth =
+              0.1 + getLineDepth(loadedLine.parentId, state.linesStore); // Line is not in store yet
+            const lengthMultiplier = 0.8 * (1.0 - 0.75 / depth);
+
+            let calculatedMagnitude =
+              Math.abs(parentLine.length) * lengthMultiplier;
+            calculatedMagnitude = Math.max(
+              calculatedMagnitude,
+              MIN_LINE_LENGTH,
+            );
+
+            // Determine sign for the length.
+            // Use relativeDirection (defaulted by MD parser to alternate) to influence length sign.
+            // If relativeDirection is -1 (typically "left" turn from parent), length is negative.
+            // If relativeDirection is 1 (typically "right" turn from parent), length is positive.
+            // This makes the initial visual extension direction consistent with the turn.
+            const sign = loadedLine.relativeDirection === -1 ? -1 : 1;
+            newLineData.length = sign * calculatedMagnitude;
+            // Note: parentLine.length here is already scaled to the current viewport for the main line,
+            // or derived from that for other parents. So, no additional scaleFactor is needed for this default.
+          } else {
+            // Fallback if parent somehow has no length or not found (shouldn't happen in valid tree)
+            console.warn(
+              `Parent line or parent line length not found for ${loadedLine.id}. Defaulting length.`,
+            );
+            newLineData.length = MIN_LINE_LENGTH * scaleFactor; // Basic default scaled from original diagram proportions
+          }
         }
-        createPostIt(noteDataForCreate);
+
+        newLineData.thickness = Math.max(
+          1,
+          (loadedLine.thickness || CHILD_LINE_DEFAULT_THICKNESS) * scaleFactor,
+        );
+        newLineData.textPerpOffset =
+          (loadedLine.textPerpOffset || -15) * scaleFactor;
       }
-      state.postItIdCounter = maxPostItIdNum + 1;
+      state.linesStore[newLineData.id] = newLineData;
+    });
+    state.lineIdCounter = maxLineIdNum + 1;
 
-      let maxDrawingIdNum = -1;
-      loadedDrawingsPart.forEach((shapeData) => {
-        const numId = parseInt(shapeData.id.split("-")[1]);
-        if (!isNaN(numId) && numId > maxDrawingIdNum) maxDrawingIdNum = numId;
+    if (mainLineCurrentId && state.linesStore[mainLineCurrentId]) {
+      // Create a processing queue for adjusting children, starting with the main line
+      const processingQueue = [mainLineCurrentId];
+      const processedParents = new Set();
 
-        const currentEditorRect = editorContainer.getBoundingClientRect();
-        let shape;
-        if (shapeData.kind === "rect" || shapeData.kind === "highlight") {
-          const x = (shapeData.xPercent / 100) * currentEditorRect.width;
-          const y = (shapeData.yPercent / 100) * currentEditorRect.height;
-          const w = (shapeData.widthPercent / 100) * currentEditorRect.width;
-          const h = (shapeData.heightPercent / 100) * currentEditorRect.height;
-          shape = new Rect(
-            x,
-            y,
-            shapeData.colorName,
-            state.drawingCanvas,
-            shapeData.type,
-          );
-          shape.width = w;
-          shape.height = h;
-          if (shape.element) {
-            shape.element.setAttribute("x", x);
-            shape.element.setAttribute("y", y);
-            shape.element.setAttribute("width", w);
-            shape.element.setAttribute("height", h);
-          }
-          if (typeof shape._applyRotation === "function") {
-            shape._applyRotation();
-          }
-        } else if (shapeData.kind === "arrow") {
-          const x1 = (shapeData.x1Percent / 100) * currentEditorRect.width;
-          const y1 = (shapeData.y1Percent / 100) * currentEditorRect.height;
-          const x2 = (shapeData.x2Percent / 100) * currentEditorRect.width;
-          const y2 = (shapeData.y2Percent / 100) * currentEditorRect.height;
-          shape = new Arrow(x1, y1, shapeData.colorName, state.drawingCanvas);
-          shape.x2 = x2;
-          shape.y2 = y2;
-          if (shape.element) {
-            shape.element.setAttribute("x2", x2);
-            shape.element.setAttribute("y2", y2);
-          }
+      while (processingQueue.length > 0) {
+        const currentParentId = processingQueue.shift();
+        if (processedParents.has(currentParentId)) continue;
+
+        adjustChildrenLayoutForEvenSplit(currentParentId, state.linesStore);
+        processedParents.add(currentParentId);
+
+        const parentLine = state.linesStore[currentParentId];
+        if (parentLine && parentLine.children) {
+          parentLine.children.forEach((childId) => {
+            if (state.linesStore[childId] && !processedParents.has(childId)) {
+              processingQueue.push(childId);
+            }
+          });
         }
-        if (shape) {
-          shape.id = shapeData.id;
-          if (shape.element) shape.element.setAttribute("id", shape.id);
-          state.drawingElementsStore[shape.id] = shape;
-        }
-      });
-      state.drawingElementIdCounter = maxDrawingIdNum + 1;
-
-      console.log("Pinta: Diagram data processed and rendered successfully.");
-    } else {
-      console.error("Pinta: Invalid diagram data structure in parsed JSON.");
-      alert("Error: Could not load diagram. Invalid file format or structure.");
+      }
     }
-  } catch (err) {
-    console.error("Pinta: Error parsing diagram JSON data:", err);
-    alert(
-      "Error: Could not load diagram. File may be corrupted or not valid JSON.",
-    );
+
+    if (state.linesStore[mainLineCurrentId]) {
+      renderLine(state.linesStore[mainLineCurrentId]);
+      updateChildrenPositions(mainLineCurrentId);
+    } else {
+      console.warn(
+        "Pinta: Main line not found after processing lines. Rendering all as is.",
+      );
+      for (const id in state.linesStore) renderLine(state.linesStore[id]);
+    }
+
+    let maxPostItIdNum = -1;
+    const currentMainLine = state.linesStore[mainLineCurrentId]; // Used for both PostIts and Drawings
+
+    for (const id in loadedPostItsPart) {
+      const originalNoteData = loadedPostItsPart[id];
+      const numId = parseInt(id.split("-")[1]);
+      if (!isNaN(numId) && numId > maxPostItIdNum) maxPostItIdNum = numId;
+
+      state.postItsStore[id] = { ...originalNoteData };
+
+      const noteDataForCreate = { ...originalNoteData };
+
+      if (
+        currentMainLine &&
+        noteDataForCreate.offsetRatioOnMainLine !== undefined &&
+        noteDataForCreate.perpDistRatioFromMainLine !== undefined &&
+        noteDataForCreate.savedWidth !== undefined &&
+        noteDataForCreate.savedHeight !== undefined &&
+        Math.abs(currentMainLine.length) > 1e-6
+      ) {
+        const cmLineStartX = currentMainLine.startX;
+        const cmLineStartY = currentMainLine.startY;
+        const cmLineAngleRad = currentMainLine.angle * (Math.PI / 180);
+        const cmLineLength = currentMainLine.length;
+
+        const distAlongCurrentMain =
+          noteDataForCreate.offsetRatioOnMainLine * cmLineLength;
+        const perpDistFromCurrentMain =
+          noteDataForCreate.perpDistRatioFromMainLine * cmLineLength;
+
+        const pointOnMainLineX =
+          cmLineStartX + distAlongCurrentMain * Math.cos(cmLineAngleRad);
+        const pointOnMainLineY =
+          cmLineStartY + distAlongCurrentMain * Math.sin(cmLineAngleRad);
+
+        const perpDirX = -Math.sin(cmLineAngleRad);
+        const perpDirY = Math.cos(cmLineAngleRad);
+
+        const targetCenterX =
+          pointOnMainLineX + perpDistFromCurrentMain * perpDirX;
+        const targetCenterY =
+          pointOnMainLineY + perpDistFromCurrentMain * perpDirY;
+
+        noteDataForCreate.styleLeft = `${
+          targetCenterX - noteDataForCreate.savedWidth / 2
+        }px`;
+        noteDataForCreate.styleTop = `${
+          targetCenterY - noteDataForCreate.savedHeight / 2
+        }px`;
+      } else if (
+        noteDataForCreate.xPercent !== undefined &&
+        noteDataForCreate.yPercent !== undefined
+      ) {
+        if (containerRect.width > 0)
+          noteDataForCreate.styleLeft = `${
+            (noteDataForCreate.xPercent / 100) * containerRect.width
+          }px`;
+        else noteDataForCreate.styleLeft = "10px";
+        if (containerRect.height > 0)
+          noteDataForCreate.styleTop = `${
+            (noteDataForCreate.yPercent / 100) * containerRect.height
+          }px`;
+        else noteDataForCreate.styleTop = "10px";
+      } else {
+        noteDataForCreate.styleLeft = "10px";
+        noteDataForCreate.styleTop = "10px";
+      }
+      createPostIt(noteDataForCreate);
+    }
+    state.postItIdCounter = maxPostItIdNum + 1;
+
+    let maxDrawingIdNum = -1;
+    loadedDrawingsPart.forEach((shapeData) => {
+      const numId = parseInt(shapeData.id.split("-")[1]);
+      if (!isNaN(numId) && numId > maxDrawingIdNum) maxDrawingIdNum = numId;
+
+      const currentEditorRect = editorContainer.getBoundingClientRect();
+      let shape;
+
+      if (shapeData.kind === "rect" || shapeData.kind === "highlight") {
+        let x, y, w, h;
+        if (
+          currentMainLine &&
+          shapeData.xOffsetRatio !== undefined &&
+          shapeData.yPerpDistRatio !== undefined &&
+          shapeData.widthRatio !== undefined &&
+          shapeData.heightRatio !== undefined &&
+          Math.abs(currentMainLine.length) > 1e-6
+        ) {
+          const cmLineStartX = currentMainLine.startX;
+          const cmLineStartY = currentMainLine.startY;
+          const cmLineAngleRad = currentMainLine.angle * (Math.PI / 180);
+          const cmLineLength = currentMainLine.length;
+
+          const distAlongMain = shapeData.xOffsetRatio * cmLineLength;
+          const perpDist = shapeData.yPerpDistRatio * cmLineLength;
+          const cosA = Math.cos(cmLineAngleRad);
+          const sinA = Math.sin(cmLineAngleRad);
+          const perpDirX = -sinA;
+          const perpDirY = cosA;
+
+          x = cmLineStartX + distAlongMain * cosA + perpDist * perpDirX;
+          y = cmLineStartY + distAlongMain * sinA + perpDist * perpDirY;
+          w = shapeData.widthRatio * Math.abs(cmLineLength); // Use abs length for dimensions
+          h = shapeData.heightRatio * Math.abs(cmLineLength);
+        } else if (shapeData.xPercent !== undefined) {
+          x = (shapeData.xPercent / 100) * currentEditorRect.width;
+          y = (shapeData.yPercent / 100) * currentEditorRect.height;
+          w = (shapeData.widthPercent / 100) * currentEditorRect.width;
+          h = (shapeData.heightPercent / 100) * currentEditorRect.height;
+        } else {
+          console.warn(
+            `Rect/Highlight ${shapeData.id} could not be positioned. Defaulting.`,
+          );
+          x = 10;
+          y = 10;
+          w = 50;
+          h = 50;
+        }
+        shape = new Rect(
+          x,
+          y,
+          shapeData.colorName,
+          state.drawingCanvas,
+          shapeData.type,
+        );
+        shape.width = w;
+        shape.height = h;
+        if (shape.element) {
+          shape.element.setAttribute("x", x);
+          shape.element.setAttribute("y", y);
+          shape.element.setAttribute("width", w);
+          shape.element.setAttribute("height", h);
+        }
+        if (typeof shape._applyRotation === "function") {
+          shape._applyRotation();
+        }
+      } else if (shapeData.kind === "arrow") {
+        let x1, y1, x2, y2;
+        if (
+          currentMainLine &&
+          shapeData.x1OffsetRatio !== undefined &&
+          shapeData.y1PerpDistRatio !== undefined &&
+          shapeData.x2OffsetRatio !== undefined &&
+          shapeData.y2PerpDistRatio !== undefined &&
+          Math.abs(currentMainLine.length) > 1e-6
+        ) {
+          const cmLineStartX = currentMainLine.startX;
+          const cmLineStartY = currentMainLine.startY;
+          const cmLineAngleRad = currentMainLine.angle * (Math.PI / 180);
+          const cmLineLength = currentMainLine.length;
+          const cosA = Math.cos(cmLineAngleRad);
+          const sinA = Math.sin(cmLineAngleRad);
+          const perpDirX = -sinA;
+          const perpDirY = cosA;
+
+          // Calculate P1
+          const distAlongMain1 = shapeData.x1OffsetRatio * cmLineLength;
+          const perpDist1 = shapeData.y1PerpDistRatio * cmLineLength;
+          const pointOnMainLine1X = cmLineStartX + distAlongMain1 * cosA;
+          const pointOnMainLine1Y = cmLineStartY + distAlongMain1 * sinA;
+          x1 = pointOnMainLine1X + perpDist1 * perpDirX;
+          y1 = pointOnMainLine1Y + perpDist1 * perpDirY;
+
+          // Calculate P2
+          const distAlongMain2 = shapeData.x2OffsetRatio * cmLineLength;
+          const perpDist2 = shapeData.y2PerpDistRatio * cmLineLength;
+          const pointOnMainLine2X = cmLineStartX + distAlongMain2 * cosA;
+          const pointOnMainLine2Y = cmLineStartY + distAlongMain2 * sinA;
+          x2 = pointOnMainLine2X + perpDist2 * perpDirX;
+          y2 = pointOnMainLine2Y + perpDist2 * perpDirY;
+        } else if (shapeData.x1Percent !== undefined) {
+          // Fallback to old percentage based
+          x1 = (shapeData.x1Percent / 100) * currentEditorRect.width;
+          y1 = (shapeData.y1Percent / 100) * currentEditorRect.height;
+          x2 = (shapeData.x2Percent / 100) * currentEditorRect.width;
+          y2 = (shapeData.y2Percent / 100) * currentEditorRect.height;
+        } else {
+          console.warn(
+            `Arrow ${shapeData.id} could not be positioned. Defaulting.`,
+          );
+          x1 = 0;
+          y1 = 0;
+          x2 = 10;
+          y2 = 10; // Minimal default
+        }
+
+        shape = new Arrow(x1, y1, shapeData.colorName, state.drawingCanvas);
+        shape.x2 = x2;
+        shape.y2 = y2;
+        if (shape.element) {
+          shape.element.setAttribute("x1", x1);
+          shape.element.setAttribute("y1", y1);
+          shape.element.setAttribute("x2", x2);
+          shape.element.setAttribute("y2", y2);
+        }
+      }
+      if (shape) {
+        shape.id = shapeData.id;
+        if (shape.element) shape.element.setAttribute("id", shape.id);
+        state.drawingElementsStore[shape.id] = shape;
+      }
+    });
+    state.drawingElementIdCounter = maxDrawingIdNum + 1;
+
+    console.log("Pinta: Diagram data processed and rendered successfully.");
+  } else {
+    console.error("Pinta: Invalid diagram data structure in parsed JSON.");
+    alert("Error: Could not load diagram. Invalid file format or structure.");
   }
 }
 
 function loadDataFromFile(fileOrJsonString) {
+  let isMarkdown = false;
   if (typeof fileOrJsonString === "string") {
-    console.log("Pinta: Loading diagram from JSON string.");
-    _processLoadedDiagramData(fileOrJsonString);
+    console.log("Pinta: Loading diagram from string data.");
+    // Simple content sniffing for markdown can be added here if needed,
+    // but relying on explicit type or filename is safer.
+    // For now, assume string is JSON unless explicitly told otherwise.
   } else if (fileOrJsonString instanceof File) {
     console.log(
       `Pinta: Loading diagram from File object: ${fileOrJsonString.name}`,
     );
+    isMarkdown = fileOrJsonString.name.toLowerCase().endsWith(".md");
     const reader = new FileReader();
     reader.onload = (event) => {
-      _processLoadedDiagramData(event.target.result);
+      _processLoadedDiagramData(event.target.result, isMarkdown);
     };
     reader.onerror = () => {
       console.error("Pinta: Error reading file with FileReader.");
       alert("Error: Could not read the selected file.");
     };
     reader.readAsText(fileOrJsonString);
+    return; // Handled by reader.onload
   } else {
     console.error(
       "Pinta: loadDataFromFile received invalid input type.",
       fileOrJsonString,
     );
     alert("Error: Invalid data provided for loading.");
+    return;
   }
+  // If it's a string and not handled by FileReader, process directly
+  // (isMarkdown would be false by default if it's just a string without context)
+  _processLoadedDiagramData(fileOrJsonString, isMarkdown);
 }
 
 function escapeHtml(unsafe) {
@@ -788,4 +1050,274 @@ async function exportToStaticHTML(loadedCSSText) {
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
   console.log("Diagram exported to HTML.");
+}
+
+// Add this to js/files.js
+
+/**
+ * Converts Pinta JSON diagram data to a Markdown-like string.
+ * @param {object} jsonData The Pinta diagram data.
+ * @returns {string} A string in a Markdown/YAML-hybrid format.
+ */
+function pintaJsonToMarkdown(jsonData) {
+  let mdString = "";
+
+  // Helper to format properties
+  const formatProps = (obj, excludeKeys = []) => {
+    let propsMd = "";
+    for (const key in obj) {
+      if (excludeKeys.includes(key) || typeof obj[key] === "function") continue;
+      // Specifically handle children for lines later if needed, for now, basic stringify
+      if (key === "children" && Array.isArray(obj[key])) {
+        // Optionally, list child IDs if needed, or skip if hierarchy is enough
+        // propsMd += `- ${key}: [${obj[key].join(', ')}]\n`;
+      } else {
+        propsMd += `- ${key}: ${JSON.stringify(obj[key])}\n`;
+      }
+    }
+    return propsMd;
+  };
+
+  // 1. Process Lines (Hierarchically)
+  const processLine = (lineId, depth) => {
+    const line = jsonData.lines[lineId];
+    if (!line) return;
+
+    mdString += `${"#".repeat(depth)} ${line.text || "Untitled Line"}\n`;
+    mdString += formatProps(line, ["id", "parentId", "children", "text"]); // Exclude structural/handled props
+
+    if (line.children && line.children.length > 0) {
+      line.children.forEach((childId) => processLine(childId, depth + 1));
+    }
+  };
+
+  const rootLineId = Object.keys(jsonData.lines).find(
+    (id) => jsonData.lines[id] && jsonData.lines[id].parentId === null,
+  );
+
+  if (rootLineId) {
+    processLine(rootLineId, 1);
+  } else {
+    // Fallback if no single root (should not happen with current Pinta logic)
+    Object.keys(jsonData.lines).forEach((lineId) => {
+      if (jsonData.lines[lineId] && jsonData.lines[lineId].parentId === null) {
+        processLine(lineId, 1);
+      }
+    });
+  }
+  mdString += "\n";
+
+  // 2. Process Drawings
+  if (jsonData.drawings && jsonData.drawings.length > 0) {
+    mdString += "---\n";
+    mdString += "# Drawings\n\n";
+    jsonData.drawings.forEach((drawing) => {
+      mdString += `## ${drawing.kind || "Unnamed Drawing"} ${drawing.id}\n`;
+      mdString += formatProps(drawing, ["kind", "id"]);
+      mdString += "\n";
+    });
+  }
+
+  // 3. Process Post-its
+  if (jsonData.postIts && Object.keys(jsonData.postIts).length > 0) {
+    mdString += "---\n";
+    mdString += "# Post its\n\n";
+    for (const postItId in jsonData.postIts) {
+      const postIt = jsonData.postIts[postItId];
+      mdString += `## ${postIt.title || postIt.id}\n`;
+      // Decide how to handle content. For now, treating as a prop.
+      // For better readability, you might want a block for content:
+      // mdString += `\n\`\`\`\n${postIt.content}\n\`\`\`\n`;
+      mdString += formatProps(postIt, ["id", "title"]); // if title used in header
+      mdString += "\n";
+    }
+  }
+
+  return mdString.trim();
+}
+
+// Add this to js/files.js
+
+/**
+ * Converts a Markdown-like string back to Pinta JSON diagram data.
+ * @param {string} markdownString The Markdown/YAML-hybrid string.
+ * @returns {object} The Pinta diagram data object.
+ */
+function pintaMarkdownToJson(markdownString) {
+  const jsonData = {
+    lines: {},
+    postIts: {},
+    drawings: [],
+    mainLineReference: null,
+  };
+  let lineIdCounter = 0;
+  let drawingIdCounter = 0; // Keep track for drawings if IDs are not in MD
+  let postItIdCounter = 0; // Keep track for post-its if IDs are not in MD
+
+  const lines = markdownString.split("\n");
+  let currentSection = "lines"; // 'lines', 'drawings', 'postits'
+  let currentLineParentStack = [];
+  let currentObject = null; // For drawings or postits
+
+  // Helper to parse "prop: value" lines
+  const parsePropLine = (line) => {
+    const match = line.match(/^\s*-\s*([^:]+):\s*(.*)$/);
+    if (match) {
+      const key = match[1].trim();
+      let valueString = match[2].trim();
+      try {
+        // Attempt to parse as JSON (handles numbers, booleans, null, strings in quotes)
+        return { key, value: JSON.parse(valueString) };
+      } catch (e) {
+        // If JSON.parse fails, it's likely an unquoted string or malformed
+        return { key, value: valueString };
+      }
+    }
+    return null;
+  };
+
+  for (const line of lines) {
+    if (line.trim() === "---") {
+      currentObject = null; // Reset current object when changing section
+      // Determine next section based on the heading that should follow
+      continue; // Separator processed, move to next line
+    }
+
+    if (currentSection === "lines") {
+      const headingMatch = line.match(/^(#+)\s+(.*)/);
+      if (headingMatch) {
+        const depth = headingMatch[1].length;
+        const text = headingMatch[2].trim();
+        const lineId = `line-${lineIdCounter++}`;
+
+        currentObject = {
+          id: lineId,
+          text: text,
+          children: [],
+          parentId: null,
+          // Initialize with some defaults that might be overridden by props
+          textPosRatio: 0.5,
+          textPerpOffset: -15,
+          thickness:
+            depth === 1
+              ? MAIN_LINE_DEFAULT_THICKNESS
+              : CHILD_LINE_DEFAULT_THICKNESS,
+          visualColor: "default",
+          textColor: "default",
+          fontSize: 16,
+          isBold: false,
+          isCentered: true,
+          linkUrl: null,
+          hasCheckbox: false,
+          isCheckboxChecked: false,
+        };
+
+        if (depth === 1) {
+          if (!jsonData.mainLineReference) {
+            // Assuming the first H1 is the main line
+            jsonData.mainLineReference = { id: lineId, length: 0 }; // Length will be updated by prop
+          }
+          currentLineParentStack = [
+            { id: lineId, depth: 1, obj: currentObject },
+          ];
+        } else {
+          while (
+            currentLineParentStack.length > 0 &&
+            currentLineParentStack[currentLineParentStack.length - 1].depth >=
+              depth
+          ) {
+            currentLineParentStack.pop();
+          }
+          if (currentLineParentStack.length > 0) {
+            const parent =
+              currentLineParentStack[currentLineParentStack.length - 1];
+            currentObject.parentId = parent.id;
+            parent.obj.children.push(lineId);
+            // Set default and hint for auto-distribution if not overridden by a prop later
+            currentObject.relativeDirection =
+              parent.obj.children.length % 2 === 0 ? -1 : 1; // Default alternation
+            currentObject.offsetRatioOnParent = 0.5; // Default to middle
+            currentObject.autoPositionHint = true; // Add this hint for implicit positioning
+          }
+          currentLineParentStack.push({
+            id: lineId,
+            depth: depth,
+            obj: currentObject,
+          });
+        }
+        jsonData.lines[lineId] = currentObject;
+      } else {
+        const prop = parsePropLine(line);
+        if (prop && currentObject && currentSection === "lines") {
+          currentObject[prop.key] = prop.value;
+          // If these specific positioning properties are found in the MD, remove the hint
+          if (
+            prop.key === "offsetRatioOnParent" ||
+            prop.key === "relativeDirection" ||
+            prop.key === "startX" ||
+            prop.key === "startY"
+          ) {
+            delete currentObject.autoPositionHint;
+          }
+          if (
+            currentObject.id === jsonData.mainLineReference?.id &&
+            prop.key === "length"
+          ) {
+            jsonData.mainLineReference.length = parseFloat(prop.value);
+          }
+        }
+      }
+    } else if (currentSection === "drawings") {
+      const itemHeadingMatch = line.match(/^##\s+([^ ]+)\s+([^ ]+)/); // Matches "## kind id"
+      if (itemHeadingMatch) {
+        currentObject = { kind: itemHeadingMatch[1], id: itemHeadingMatch[2] };
+        jsonData.drawings.push(currentObject);
+      } else {
+        const prop = parsePropLine(line);
+        if (prop && currentObject) {
+          currentObject[prop.key] = prop.value;
+        }
+      }
+    } else if (currentSection === "postits") {
+      const itemHeadingMatch = line.match(/^##\s+(.*)/); // Matches "## Title or ID"
+      if (itemHeadingMatch) {
+        const titleOrId = itemHeadingMatch[1].trim();
+        // Attempt to extract ID if title format is "Title (id)" or just use as ID.
+        // For simplicity, we'll assume the heading IS the ID or a unique title.
+        // A more robust system might require explicit ID prop.
+        const id = titleOrId.startsWith("postit-")
+          ? titleOrId
+          : `postit-${postItIdCounter++}`;
+        currentObject = { id: id, title: titleOrId !== id ? titleOrId : "" };
+        jsonData.postIts[id] = currentObject;
+      } else {
+        const prop = parsePropLine(line);
+        if (prop && currentObject) {
+          currentObject[prop.key] = prop.value;
+        }
+      }
+    }
+
+    // Switch section based on heading
+    if (line.trim() === "# Drawings") {
+      currentSection = "drawings";
+      currentObject = null;
+      currentLineParentStack = []; // Reset parent stack for lines
+    } else if (line.trim() === "# Post its") {
+      currentSection = "postits";
+      currentObject = null;
+      currentLineParentStack = []; // Reset parent stack for lines
+    }
+  }
+  // After parsing all lines, ensure mainLineReference has length if not set by a prop for line-0
+  if (
+    jsonData.mainLineReference &&
+    jsonData.mainLineReference.length === 0 &&
+    jsonData.lines[jsonData.mainLineReference.id]
+  ) {
+    jsonData.mainLineReference.length =
+      jsonData.lines[jsonData.mainLineReference.id].length || 0;
+  }
+
+  return jsonData;
 }

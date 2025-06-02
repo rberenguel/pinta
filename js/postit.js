@@ -186,12 +186,33 @@ function handlePostItKeyDown(e, postItElement, contentArea) {
       g: "green",
       b: "blue",
       w: "white",
-      t: "transp",
+      t: "transp-0",
+      tt: "transp-1", // Dummies
+      ttt: "transp-2", // Dummies
     };
-    if (colorMap[e.key.toLowerCase()]) {
+    const key = e.key.toLowerCase();
+    if (colorMap[key]) {
       state.isWaitingForColorKey = false;
       preventDefault = true;
-      const newColor = colorMap[e.key.toLowerCase()];
+      let newColor = colorMap[e.key.toLowerCase()];
+      if (
+        postItElement.classList.contains("postit-color-transp-0") &&
+        key == "t"
+      ) {
+        newColor = "transp-1";
+      }
+      if (
+        postItElement.classList.contains("postit-color-transp-1") &&
+        key == "t"
+      ) {
+        newColor = "transp-2";
+      }
+      if (
+        postItElement.classList.contains("postit-color-transp-2") &&
+        key == "t"
+      ) {
+        newColor = "transp-0";
+      }
       POSTIT_VALID_COLORS.forEach((c) =>
         postItElement.classList.remove(`postit-color-${c}`),
       );

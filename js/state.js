@@ -54,7 +54,9 @@ export const POSTIT_VALID_COLORS = [
   "green",
   "blue",
   "white",
-  "transp",
+  "transp-0",
+  "transp-1",
+  "transp-2",
 ];
 
 export const drawingColorNames = {

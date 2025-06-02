@@ -92,7 +92,7 @@ but I'm not your doctor or that kind of doctor).
 - **Add Newline**: Press `Shift + Enter` while editing.
 - **Text Styling (while editing text)**:
   - **Change Text Color**: Press `Ctrl/Cmd + G`, then a color key.
-  - **Bold**: Press `Ctrl/Cmd + B`.
+  - **Bold**: Press `Ctrl/Cmd + Shift + B`.
   - **Increase Font Size**: Press `Ctrl/Cmd + .` (period).
   - **Decrease Font Size**: Press `Ctrl/Cmd + ,` (comma).
   - **Toggle Centered Text**: Press `Ctrl/Cmd + C`.
@@ -124,11 +124,25 @@ but I'm not your doctor or that kind of doctor).
 
 - [ ] Better UX of shape selection (e.g. explicit selection state).
 - [ ] Add the ellipse tool.
-- [ ] Better positioning of drawn elements
+- [x] Better positioning of drawn elements
 
 ---
 
 ## Changelog
+
+### 0.4.0
+
+- Fix positioning of drawn elements.
+- Alternate saving format, markdown-like.
+- Which means it can load header-only outlines just fine, like the example in `SW.md`.
+  - It won't look particularly pretty on first load, but it tries to fit everything so you can drag and resize stuff
+
+### 0.3.6 (skipped release)
+
+- Three translucent levels (`Ctrl-g + t` in post it).
+- Hover + delete on lines. Enter now confirms deletion modal.
+- Cmd and Ctrl work now for all text commands (broke this at some point and only Ctrl worked).
+- Fix issue with save notification.
 
 ### 0.3.5
 

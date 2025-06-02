@@ -4,6 +4,7 @@ export {
   renderLine,
   updateChildrenPositions,
   getLineDisplayAngle,
+  getLineDepth,
 };
 
 export const MAIN_LINE_DEFAULT_THICKNESS = 4;
@@ -32,7 +33,7 @@ export const MAX_LINE_THICKNESS = 20;
 import { getLinkPrefix, setupTextDraggable, handleTextClick } from "./text.js";
 import { DEFAULT_SCHEMA_TEXT_COLOR_VAR } from "./text.js";
 import { state, editorContainer } from "./state.js";
-import { handleDeleteItemClick } from "./delete.js";
+import { deleteItem, handleDeleteItemClick } from "./delete.js";
 
 const DELETE_BUTTON_PERP_OFFSET = 0;
 
@@ -766,5 +767,12 @@ function handleLineVisualColorKeydown(event) {
       Math.max(minThickness, newThickness),
     );
     renderLine(lineToUpdate, true);
+  }
+  if (key === "backspace") {
+    event.preventDefault();
+    event.stopPropagation();
+    state.itemToDeleteId = state.hoveredLineIdForVisualColorChange;
+    state.itemTypeToDelete = "line";
+    deleteItem(event);
   }
 }

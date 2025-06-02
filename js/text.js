@@ -250,7 +250,7 @@ function makeEditable(textEl) {
         state.targetLineIdForTextColorChange = null;
         return;
       }
-      if (e.ctrlKey) {
+      if (isCtrlOrCmd) {
         if (e.key.toLowerCase() === "k") {
           e.preventDefault();
           textEl.blur();

@@ -8,90 +8,50 @@ The primary goal of Pinta is to create a dynamic, web-based graphical editor for
 
 Pinta's functionality, primarily managed in `pinta.js` and `style.css`, revolves around several core components:
 
-- **Core Structure (Schema Lines):**
+* **Core Structure (Schema Lines):**
+    * Initializes with a main diagonal line scaled to the viewport.
+    * Clicking a line creates a child line oriented perpendicularly.
+    * Line labels are editable, support multiline input, dynamic styling (font size, bold, alignment, color), hyperlink support, and can be marked as tasks with checkboxes.
+    * Child lines are resizable, and their base can be dragged along the parent line. Line color and thickness can be changed with keyboard shortcuts while hovering.
 
-  - Initializes with a main diagonal line scaled to the viewport, serving as a reference.
-  - Clicking a line creates a child line oriented perpendicularly, using a `relativeDirection` property and dynamic angle calculation.
-  - Line labels are editable, support multiline input, can be dragged, and their perpendicular offset adjusted. They also feature dynamic font sizing, bolding, centering, and hyperlink support with prefix icons.
-  - Child lines are resizable and their base can be dragged along the parent line.
+* **Annotation Tools:**
+    * **Post-it Notes:** Can be created (Alt+Click or Hold Click), dragged, edited (rich text, links), deleted, and their color/font size changed. Positions are saved relative to the main line.
+    * **SVG Drawings:** An SVG layer supports drawing rectangles, highlights, and arrows. These can be selected, dragged, deleted, and their colors changed via keyboard shortcuts.
 
-- **Annotation Tools:**
+* **User Interface & Interaction:**
+    * Uses a Solarized-inspired dark theme (with a toggle for a light theme, `q` key).
+    * Extensive keyboard shortcuts for many operations (Help via `?` key).
+    * `interact.js` manages drag-and-drop and resizing.
+    * Custom HTML modals for confirmations and link editing.
 
-  - **Post-it Notes:** Can be created, dragged, edited (with rich text), deleted, and their color/font size changed. Positions are saved as percentages. Functionality is in `js/postit.js`.
-  - **SVG Drawings:** An SVG layer supports drawing rectangles, highlights, and arrows. These can be selected, dragged, deleted, and their colors changed via keyboard shortcuts.
+* **Data Management:**
+    * Diagram state is saved as a single JSON file (`.pnt`) or a Markdown-like format (`.md`).
+    * On load, elements are scaled/positioned relative to the main line, which adapts to the current viewport.
+    * Supports PWA file handling for `.pnt` files and remembers the last opened `.pnt` file for quick reloading.
 
-- **User Interface & Interaction:**
-
-  - Uses a Solarized-inspired dark theme with keyboard shortcuts for many operations.
-  - `interact.js` manages drag-and-drop and resizing.
-  - Custom HTML modals are used for confirmations and link editing.
-
-- **Data Management:**
-
-  - The entire diagram state is saved as a single JSON file.
-  - On load, elements are scaled/positioned relative to the main line, which adapts to the current viewport.
-
-- **Output & Print:**
-  - Can export diagrams to static, self-contained HTML.
-  - Includes CSS for clean black-and-white printing from the browser.
+* **Output & Print:**
+    * Can export diagrams to static, self-contained HTML (which also embeds the diagram data for re-import).
+    * Includes CSS for clean black-and-white printing.
 
 ## 3. What We Have Been Doing Recently
 
-To make Post-it note positions relative to the main line, the following changes were implemented:
+Recent development has focused on enhancing data portability, editing flexibility, and refining the positioning logic of diagram elements, particularly for responsiveness to viewport changes:
 
-### 1. Data Storage for Post-it Notes:
+1.  **Relative Positioning for Annotations and Drawings:**
+    * **Post-it Notes:** Modified to save and load their positions relative to the main schema line (using `offsetRatioOnMainLine` and `perpDistRatioFromMainLine` normalized by the main line's length, along with `savedWidth` and `savedHeight`) rather than absolute or editor-percentage-based coordinates. This ensures they maintain their intended placement relative to the core diagram structure when the viewport size changes between sessions. The window resize handler in `pinta.js` was updated to correctly reposition Post-its using this relative data.
+    * **Arrows:** Similar to Post-its, arrow start and end points (`x1, y1, x2, y2`) are now saved and loaded using `x1OffsetRatio`, `y1PerpDistRatio`, `x2OffsetRatio`, and `y2PerpDistRatio` relative to the main line. The loading logic in `js/files.js` and the resize handler in `pinta.js` were updated to calculate absolute positions from these ratios based on the current main line's geometry.
+    * **Rectangles and Highlights:** These drawing elements also had their `toSaveData` methods (in `js/drawing.js`) and corresponding loading/resizing logic (in `js/files.js` and `pinta.js`) updated. Their top-left corner (`x`, `y`) is stored as relative offsets (`xOffsetRatio`, `yPerpDistRatio`), and their dimensions (`width`, `height`) are stored as ratios (`widthRatio`, `heightRatio`) of the main line's length.
 
-- **Previous method:** Post-it positions were stored as `xPercent` and `yPercent`, representing their top-left corner's percentage-based offset within the main editor container.
-- **New method (on save):**
-  - The Post-it's center coordinates are now calculated relative to the main line's start point and orientation.
-  - Two new ratios are stored in the `postIts` object within the saved JSON data:
-    - `offsetRatioOnMainLine`: The projected distance of the Post-it's center along the main line's axis, normalized by the main line's current length.
-    - `perpDistRatioFromMainLine`: The perpendicular distance of the Post-it's center from the main line, also normalized by the main line's current length.
-  - The Post-it's actual `offsetWidth` and `offsetHeight` at the time of saving are stored as `savedWidth` and `savedHeight`.
-  - The old `xPercent` and `yPercent` properties are removed from the saved data for Post-its if the new relative positioning is successful.
+2.  **Markdown Import/Export Functionality:**
+    * Implemented functions (`pintaJsonToMarkdown` and `pintaMarkdownToJson` in `js/files.js`) to convert Pinta's internal JSON diagram data to a human-readable, Markdown/YAML-like format and vice-versa.
+    * The Markdown format uses headings for lines (e.g., `# Main Topic`, `## Sub-Topic`) to imply hierarchy, and lists properties as `- key: value`. Drawings and Post-its are in separate sections delineated by `---`.
+    * Saving and loading logic in `js/files.js` was updated to dispatch based on file extension (`.pnt` for JSON, `.md` for the new Markdown format).
 
-### 2. Saving Process (`js/files.js` - `getCurrentDiagramDataForSave`):
+3.  **Improved Loading of "Bare-bones" Markdown:**
+    * Enhanced the `pintaMarkdownToJson` parser and the `_processLoadedDiagramData` function to handle Markdown files that only define line titles (headings) without explicit properties like `length`.
+    * Child lines created from such minimal Markdown now receive a default length calculated based on their parent line's current length and their depth in the hierarchy (similar to the logic in `addNewChildLine`). The sign of this default length is determined by the `relativeDirection` (which the parser defaults to alternating).
+    * A new `autoPositionHint` was added by the Markdown parser to flag implicitly positioned children. The loading logic (`adjustChildrenLayoutForEvenSplit` in `js/files.js`) uses this hint to evenly distribute children along their parent line if *all* children of that parent were implicitly positioned.
 
-- When a diagram is saved, for each Post-it note:
-  1.  Its current absolute center pixel coordinates (cx, cy) are determined, taking into account its `style.left`, `style.top`, `offsetWidth`, `offsetHeight`, and any active drag translations (`data-x`, `data-y`).
-  2.  The main line's current geometry (start coordinates, angle, and length) is retrieved from `state.linesStore`.
-  3.  A vector from the main line's start to the Post-it's center is calculated.
-  4.  This vector is projected onto the main line's axis and its perpendicular axis.
-  5.  These projected distances are then divided by the main line's length to get `offsetRatioOnMainLine` and `perpDistRatioFromMainLine`.
-  6.  The Post-it's current `offsetWidth` and `offsetHeight` are also saved.
-
-### 3. Loading Process (`js/files.js` - `_processLoadedDiagramData`):
-
-- When a diagram is loaded:
-  1.  The main line is reconstructed first, based on the current viewport dimensions. Its new `startX`, `startY`, `length`, and `angle` are determined.
-  2.  For each Post-it note from the saved data:
-      - The saved `offsetRatioOnMainLine`, `perpDistRatioFromMainLine`, `savedWidth`, and `savedHeight` are used.
-      - The absolute distance along the _current_ main line and the perpendicular distance are calculated by multiplying the ratios with the _current_ main line's length.
-      - These distances are used to determine the target center coordinates (`targetCenterX`, `targetCenterY`) of the Post-it relative to the current main line.
-      - The top-left coordinates (`styleLeft`, `styleTop`) for the Post-it are then calculated using `targetCenterX - savedWidth / 2` and `targetCenterY - savedHeight / 2`.
-      - This `noteData` (now including `styleLeft` and `styleTop`) is passed to `createPostIt`.
-
-### 4. Post-it Creation (`js/postit.js` - `createPostIt`):
-
-- The `createPostIt` function was updated to prioritize using `noteData.styleLeft` and `noteData.styleTop` (pixel values) for positioning if they are provided (which they will be during the loading process).
-- If these direct style properties are not available (e.g., when a new Post-it is created via user interaction, or for backward compatibility with old files), it falls back to using `noteData.xPercent`/`yPercent` or default pixel values.
-- When a Post-it is loaded, `_processLoadedDiagramData` populates `state.postItsStore` with the original loaded data (including the relative ratios and saved dimensions) before `createPostIt` is called. `createPostIt` then uses the calculated `styleLeft`/`styleTop` for DOM positioning but ensures the core data in `state.postItsStore` retains the relative positioning information for subsequent saves.
-
-This ensures that Post-it notes maintain their position relative to the diagram's main structural element (the main line) when a file is saved and reloaded, regardless of changes in viewport size between sessions.
-
-- **Feature Enhancements & Additions:**
-
-  - **Line Label Improvements:** Added multiline input, refined click-to-edit, dynamic styling (font size, bold, alignment), and hyperlink support with clickable prefix icons.
-  - **Core Line Logic Refactor:** Changed line orientation to use a `relativeDirection` property with dynamic angle calculation at render time for better responsiveness. This involved creating `getLineDisplayAngle` and updating relevant logic.
-
-- **Codebase Refactoring (Modularization):**
-
-  - Began breaking down the main `pinta.js` into smaller ES6 modules.
-  - **`js/state.js`:** Centralizes mutable application state, constants, and stable DOM references.
-  - **`js/textUtils.js` (now `js/text.js` based on other files):** For text-related utilities like `getLinkPrefix`.
-  - **`js/drawingUtils.js` (now `js/drawing.js`):** For drawing utilities.
-  - **`js/postit.js`:** Encapsulates all Post-it note functionality.
-  - `pinta.js` now imports these modules, and `index.html` loads it as a module.
-
-- **Bug Fixing:**
-  - Resolved an issue with grandchild line rendering after the line angle refactor.
+4.  **Bug Fixes and Refinements:**
+    * Addressed issues in the window resize handler in `pinta.js` to ensure arrows, rectangles, and highlights (along with post-its) correctly re-calculate their absolute positions based on their new relative-to-mainline data, preventing them from disappearing or being misplaced on resize.
+    * Corrected depth calculation for lines being loaded from Markdown to ensure default lengths are based on the accurate depth of the line being processed.

@@ -151,18 +151,56 @@ class Rect extends DrawingElement {
     });
   }
   toSaveData() {
-    const editorRect = editorContainer.getBoundingClientRect();
-    if (editorRect.width === 0 || editorRect.height === 0) return null;
-    return {
-      id: this.id,
-      kind: this.kind,
-      type: this.type,
-      colorName: this.colorName,
-      xPercent: (this.x / editorRect.width) * 100,
-      yPercent: (this.y / editorRect.height) * 100,
-      widthPercent: (this.width / editorRect.width) * 100,
-      heightPercent: (this.height / editorRect.height) * 100,
-    };
+    const mainLineId = Object.keys(state.linesStore).find(
+      (id) => state.linesStore[id] && state.linesStore[id].parentId === null,
+    );
+    const mainLine = mainLineId ? state.linesStore[mainLineId] : null;
+
+    if (mainLine && Math.abs(mainLine.length) > 1e-6) {
+      const mainLineStartX = mainLine.startX;
+      const mainLineStartY = mainLine.startY;
+      const mainLineAngleRad = mainLine.angle * (Math.PI / 180);
+      const mainLineLength = mainLine.length;
+
+      const vecX = this.x - mainLineStartX;
+      const vecY = this.y - mainLineStartY;
+
+      const mainLineDirX = Math.cos(mainLineAngleRad);
+      const mainLineDirY = Math.sin(mainLineAngleRad);
+
+      const distAlongMainLine = vecX * mainLineDirX + vecY * mainLineDirY;
+      const xOffsetRatio = distAlongMainLine / mainLineLength;
+
+      const perpDirX = -mainLineDirY;
+      const perpDirY = mainLineDirX;
+      const perpDist = vecX * perpDirX + vecY * perpDirY;
+      const yPerpDistRatio = perpDist / mainLineLength;
+
+      return {
+        id: this.id,
+        kind: this.kind,
+        type: this.type,
+        colorName: this.colorName,
+        xOffsetRatio: xOffsetRatio,
+        yPerpDistRatio: yPerpDistRatio,
+        widthRatio: this.width / mainLineLength,
+        heightRatio: this.height / mainLineLength,
+      };
+    } else {
+      // Fallback to editor percentage
+      const editorRect = editorContainer.getBoundingClientRect();
+      if (editorRect.width === 0 || editorRect.height === 0) return null;
+      return {
+        id: this.id,
+        kind: this.kind,
+        type: this.type,
+        colorName: this.colorName,
+        xPercent: (this.x / editorRect.width) * 100,
+        yPercent: (this.y / editorRect.height) * 100,
+        widthPercent: (this.width / editorRect.width) * 100,
+        heightPercent: (this.height / editorRect.height) * 100,
+      };
+    }
   }
 }
 
@@ -232,18 +270,73 @@ class Arrow extends DrawingElement {
       this.delete();
     }
   }
-  toSaveData() {
-    const editorRect = editorContainer.getBoundingClientRect();
-    if (editorRect.width === 0 || editorRect.height === 0) return null;
+  _getRelativePointData(pointX, pointY, mainLine) {
+    if (!mainLine || Math.abs(mainLine.length) < 1e-6) {
+      const editorRect = editorContainer.getBoundingClientRect();
+      return {
+        xPercent: editorRect.width > 0 ? (pointX / editorRect.width) * 100 : 0,
+        yPercent:
+          editorRect.height > 0 ? (pointY / editorRect.height) * 100 : 0,
+      };
+    }
+
+    const mainLineStartX = mainLine.startX;
+    const mainLineStartY = mainLine.startY;
+    const mainLineAngleRad = mainLine.angle * (Math.PI / 180);
+    const mainLineLength = mainLine.length;
+
+    const vecX = pointX - mainLineStartX;
+    const vecY = pointY - mainLineStartY;
+
+    const mainLineDirX = Math.cos(mainLineAngleRad);
+    const mainLineDirY = Math.sin(mainLineAngleRad);
+
+    const distAlongMainLine = vecX * mainLineDirX + vecY * mainLineDirY;
+    const offsetRatioOnMainLine = distAlongMainLine / mainLineLength;
+
+    const perpDirX = -mainLineDirY;
+    const perpDirY = mainLineDirX;
+    const perpDistFromMainLine = vecX * perpDirX + vecY * perpDirY;
+    const perpDistRatioFromMainLine = perpDistFromMainLine / mainLineLength;
+
     return {
-      id: this.id,
-      kind: this.kind,
-      colorName: this.colorName,
-      x1Percent: (this.x1 / editorRect.width) * 100,
-      y1Percent: (this.y1 / editorRect.height) * 100,
-      x2Percent: (this.x2 / editorRect.width) * 100,
-      y2Percent: (this.y2 / editorRect.height) * 100,
+      offsetRatioOnMainLine,
+      perpDistRatioFromMainLine,
     };
+  }
+  toSaveData() {
+    const mainLineId = Object.keys(state.linesStore).find(
+      (id) => state.linesStore[id] && state.linesStore[id].parentId === null,
+    );
+    const mainLine = mainLineId ? state.linesStore[mainLineId] : null;
+
+    const p1Data = this._getRelativePointData(this.x1, this.y1, mainLine);
+    const p2Data = this._getRelativePointData(this.x2, this.y2, mainLine);
+
+    if (mainLine && Math.abs(mainLine.length) > 1e-6) {
+      return {
+        id: this.id,
+        kind: this.kind,
+        colorName: this.colorName,
+        x1OffsetRatio: p1Data.offsetRatioOnMainLine,
+        y1PerpDistRatio: p1Data.perpDistRatioFromMainLine,
+        x2OffsetRatio: p2Data.offsetRatioOnMainLine,
+        y2PerpDistRatio: p2Data.perpDistRatioFromMainLine,
+      };
+    } else {
+      // Fallback to editor percentage if mainLine is not suitable
+      const editorRect = editorContainer.getBoundingClientRect();
+      if (editorRect.width === 0 || editorRect.height === 0) return null;
+      return {
+        id: this.id,
+        kind: this.kind,
+        colorName: this.colorName,
+        x1Percent: (this.x1 / editorRect.width) * 100,
+        y1Percent: (this.y1 / editorRect.height) * 100,
+        x2Percent: (this.x2 / editorRect.width) * 100,
+        y2Percent: (this.y2 / editorRect.height) * 100,
+      };
+    }
   }
 }
 
