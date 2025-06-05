@@ -4,15 +4,26 @@ import { renderLine } from "../js/lines.js";
 import { handleTextClick } from "../js/text.js";
 
 mocha.run();
-
+mocha.slow(500);
+const waitForTimeout = (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
 describe("Pinta Text Functionality", function () {
   let editorContainer;
   let mainLineId;
   let mainLineTextElement;
 
-  beforeEach(function () {
+  beforeEach(async function () {
     editorContainer = document.getElementById("editor-container");
-    initPinta();
+    if (typeof initPinta === "function") {
+      initPinta();
+      await waitForTimeout(200);
+    } else {
+      throw new Error("initPinta is not a function.");
+    }
+    await waitForTimeout(10);
 
     mainLineId = Object.keys(state.linesStore).find(
       (id) => state.linesStore[id].parentId === null,
@@ -50,14 +61,11 @@ describe("Pinta Text Functionality", function () {
       requestAnimationFrame(() => {
         chai.expect(state.linesStore[mainLineId].text).to.equal(newText);
 
-        const displayedText = mainLineTextElement.textContent.replace(
-          state.linesStore[mainLineId].linkUrl ? /🔗 |📜 |📦 / : "",
-          "",
-        );
+        const displayedText = mainLineTextElement.textContent;
         chai.expect(displayedText).to.equal(newText);
-        done();
       });
     });
+    setTimeout(done, 200);
   });
 
   it("should select all text if text length is less than 4 characters on click", function (done) {

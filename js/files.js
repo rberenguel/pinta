@@ -20,6 +20,7 @@ import {
   CHILD_LINE_DEFAULT_THICKNESS,
   MIN_LINE_LENGTH,
   getLineDepth,
+  SCHEMA_LINE_VISUAL_COLORS,
 } from "./lines.js";
 
 import { DEFAULT_SCHEMA_TEXT_COLOR_VAR, getLinkPrefix } from "./text.js";
@@ -495,6 +496,9 @@ function _processLoadedDiagramData(fileContentString, isMarkdown = false) {
       if (!isNaN(numId) && numId > maxLineIdNum) maxLineIdNum = numId;
 
       let newLineData = { ...loadedLine };
+      delete newLineData["hasCheckbox"]; // Avoid rewriting legacy fields
+      delete newLineData["isCheckboxChecked"]; // Avoid rewriting legacy fields
+      delete newLineData["visualColor"]; // Avoid rewriting legacy fields
 
       if (loadedLine.id === mainLineCurrentId) {
         newLineData.startX = p1x;
@@ -927,7 +931,10 @@ async function exportToStaticHTML(loadedCSSText) {
           textContentHtml = escapeHtml(rawLineText);
         }
 
-        if (line.hasCheckbox) {
+        if (
+          line.checkboxState === "checked" ||
+          line.checkboxState === "unchecked"
+        ) {
           const currentLineTextColorValue =
             line.textColor && line.textColor !== "default"
               ? `var(--${line.textColor})`
@@ -1067,6 +1074,21 @@ function pintaJsonToMarkdown(jsonData) {
     let propsMd = "";
     for (const key in obj) {
       if (excludeKeys.includes(key) || typeof obj[key] === "function") continue;
+      if (
+        obj.hasOwnProperty("parentId") &&
+        (key === "checkboxState" ||
+          key === "linkUrl" ||
+          key === "text" ||
+          key === "isBold" ||
+          key === "isCentered" ||
+          key === "fontSize" ||
+          key === "textColor" ||
+          key === "angle" ||
+          key === "startX" ||
+          key === "startY")
+      ) {
+        continue;
+      }
       // Specifically handle children for lines later if needed, for now, basic stringify
       if (key === "children" && Array.isArray(obj[key])) {
         // Optionally, list child IDs if needed, or skip if hierarchy is enough
@@ -1083,8 +1105,97 @@ function pintaJsonToMarkdown(jsonData) {
     const line = jsonData.lines[lineId];
     if (!line) return;
 
-    mdString += `${"#".repeat(depth)} ${line.text || "Untitled Line"}\n`;
-    mdString += formatProps(line, ["id", "parentId", "children", "text"]); // Exclude structural/handled props
+    let titlePrefix = "";
+    if (line.checkboxState === "checked") {
+      titlePrefix = "[x] ";
+    } else if (line.checkboxState === "unchecked") {
+      titlePrefix = "[ ] ";
+    }
+    const escapedLineText = (line.text || "Untitled Line").replace(
+      /\n/g,
+      "\\n",
+    );
+    let lineTitleContent = escapedLineText;
+    if (line.linkUrl) {
+      // Use a default link text if actual text is empty but URL exists
+      const linkText = line.text || "Link";
+      lineTitleContent = `[${linkText}](${line.linkUrl})`;
+    }
+    const newLine = depth > 1 ? "\n" : "";
+    mdString += `${newLine}${"#".repeat(depth)} ${titlePrefix}${lineTitleContent}\n`;
+    let formatParts = [];
+    if (line.isBold === true) {
+      // Default is false
+      formatParts.push("bold");
+    }
+    if (line.isCentered === false) {
+      // Default is true, so only add if explicitly false
+      formatParts.push("left-aligned"); // Or a similar keyword for non-centered
+    } else if (
+      line.isCentered === true &&
+      jsonData.lines[line.parentId] !== undefined
+    ) {
+      // Only add "centered" if it's not the root and it's true (to override potential inheritance if that was a feature)
+      // For now, let's be explicit if it's true and not a root-level default style for clarity
+      // Or, better: only add "centered" if true. Absence will mean use Pinta default (which is true).
+      // If user wants left-aligned, they'd omit "centered" OR we introduce "left-aligned".
+      // Let's go with: "centered" means true. Absence means Pinta default (true).
+      // To make it *not* centered, we'll need a "left" or "left-aligned" keyword.
+      // Given the prompt "centered (or not)", let's assume "centered" means true.
+      // If the user wants to explicitly make it left, they would omit "centered" from format string,
+      // and the parser would default to false.
+      // To make this robust: If isCentered is true (Pinta default), we only *need* to write it if it's different from an implied "false" when format is present.
+      // Simpler: if isCentered is true, write "centered".
+      formatParts.push("centered");
+    }
+
+    if (line.fontSize !== undefined && line.fontSize !== 16) {
+      // Default is 16
+      formatParts.push(String(line.fontSize));
+    }
+    if (line.textColor && line.textColor !== "default") {
+      // Default is "default"
+      formatParts.push(line.textColor);
+    }
+
+    if (formatParts.length > 0) {
+      mdString += `- format: ${formatParts.join(", ")}\n`;
+    }
+    // Line visual property (color and thickness)
+    const isMainLine = line.parentId === null;
+    const defaultThickness = isMainLine
+      ? MAIN_LINE_DEFAULT_THICKNESS
+      : CHILD_LINE_DEFAULT_THICKNESS;
+    const lineColor = line.color || "default";
+    const lineThickness =
+      line.thickness === undefined
+        ? defaultThickness
+        : parseFloat(line.thickness);
+
+    if (lineColor !== "default" || lineThickness !== defaultThickness) {
+      mdString += `- line: ${lineColor}, ${lineThickness.toFixed(2)}\n`;
+    }
+
+    // Exclude properties now handled in the heading or specific format/line props for lines
+    mdString += formatProps(line, [
+      "id",
+      "parentId",
+      "children",
+      "text",
+      "checkboxState",
+      "linkUrl",
+      "isBold",
+      "isCentered",
+      "fontSize",
+      "textColor",
+      "color",
+      "thickness",
+      "angle",
+      "startX",
+      "startY",
+      "hasCheckbox", // Avoid rewriting legacy fields
+      "isCheckboxChecked", // Avoid rewriting legacy fields
+    ]);
 
     if (line.children && line.children.length > 0) {
       line.children.forEach((childId) => processLine(childId, depth + 1));
@@ -1176,6 +1287,8 @@ function pintaMarkdownToJson(markdownString) {
     return null;
   };
 
+  const linkRegex = /\[(.*?)\]\((.*?)\)/;
+
   for (const line of lines) {
     if (line.trim() === "---") {
       currentObject = null; // Reset current object when changing section
@@ -1187,12 +1300,40 @@ function pintaMarkdownToJson(markdownString) {
       const headingMatch = line.match(/^(#+)\s+(.*)/);
       if (headingMatch) {
         const depth = headingMatch[1].length;
-        const text = headingMatch[2].trim();
-        const lineId = `line-${lineIdCounter++}`;
+        let titleText = headingMatch[2].trim();
+        let lineCheckboxState = null;
 
+        if (titleText.startsWith("[ ] ")) {
+          lineCheckboxState = "unchecked";
+          titleText = titleText.substring(4);
+        } else if (
+          titleText.startsWith("[x] ") ||
+          titleText.startsWith("[X] ")
+        ) {
+          lineCheckboxState = "checked";
+          titleText = titleText.substring(4);
+        }
+        let lineText = titleText;
+        let linkUrl = null;
+        const linkMatch = titleText.match(linkRegex);
+
+        if (
+          linkMatch &&
+          linkMatch[1] !== undefined &&
+          linkMatch[2] !== undefined
+        ) {
+          lineText = linkMatch[1].trim();
+          linkUrl = linkMatch[2].trim();
+          if (!lineText && linkUrl) {
+            // Handle empty link text like [](<url>)
+            lineText = "Link";
+          }
+        }
+        const lineId = `line-${lineIdCounter++}`;
+        lineText = lineText.replace(/\\n/g, "\n");
         currentObject = {
           id: lineId,
-          text: text,
+          text: lineText,
           children: [],
           parentId: null,
           // Initialize with some defaults that might be overridden by props
@@ -1207,9 +1348,8 @@ function pintaMarkdownToJson(markdownString) {
           fontSize: 16,
           isBold: false,
           isCentered: true,
-          linkUrl: null,
-          hasCheckbox: false,
-          isCheckboxChecked: false,
+          linkUrl: linkUrl,
+          checkboxState: lineCheckboxState,
         };
 
         if (depth === 1) {
@@ -1249,15 +1389,88 @@ function pintaMarkdownToJson(markdownString) {
       } else {
         const prop = parsePropLine(line);
         if (prop && currentObject && currentSection === "lines") {
-          currentObject[prop.key] = prop.value;
-          // If these specific positioning properties are found in the MD, remove the hint
-          if (
-            prop.key === "offsetRatioOnParent" ||
-            prop.key === "relativeDirection" ||
-            prop.key === "startX" ||
-            prop.key === "startY"
-          ) {
+          if (prop.key === "format") {
+            console.log(prop.value);
+            const formatString = `${prop.value}` || "";
+            const parts = formatString
+              .split(",")
+              .map((p) => p.trim().toLowerCase());
+
+            // Apply format parts, potentially overriding defaults set above
+            // If a format part is missing, the default (or prior value) holds.
+            // For isCentered, absence of "centered" in a format string means left-aligned.
+            let foundCenteredInFormat = false;
+
+            parts.forEach((part) => {
+              if (part === "bold") {
+                currentObject.isBold = true;
+              } else if (part === "centered") {
+                currentObject.isCentered = true;
+                foundCenteredInFormat = true;
+              } else if (part === "left-aligned") {
+                // Specific keyword for left-align
+                currentObject.isCentered = false;
+                foundCenteredInFormat = true; // A alignment choice was made
+              } else if (!isNaN(parseInt(part))) {
+                currentObject.fontSize = parseInt(part);
+              } else if (
+                Object.values(SCHEMA_LINE_VISUAL_COLORS).includes(part)
+              ) {
+                currentObject.textColor = part;
+              } else if (SCHEMA_LINE_VISUAL_COLORS[part]) {
+                // Check if it's a short color code like 'r' for 'red'
+                currentObject.textColor = SCHEMA_LINE_VISUAL_COLORS[part];
+              }
+            });
+            // If format string exists but "centered" or "left-aligned" is NOT mentioned,
+            // it should become left-aligned (isCentered: false)
+            if (!foundCenteredInFormat) {
+              currentObject.isCentered = false;
+            }
+
             delete currentObject.autoPositionHint;
+          } else if (prop.key === "line") {
+            const lineStyleString = prop.value;
+            const parts = lineStyleString
+              .split(",")
+              .map((p) => p.trim().toLowerCase());
+
+            // Defaults for color/thickness are already set. Override if found in parts.
+            parts.forEach((part) => {
+              const numPart = parseFloat(part);
+              if (!isNaN(numPart)) {
+                currentObject.thickness = numPart;
+              } else if (
+                Object.values(SCHEMA_LINE_VISUAL_COLORS).includes(part)
+              ) {
+                currentObject.color = part;
+              } else if (SCHEMA_LINE_VISUAL_COLORS[part]) {
+                currentObject.color = SCHEMA_LINE_VISUAL_COLORS[part];
+              }
+            });
+            delete currentObject.autoPositionHint;
+          } else if (
+            ![
+              "text",
+              "checkboxState",
+              "linkUrl",
+              "isBold",
+              "isCentered",
+              "fontSize",
+              "textColor",
+              "color",
+              "thickness",
+            ].includes(prop.key)
+          ) {
+            currentObject[prop.key] = prop.value;
+            if (
+              prop.key === "offsetRatioOnParent" ||
+              prop.key === "relativeDirection" ||
+              prop.key === "startX" ||
+              prop.key === "startY"
+            ) {
+              delete currentObject.autoPositionHint;
+            }
           }
           if (
             currentObject.id === jsonData.mainLineReference?.id &&

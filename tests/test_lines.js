@@ -63,7 +63,7 @@ describe("Pinta Line Functionality", function () {
     chai.expect(childLineElement.classList.contains("line-element-group")).to.be
       .true;
   });
-});
+}).slow(500);
 
 const waitForTimeout = (ms) => {
   return new Promise((resolve) => {
@@ -209,7 +209,7 @@ describe("Pinta Child Line Behavior", function () {
     ).to.exist;
 
     const initialMainLineVisualColor =
-      state.linesStore[mainLineId].visualColor || "default";
+      state.linesStore[mainLineId].color || "default";
     const defaultColorVar = "var(--theme-schema-line-color)";
     const blueColorVar = "var(--blue)";
 
@@ -234,7 +234,7 @@ describe("Pinta Child Line Behavior", function () {
     ).to.exist;
     chai
       .expect(
-        state.linesStore[childLineId].visualColor,
+        state.linesStore[childLineId].color,
         "Child line state color should be blue",
       )
       .to.equal("blue");
@@ -248,7 +248,7 @@ describe("Pinta Child Line Behavior", function () {
 
     chai
       .expect(
-        state.linesStore[mainLineId].visualColor,
+        state.linesStore[mainLineId].color,
         "Main line state color should remain unchanged",
       )
       .to.equal(initialMainLineVisualColor);
@@ -271,7 +271,7 @@ describe("Pinta Child Line Behavior", function () {
 
     chai
       .expect(
-        state.linesStore[childLineId].visualColor,
+        state.linesStore[childLineId].color,
         "Child line state color should revert to default",
       )
       .to.equal("default");
@@ -284,7 +284,7 @@ describe("Pinta Child Line Behavior", function () {
 
     chai
       .expect(
-        state.linesStore[mainLineId].visualColor,
+        state.linesStore[mainLineId].color,
         "Main line state color should still be unchanged",
       )
       .to.equal(initialMainLineVisualColor);
@@ -638,5 +638,5 @@ describe("Pinta Child Line Behavior", function () {
     }
     await waitForTimeout(20);
   });
-});
+}).slow(2500);
 mocha.run();

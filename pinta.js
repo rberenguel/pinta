@@ -868,7 +868,7 @@ function init() {
     text: "...",
     thickness: MAIN_LINE_DEFAULT_THICKNESS,
     textPerpOffset: -15,
-    color: "var(--theme-schema-line-color)",
+    color: "default",
   });
   renderLine(mainLine);
 }
@@ -942,6 +942,10 @@ const commands = [
   {
     title: "Export to static HTML",
     lambda: () => exportToStaticHTML(loadedCSSText),
+  },
+  {
+    title: "Save as markdown",
+    lambda: () => triggerSaveDiagram(/*asMarkdown=*/ true),
   },
   {
     title: "Version",

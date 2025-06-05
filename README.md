@@ -130,6 +130,13 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.5.0 (internal representation changes)
+
+- Tweaking of the markdown export/import, simplifying it
+- Internal representation change. It could affect saved diagrams (there is no autoconversion):
+  - Tasks may disappear (the whole checkbox and its state have changed)
+  - Line colors (and default line colors, the internal representation has been changed)
+
 ### 0.4.0
 
 - Fix positioning of drawn elements.

@@ -52,8 +52,7 @@ function createLineObject(params) {
       params && params.parentId
         ? CHILD_LINE_DEFAULT_THICKNESS
         : MAIN_LINE_DEFAULT_THICKNESS,
-    color: "var(--theme-schema-line-color)", // Kind of deprecated with visualColor
-    visualColor: "default",
+    color: "default",
     textColor: "default",
     children: [],
     offsetRatioOnParent: 0.5,
@@ -61,8 +60,7 @@ function createLineObject(params) {
     isBold: false,
     isCentered: true,
     linkUrl: null,
-    hasCheckbox: false,
-    isCheckboxChecked: false,
+    checkboxState: null,
   };
 
   let lineData = { ...defaultParams, ...(params || {}), id };
@@ -104,11 +102,17 @@ function renderLine(line, isUpdate = false) {
     group.style.transform = `rotate(${displayAngle}deg) scaleX(${groupScaleX})`;
     if (visual) {
       visual.style.height = `${line.thickness}px`;
-      const currentVisualColor = line.visualColor || "default";
+      let currentColor = line.color || "default";
+      currentColor = Object.values(SCHEMA_LINE_VISUAL_COLORS).includes(
+        currentColor,
+      )
+        ? currentColor
+        : "default";
+      line.color = currentColor;
       visual.style.backgroundColor =
-        currentVisualColor === "default"
+        currentColor === "default"
           ? DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR
-          : `var(--${currentVisualColor})`;
+          : `var(--${currentColor})`;
 
       visual.removeEventListener("mouseenter", handleLineVisualMouseEnter);
       visual.addEventListener("mouseenter", handleLineVisualMouseEnter);
@@ -130,11 +134,17 @@ function renderLine(line, isUpdate = false) {
     visual = document.createElement("div");
     visual.className = "line-visual";
     visual.style.height = `${line.thickness}px`;
-    const currentVisualColor = line.visualColor || "default";
+    let currentColor = line.color || "default";
+    currentColor = Object.values(SCHEMA_LINE_VISUAL_COLORS).includes(
+      currentColor,
+    )
+      ? currentColor
+      : "default";
+    line.color = currentColor;
     visual.style.backgroundColor =
-      currentVisualColor === "default"
+      currentColor === "default"
         ? DEFAULT_SCHEMA_LINE_VISUAL_COLOR_VAR
-        : `var(--${currentVisualColor})`;
+        : `var(--${currentColor})`;
     visual.dataset.lineId = line.id;
     visual.addEventListener("click", handleVisualClick);
     visual.removeEventListener("mouseenter", handleLineVisualMouseEnter);
@@ -179,11 +189,14 @@ function renderLine(line, isUpdate = false) {
 
   if (textElement) {
     textElement.innerHTML = "";
-    if (line.hasCheckbox) {
+    if (
+      line.checkboxState === "checked" ||
+      line.checkboxState === "unchecked"
+    ) {
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.className = "line-label-checkbox";
-      checkbox.checked = line.isCheckboxChecked || false;
+      checkbox.checked = line.checkboxState === "checked";
       checkbox.style.marginRight = "5px";
       const currentLineTextColorValue =
         line.textColor && line.textColor !== "default"
@@ -199,7 +212,9 @@ function renderLine(line, isUpdate = false) {
         e.stopPropagation();
         const currentLineData = state.linesStore[line.id];
         if (currentLineData) {
-          currentLineData.isCheckboxChecked = e.target.checked;
+          currentLineData.checkboxState = e.target.checked
+            ? "checked"
+            : "unchecked";
           if (e.target.checked) {
             textElement.classList.add("checkbox-checked");
           } else {
@@ -233,7 +248,8 @@ function renderLine(line, isUpdate = false) {
       linkIconSpan.style.cursor = "pointer";
       textElement.appendChild(linkIconSpan);
     }
-    if (line.hasCheckbox && line.isCheckboxChecked) {
+    if (line.checkboxState === "checked") {
+      // Strikethrough logic
       textElement.classList.add("checkbox-checked");
     } else {
       textElement.classList.remove("checkbox-checked");
@@ -532,7 +548,6 @@ function segmentIntersection(p1, p2, p3, p4) {
 
 function addNewChildLine(parentId, clickOffsetRatioOnParent) {
   const parentLine = state.linesStore[parentId];
-  console.log(parentLine);
   if (!parentLine) return;
 
   const parentDisplayAngle = getLineDisplayAngle(parentId, state.linesStore);
@@ -570,7 +585,10 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
     initialSignedChildLength *= newSign;
   }
   if (sibling) {
-    if (sibling.hasCheckbox) {
+    if (
+      sibling.checkboxState == "checked" ||
+      sibling.checkboxState == "unchecked"
+    ) {
       hasCheckbox = true;
     }
   }
@@ -631,7 +649,6 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
       exL_P1,
       exL_P2,
     );
-    console.log(intersectData);
     if (intersectData) {
       let distToCollision =
         intersectData.t_param_on_first_segment * finalAbsoluteLength;
@@ -653,11 +670,10 @@ function addNewChildLine(parentId, clickOffsetRatioOnParent) {
     relativeDirection: sign,
     text: "...",
     thickness: CHILD_LINE_DEFAULT_THICKNESS,
-    color: "var(--theme-schema-line-color)",
+    color: "default",
     textPerpOffset: childTextPerpOffset,
     offsetRatioOnParent: clickOffsetRatioOnParent,
-    hasCheckbox: hasCheckbox,
-    isCheckboxChecked: false,
+    checkboxState: hasCheckbox ? "unchecked" : null,
   });
   parentLine.children.push(childLine.id);
   renderLine(childLine);
@@ -728,7 +744,7 @@ function handleLineVisualColorKeydown(event) {
 
     if (lineToUpdate) {
       const newColorName = SCHEMA_LINE_VISUAL_COLORS[key];
-      lineToUpdate.visualColor = newColorName;
+      lineToUpdate.color = newColorName;
       renderLine(lineToUpdate, true);
     }
     return;
@@ -736,9 +752,13 @@ function handleLineVisualColorKeydown(event) {
     event.preventDefault();
     event.stopPropagation();
     if (lineToUpdate) {
-      lineToUpdate.hasCheckbox = !lineToUpdate.hasCheckbox;
-      if (!lineToUpdate.hasCheckbox) {
-        lineToUpdate.isCheckboxChecked = false;
+      if (
+        lineToUpdate.checkboxState === "checked" ||
+        lineToUpdate.checkboxState === "unchecked"
+      ) {
+        lineToUpdate.checkboxState = null; // Remove checkbox
+      } else {
+        lineToUpdate.checkboxState = "unchecked"; // Add checkbox, default to unchecked
       }
       renderLine(lineToUpdate, true);
     }
