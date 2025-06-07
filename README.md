@@ -28,7 +28,7 @@ It is based on a diagram I saw on the (otherwise pretty bad and not recommended 
 ## How it looks
 
 This is the main "example" which also serves as feature list. This is the state of the example
-as of version 0.3.4 (but the features described above are more current).
+as of version 0.4.0 (I need to update it since this is at 0.6.0, pressing `?` will give more current help).
 
 ![](https://raw.githubusercontent.com/rberenguel/pinta/gh-pages/media/pinta-example-dark.png)
 

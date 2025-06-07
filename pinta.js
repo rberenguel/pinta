@@ -31,6 +31,7 @@ import {
   highlightBranch,
   updateChildrenPositions,
   deleteLineRecursive,
+  getLineDisplayAngle,
 } from "./js/lines.js";
 
 import { handleDeleteItemClick } from "./js/delete.js";
@@ -838,6 +839,37 @@ editorContainer.addEventListener("mousedown", (e) => {
   state.selectedLines.clear();
   e.preventDefault();
 });
+
+function isCursorOnLine(cursorEvent, lineId, editorRect) {
+  const line = state.linesStore[lineId];
+  if (!line) return false;
+
+  const cursorX = cursorEvent.clientX - editorRect.left;
+  const cursorY = cursorEvent.clientY - editorRect.top;
+
+  const dx = cursorX - line.startX;
+  const dy = cursorY - line.startY;
+
+  const angle = getLineDisplayAngle(line.id, state.linesStore);
+  const angleRad = -angle * (Math.PI / 180);
+
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
+
+  const localX = dx * cosA - dy * sinA;
+  const localY = dx * sinA + dy * cosA;
+
+  // The CSS uses a transparent border to increase the clickable area.
+  // We'll use a generous fixed padding to simulate this for easy selection.
+  const hitPadding = 10; // 10px tolerance above and below the line's visual center.
+
+  const isWithinX =
+    localX >= Math.min(0, line.length) && localX <= Math.max(0, line.length);
+  const isWithinY = Math.abs(localY) <= line.thickness / 2 + hitPadding;
+
+  return isWithinX && isWithinY;
+}
+
 editorContainer.addEventListener("mousemove", (e) => {
   if (!state.isSelecting) return;
   const trailDot = document.createElement("div");
@@ -850,32 +882,16 @@ editorContainer.addEventListener("mousemove", (e) => {
   setTimeout(() => {
     trailDot.remove();
   }, 1000); // Animation duration
-  const lineVisuals = Array.from(document.querySelectorAll(".line-visual"));
-  for (const visual of lineVisuals) {
-    const rect = visual.getBoundingClientRect();
-    if (
-      e.clientX >= rect.left &&
-      e.clientX <= rect.right &&
-      e.clientY >= rect.top &&
-      e.clientY <= rect.bottom
-    ) {
-      const lineId = visual.dataset.lineId;
+  for (const lineId in state.linesStore) {
+    if (isCursorOnLine(e, lineId, editorRect)) {
       const line = state.linesStore[lineId];
       if (line && line.parentId) {
-        // Do not select main line
-        let outermostParentId = lineId;
-        let current = line;
-        while (
-          current.parentId &&
-          state.linesStore[current.parentId] &&
-          state.linesStore[current.parentId].parentId
-        ) {
-          outermostParentId = current.parentId;
-          current = state.linesStore[current.parentId];
-        }
-        if (!state.selectedLines.has(outermostParentId)) {
-          state.selectedLines.add(outermostParentId);
-          highlightBranch(outermostParentId, true);
+        // Corrected Logic: Select the line that was actually hovered over.
+        // The upward traversal has been removed.
+        if (!state.selectedLines.has(lineId)) {
+          state.selectedLines.add(lineId);
+          // highlightBranch correctly highlights the line and all its children.
+          highlightBranch(lineId, true);
         }
       }
     }
