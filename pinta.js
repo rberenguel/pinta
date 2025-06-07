@@ -28,6 +28,9 @@ import {
   createLineObject,
   renderLine,
   MAIN_LINE_DEFAULT_THICKNESS,
+  highlightBranch,
+  updateChildrenPositions,
+  deleteLineRecursive,
 } from "./js/lines.js";
 
 import { handleDeleteItemClick } from "./js/delete.js";
@@ -39,6 +42,77 @@ let closeHelpModalButton;
 
 let version = "";
 let loadedCSSText = "";
+
+function getDeepCopyOfBranch(lineId, linesStore) {
+  const line = linesStore[lineId];
+  if (!line) return null;
+
+  const lineCopy = { ...line, children: [] }; // Deep copy of line, reset children
+
+  if (line.children && line.children.length > 0) {
+    lineCopy.children = line.children
+      .map((childId) => getDeepCopyOfBranch(childId, linesStore))
+      .filter(Boolean); // Filter out nulls if any child is missing
+  }
+
+  return lineCopy;
+}
+
+function addBranchToStore(lineData, linesStore) {
+  linesStore[lineData.id] = { ...lineData, children: [] };
+
+  if (lineData.children && lineData.children.length > 0) {
+    lineData.children.forEach((child) => {
+      linesStore[lineData.id].children.push(child.id);
+      addBranchToStore(child, linesStore);
+    });
+  }
+}
+
+function pasteBranch(branchData, newParentId, linesStore) {
+  const newId = `line-${state.lineIdCounter++}`;
+  const newLineData = {
+    ...branchData,
+    id: newId,
+    parentId: newParentId,
+    children: [], // This will be populated recursively
+  };
+
+  linesStore[newId] = newLineData;
+
+  if (branchData.children && branchData.children.length > 0) {
+    newLineData.children = branchData.children.map((childData) => {
+      const newChild = pasteBranch(childData, newId, linesStore);
+      return newChild.id;
+    });
+  }
+
+  return newLineData;
+}
+
+function restoreClipboard() {
+  if (!state.clipboard) return;
+
+  state.clipboard.forEach((branchRoot) => {
+    // Add the branch back to the linesStore
+    addBranchToStore(branchRoot, state.linesStore);
+
+    // Re-link to the original parent
+    const parent = state.linesStore[branchRoot.parentId];
+    if (parent) {
+      if (!parent.children.includes(branchRoot.id)) {
+        parent.children.push(branchRoot.id);
+      }
+    }
+
+    // Re-render the restored branch
+    renderLine(state.linesStore[branchRoot.id], true);
+  });
+
+  // Clear the clipboard
+  state.clipboard = null;
+  console.log("Pinta: Cut operation undone.");
+}
 
 async function handleLaunchQueueFiles(launchParams) {
   console.debug("Processing launch queue");
@@ -160,6 +234,9 @@ async function fetchSelfManifest() {
     if (response.ok) {
       let loadedManifest = await response.text();
       version = JSON.parse(loadedManifest).version;
+      helpModal.querySelector("h3").innerHTML = helpModal
+        .querySelector("h3")
+        .innerHTML.replace("{{version}}", version);
       console.log("Version fetched.");
     } else {
       console.warn("Failed to fetch manifest", response.statusText);
@@ -235,6 +312,67 @@ function handleKeyDown(event) {
   } else if (ctrlCmd && event.key.toLowerCase() === "o") {
     event.preventDefault();
     triggerLoadDiagram();
+    return;
+  } else if (ctrlCmd && event.key.toLowerCase() === "c") {
+    event.preventDefault();
+    if (state.selectedLines.size > 0) {
+      state.clipboard = [];
+      state.selectedLines.forEach((lineId) => {
+        const branchCopy = getDeepCopyOfBranch(lineId, state.linesStore);
+        if (branchCopy) {
+          state.clipboard.push(branchCopy);
+        }
+      });
+      state.isCutOperation = false;
+      state.selectedLines.forEach((id) => highlightBranch(id, false));
+      state.selectedLines.clear();
+      console.log("Pinta: Copied to clipboard.");
+    }
+    return;
+  } else if (ctrlCmd && event.key.toLowerCase() === "x") {
+    event.preventDefault();
+    if (state.selectedLines.size > 0) {
+      state.clipboard = [];
+      state.selectedLines.forEach((lineId) => {
+        const branchCopy = getDeepCopyOfBranch(lineId, state.linesStore);
+        if (branchCopy) {
+          state.clipboard.push(branchCopy);
+          deleteLineRecursive(lineId);
+        }
+      });
+      state.selectedLines.forEach((id) => highlightBranch(id, false));
+      state.isCutOperation = true;
+      state.selectedLines.clear();
+    }
+    return;
+  } else if (ctrlCmd && event.key.toLowerCase() === "v") {
+    event.preventDefault();
+    if (state.clipboard && state.hoveredLineIdForVisualColorChange) {
+      const pasteeId = state.hoveredLineIdForVisualColorChange;
+      const pasteeLine = state.linesStore[pasteeId];
+
+      state.clipboard.forEach((branchRoot) => {
+        const newBranchRoot = pasteBranch(
+          branchRoot,
+          pasteeId,
+          state.linesStore,
+        );
+        pasteeLine.children.push(newBranchRoot.id);
+      });
+
+      const childCount = pasteeLine.children.length;
+      pasteeLine.children.forEach((childId, index) => {
+        const childLine = state.linesStore[childId];
+        if (childLine) {
+          childLine.offsetRatioOnParent = (index + 1) / (childCount + 1);
+        }
+      });
+
+      updateChildrenPositions(pasteeId);
+      if (state.isCutOperation) {
+        state.clipboard = null;
+      }
+    }
     return;
   }
 
@@ -319,7 +457,11 @@ function handleKeyDown(event) {
 
   // Ensure Escape key also closes the help modal
   if (event.key === "Escape") {
-    // ... (existing logic for other modals/tools) ...
+    if (state.clipboard && state.isCutOperation) {
+      event.preventDefault();
+      restoreClipboard();
+      return;
+    }
     if (helpModal && helpModal.style.display === "flex") {
       hideHelpModal();
     }
@@ -381,7 +523,8 @@ function handleKeyDown(event) {
       event.key.toLowerCase() === "c" &&
       !state.currentDrawingTool &&
       !isEditingText &&
-      !isModalActive
+      !isModalActive &&
+      !state.hoveredLineIdForTextColorChange
     ) {
       state.colorChangeModeActive = !state.colorChangeModeActive;
       console.log(
@@ -684,6 +827,66 @@ window.addEventListener("resize", () => {
 });
 
 let drawingStartX, drawingStartY;
+
+editorContainer.addEventListener("mousedown", (e) => {
+  if (e.target !== editorContainer) return;
+  if (state.activeTextEditElement) {
+    state.activeTextEditElement.blur();
+  }
+  state.isSelecting = true;
+  state.selectedLines.forEach((id) => highlightBranch(id, false));
+  state.selectedLines.clear();
+  e.preventDefault();
+});
+editorContainer.addEventListener("mousemove", (e) => {
+  if (!state.isSelecting) return;
+  const trailDot = document.createElement("div");
+  trailDot.className = "selection-trail";
+  const editorRect = editorContainer.getBoundingClientRect();
+  trailDot.style.left = `${e.clientX - editorRect.left}px`;
+  trailDot.style.top = `${e.clientY - editorRect.top}px`;
+  editorContainer.appendChild(trailDot);
+
+  setTimeout(() => {
+    trailDot.remove();
+  }, 1000); // Animation duration
+  const lineVisuals = Array.from(document.querySelectorAll(".line-visual"));
+  for (const visual of lineVisuals) {
+    const rect = visual.getBoundingClientRect();
+    if (
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom
+    ) {
+      const lineId = visual.dataset.lineId;
+      const line = state.linesStore[lineId];
+      if (line && line.parentId) {
+        // Do not select main line
+        let outermostParentId = lineId;
+        let current = line;
+        while (
+          current.parentId &&
+          state.linesStore[current.parentId] &&
+          state.linesStore[current.parentId].parentId
+        ) {
+          outermostParentId = current.parentId;
+          current = state.linesStore[current.parentId];
+        }
+        if (!state.selectedLines.has(outermostParentId)) {
+          state.selectedLines.add(outermostParentId);
+          highlightBranch(outermostParentId, true);
+        }
+      }
+    }
+  }
+});
+editorContainer.addEventListener("mouseup", (e) => {
+  state.isSelecting = false;
+});
+editorContainer.addEventListener("mouseleave", (e) => {
+  state.isSelecting = false;
+});
 document.addEventListener("mousedown", (event) => {
   if (
     state.drawingCanvas.style.pointerEvents !== "auto" &&

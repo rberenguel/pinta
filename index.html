@@ -176,7 +176,7 @@
         &times;
       </button>
       <div class="modal-content" id="helpModalContent">
-        <h3>Pinta</h3>
+        <h3>Pinta {{version}}</h3>
         <div class="help-sections-container">
           <div class="help-section">
             <h4>General</h4>
@@ -190,6 +190,15 @@
               <li>
                 <code>Ctrl/Cmd + P</code> to open a command palette (it has an
                 example)
+              </li>
+              <li>
+                Select/cut/paste: Drag over lines in the schema to select them
+                (and their children). Cut/copy with
+                <code>Cmd/Ctrl-x/c</code> and paste with
+                <code>Cmd/Ctrl-v</code>. <code>Esc</code> cancels the cut.
+                Pasting is on the currently hovered line. Pasting redistributes
+                all children on that line to ensure all is pretty much on
+                screen.
               </li>
             </ul>
           </div>
@@ -228,21 +237,34 @@
                 <code>.</code> (increase) or <code>,</code> (decrease) while
                 hovering the line.
               </li>
+              <li>
+                <strong>Size (extra):</strong> <code>* or /</code> while
+                hovering the line to double or halve its length,
+                <code>[/{ or ]/}</code> to increase its length gradually.
+              </li>
+              <li>
+                <strong>Position (extra):</strong> <code>0 or 9</code> while
+                hovering the line to place it at the 5% or 95% of the parent
+                length.
+              </li>
+              <li>
+                <code>i</code> while hovering the line reverses its direction.
+              </li>
             </ul>
           </div>
 
           <div class="help-section">
-            <h4>Line Labels (Advanced - when editing text)</h4>
+            <h4>Line Labels (all while hovering on the text)</h4>
             <ul>
               <li>
-                <strong>Font Size:</strong> <code>Cmd/Ctrl</code> +
+                <strong>Font Size:</strong>
                 <code>.</code> (increase) or <code>,</code> (decrease).
               </li>
               <li>
-                <strong>Bold:</strong> <code>Cmd/Ctrl</code> + <code>B</code>.
+                <strong>Bold:</strong> <code>Shift</code> + <code>B</code>.
               </li>
               <li>
-                <strong>Align Center:</strong> <code>Cmd/Ctrl</code> +
+                <strong>Align Center:</strong> <code>Shift</code> +
                 <code>C</code>.
               </li>
               <li>
@@ -250,11 +272,14 @@
                 add/edit. Click icon on line to open.
               </li>
               <li>
-                <strong>Color:</strong> <code>Cmd/Ctrl</code> +
-                <code>G</code> to enter color change mode. Then one of the
-                "color letters" (<code>R</code>,
+                <strong>Color:</strong> One of the "color letters"
+                (<code>R</code>,
                 <code>G</code
                 >,<code>Y</code>,<code>B</code>,<code>K</code>,<code>W</code>,)
+              </li>
+              <li>
+                Styling and links can also be tweaked while writing by using
+                <code>Ctrl/Cmd + key</code> when editing. Colors only on hover.
               </li>
             </ul>
           </div>
@@ -351,7 +376,15 @@
           <div class="help-section">
             <h4>About Pinta</h4>
             <p>Pinta - Visual Diagram Editor.</p>
-            <p>&copy; Ruben Berenguel 2025 with most code by Gemini</p>
+            <p>
+              <a
+                href="https://www.github.com/rberenguel/pinta"
+                target="_blank"
+                rel="noopener,noreferrer"
+                >Github</a
+              >
+            </p>
+            <p>&copy; Ruben Berenguel 2025 with a lot of code by Gemini</p>
           </div>
         </div>
       </div>

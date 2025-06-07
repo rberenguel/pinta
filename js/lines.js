@@ -5,6 +5,7 @@ export {
   updateChildrenPositions,
   getLineDisplayAngle,
   getLineDepth,
+  highlightBranch,
 };
 
 export const MAIN_LINE_DEFAULT_THICKNESS = 4;
@@ -187,6 +188,12 @@ function renderLine(line, isUpdate = false) {
     setupTextDraggable(textElement, line);
   }
 
+  if (state.selectedLines.has(line.id)) {
+    group.classList.add("line-selected");
+  } else {
+    group.classList.remove("line-selected");
+  }
+
   if (textElement) {
     textElement.innerHTML = "";
     if (
@@ -261,7 +268,6 @@ function renderLine(line, isUpdate = false) {
     if (hasExplicitNewlines) {
       textElement.style.whiteSpace = "pre-wrap";
     } else {
-      console.debug("Resizing proportionally to line");
       textElement.style.removeProperty("max-width");
       textElement.style.removeProperty("width");
       textElement.style.whiteSpace = "pre-wrap";
@@ -323,6 +329,24 @@ function updateChildrenPositions(parentId) {
       renderLine(childLine, true);
     }
   });
+}
+
+function highlightBranch(lineId, isHighlighted) {
+  const line = state.linesStore[lineId];
+  if (!line) return;
+
+  const element = document.getElementById(lineId);
+  if (element) {
+    if (isHighlighted) {
+      element.classList.add("line-selected");
+    } else {
+      element.classList.remove("line-selected");
+    }
+  }
+
+  if (line.children) {
+    line.children.forEach((childId) => highlightBranch(childId, isHighlighted));
+  }
 }
 
 function getLineDisplayAngle(lineId, lines) {
@@ -452,7 +476,6 @@ function setupRootDraggable(handle, childLine) {
     .draggable({
       listeners: {
         start(event) {
-          console.debug("Start drag event");
           event.target.classList.add("dragging");
           if (state.activeTextEditElement) state.activeTextEditElement.blur();
         },
@@ -733,8 +756,14 @@ const isEditingLineText = () => {
 };
 
 function handleLineVisualColorKeydown(event) {
-  if (!state.hoveredLineIdForVisualColorChange) return;
-  if (isEditingLineText()) return;
+  if (
+    !state.hoveredLineIdForVisualColorChange ||
+    isEditingLineText() ||
+    event.metaKey ||
+    event.ctrlKey
+  ) {
+    return;
+  }
   const key = event.key.toLowerCase();
   const lineId = state.hoveredLineIdForVisualColorChange;
   const lineToUpdate = state.linesStore[lineId];
@@ -761,6 +790,60 @@ function handleLineVisualColorKeydown(event) {
         lineToUpdate.checkboxState = "unchecked"; // Add checkbox, default to unchecked
       }
       renderLine(lineToUpdate, true);
+    }
+  } else if (key === "i") {
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate) {
+      lineToUpdate.length *= -1;
+      renderLine(lineToUpdate, true);
+    }
+  } else if (key === "/") {
+    if (!lineToUpdate.parentId) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate) {
+      lineToUpdate.length /= 2;
+      renderLine(lineToUpdate, true);
+    }
+  } else if (key === "*") {
+    if (!lineToUpdate.parentId) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate) {
+      lineToUpdate.length *= 2;
+      renderLine(lineToUpdate, true);
+    }
+  } else if (key === "]" || key === "}") {
+    if (!lineToUpdate.parentId) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate) {
+      lineToUpdate.length += 20;
+      renderLine(lineToUpdate, true);
+    }
+  } else if (key === "[" || key === "{") {
+    if (!lineToUpdate.parentId) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate) {
+      lineToUpdate.length -= 20;
+      renderLine(lineToUpdate, true);
+    }
+  } else if (key === "0" || key === "9") {
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate && lineToUpdate.parentId) {
+      lineToUpdate.offsetRatioOnParent = key === "0" ? 0.05 : 0.95;
+      updateChildrenPositions(lineToUpdate.parentId);
     }
   }
   const step = LINE_THICKNESS_STEP;

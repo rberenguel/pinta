@@ -264,6 +264,28 @@ body {
   color: #a71e1c;
 }
 
+.line-selected .line-visual {
+  filter: drop-shadow(0 0 3px var(--yellow));
+}
+
+.selection-trail {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background-color: var(--yellow);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: fade-out-trail 1s forwards;
+  z-index: 9999;
+}
+
+@keyframes fade-out-trail {
+  to {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
 .post-it {
   position: absolute;
   z-index: 500;
@@ -573,6 +595,10 @@ body {
   border-radius: 3px;
   font-family: monospace;
   color: var(--theme-schema-text-color);
+}
+
+.help-section a {
+  color: var(--yellow);
 }
 
 .modal-close-button {

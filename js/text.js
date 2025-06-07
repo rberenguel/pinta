@@ -30,8 +30,76 @@ function getLinkPrefix(url) {
   return DEFAULT_LINK_SYMBOL;
 }
 
+function handleKeydown(event) {
+  const key = event.key.toLowerCase();
+  const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+  if (
+    !state.hoveredLineIdForTextColorChange ||
+    state.activeTextEditElement ||
+    (isCtrlOrCmd && key != "k")
+  ) {
+    return;
+  }
+
+  const lineId = state.hoveredLineIdForTextColorChange;
+  const lineToUpdate = state.linesStore[lineId];
+
+  if (
+    SCHEMA_LINE_VISUAL_COLORS[key] &&
+    !event.shiftKey &&
+    !event.ctrlKey &&
+    !event.metaKey
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (lineToUpdate) {
+      const newColorName = SCHEMA_LINE_VISUAL_COLORS[key];
+      lineToUpdate.textColor = newColorName;
+      renderLine(lineToUpdate, true);
+    }
+  }
+
+  if (key === "," || key === "<") {
+    event.preventDefault();
+    let newSize = (lineToUpdate.fontSize || 16) - 2;
+    if (newSize < 4) newSize = 4;
+    lineToUpdate.fontSize = newSize;
+    renderLine(lineToUpdate, true);
+  } else if (key === "." || key === ">") {
+    event.preventDefault();
+    let newSize = (lineToUpdate.fontSize || 16) + 2;
+    lineToUpdate.fontSize = newSize;
+    renderLine(lineToUpdate, true);
+  } else if (key.toLowerCase() === "b" && event.shiftKey) {
+    event.preventDefault();
+    lineToUpdate.isBold = !lineToUpdate.isBold;
+    renderLine(lineToUpdate, true);
+  } else if (key.toLowerCase() === "c" && event.shiftKey) {
+    event.preventDefault();
+    lineToUpdate.isCentered = !lineToUpdate.isCentered;
+    renderLine(lineToUpdate, true);
+  } else if (key.toLowerCase() === "k" && isCtrlOrCmd) {
+    event.preventDefault();
+    showlinkModal(lineId);
+    return;
+  }
+}
+
+function handleTextMouseEnter(event) {
+  const lineId = event.target.dataset.lineId;
+  if (lineId) {
+    state.hoveredLineIdForTextColorChange = lineId;
+    document.addEventListener("keydown", handleKeydown);
+  }
+}
+
+function handleTextMouseLeave(event) {
+  state.hoveredLineIdForTextColorChange = null;
+  document.removeEventListener("keydown", handleKeydown);
+}
+
 function handleTextClick(e) {
-  console.log(e.currentTarget);
   const textElementDiv = e.currentTarget;
 
   if (
@@ -76,6 +144,9 @@ function handleTextClick(e) {
 }
 
 function setupTextDraggable(textElement, lineObject) {
+  textElement.addEventListener("mouseenter", handleTextMouseEnter);
+  textElement.addEventListener("mouseleave", handleTextMouseLeave);
+
   interact(textElement)
     .draggable({
       listeners: {
@@ -182,15 +253,6 @@ function makeEditable(textEl) {
   }
 
   const onBlur = () => {
-    if (
-      state.isWaitingForColorKey &&
-      state.targetLineIdForTextColorChange === itemId
-    ) {
-      state.isWaitingForColorKey = false;
-      state.targetLineIdForTextColorChange = null;
-      // If you added a visual cue like an outline, remove it:
-      // textEl.style.outline = "";
-    }
     textEl.contentEditable = "false";
     textEl.style.cursor = textEl.classList.contains("line-text")
       ? "grab"
@@ -212,44 +274,6 @@ function makeEditable(textEl) {
     if (itemType === "line") {
       const lineId = itemId;
       const currentLine = state.linesStore[lineId];
-      if (isCtrlOrCmd && e.key.toLowerCase() === "g") {
-        e.preventDefault();
-        e.stopPropagation();
-        state.isWaitingForColorKey = true;
-        state.targetLineIdForTextColorChange = lineId;
-        return; // Entered color mode, wait for next key
-      }
-      if (
-        state.isWaitingForColorKey &&
-        state.targetLineIdForTextColorChange === lineId
-      ) {
-        e.stopPropagation(); // Important to prevent other actions while in this "mode"
-        const keyPressed = e.key.toLowerCase();
-
-        // Check if the pressed key is a defined color shortcut
-        if (
-          SCHEMA_LINE_VISUAL_COLORS &&
-          SCHEMA_LINE_VISUAL_COLORS[keyPressed]
-        ) {
-          e.preventDefault();
-          if (currentLine) {
-            const newColorName = SCHEMA_LINE_VISUAL_COLORS[keyPressed];
-            currentLine.textColor = newColorName;
-            textEl.style.color =
-              newColorName === "default"
-                ? DEFAULT_SCHEMA_TEXT_COLOR_VAR
-                : `var(--${newColorName})`;
-          }
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-        } else {
-          e.preventDefault();
-        }
-
-        state.isWaitingForColorKey = false;
-        state.targetLineIdForTextColorChange = null;
-        return;
-      }
       if (isCtrlOrCmd) {
         if (e.key.toLowerCase() === "k") {
           e.preventDefault();

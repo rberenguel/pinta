@@ -123,12 +123,19 @@ but I'm not your doctor or that kind of doctor).
 ## TODO (Next Steps)
 
 - [ ] Better UX of shape selection (e.g. explicit selection state).
+  - This is harder than it looks…
 - [ ] Add the ellipse tool.
-- [x] Better positioning of drawn elements
+- [ ] Hover on line is a bit annoying because it does not trigger properly when hovering on the delete button or handles. This is eventually annoying.
 
 ---
 
 ## Changelog
+
+### 0.6.0
+
+- Copy and paste of pieces of the schema.
+- Changed color interaction for text (no longer modal).
+- Added some keyboard tools to resize and reposition without needing hover and move so often.
 
 ### 0.5.0 (internal representation changes)
 

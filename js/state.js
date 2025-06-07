@@ -3,9 +3,14 @@ export const state = {
   linesStore: {},
   currentMainLineAngle: 0,
   hoveredLineIdForVisualColorChange: null,
+  hoveredLineIdForTextColorChange: null,
   isWaitingForColorKey: false,
   postItsStore: {},
   drawingElementsStore: {},
+  selectedLines: new Set(),
+  selectedDrawings: new Set(),
+  clipboard: null,
+  isCutOperation: false,
 
   // Counters
   lineIdCounter: 0,
@@ -21,7 +26,6 @@ export const state = {
   activeDrawingShape: null,
   selectedDrawingElement: null,
   isDrawingModeActive: false,
-  colorChangeModeActive: false,
   currentLineEditIdForModal: null,
   drawingStartX: 0,
   drawingStartY: 0,
