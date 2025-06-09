@@ -194,6 +194,7 @@ body.light-theme #theme-toggle-export:checked ~ .pinta-static-container {
 }
 
 body:not(.light-theme) #theme-toggle-export:checked ~ .pinta-static-container {
+  /* TODO: this is not exactly the same as the light theme below */
   --theme-main-background: #999;
   --theme-editor-background: #aaa;
   --theme-primary-text: #1c1c1c;
@@ -201,6 +202,8 @@ body:not(.light-theme) #theme-toggle-export:checked ~ .pinta-static-container {
   --theme-border-color: #c0c0c0;
   --theme-schema-line-color: #333;
   --theme-schema-text-color: #333;
+  --yellow: #754900;
+  --orange: #a93a16;
 }
 /* Magic ends */
 
