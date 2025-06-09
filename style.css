@@ -199,8 +199,34 @@ body:not(.light-theme) #theme-toggle-export:checked ~ .pinta-static-container {
   --theme-primary-text: #1c1c1c;
   --theme-secondary-text: #4a4a4a;
   --theme-border-color: #c0c0c0;
+
   --theme-schema-line-color: #333;
   --theme-schema-text-color: #333;
+
+  --theme-modal-background: #ffffff;
+  --theme-modal-overlay-bg: rgba(50, 50, 50, 0.6);
+  --theme-modal-text-primary: #1c1c1c;
+  --theme-modal-text-secondary: #4a4a4a;
+
+  --theme-modal-button-confirm-text: #ffffff;
+  --theme-modal-button-cancel-bg: #e0e0e0;
+  --theme-modal-button-cancel-text: #1c1c1c;
+  --theme-modal-button-cancel-hover-bg: #d0d0d0;
+
+  --theme-postit-yellow-text: #1c1c1c;
+  --theme-postit-red-text: #ffffff;
+  --theme-postit-green-text: #1c1c1c;
+  --theme-postit-blue-text: #ffffff;
+  --theme-postit-white-text: #1c1c1c;
+  --theme-postit-transp-text: #1c1c1c;
+
+  --theme-postit-yellow-drag-handle: var(--base01);
+  --theme-postit-red-drag-handle: var(--postit-white-bg);
+  --theme-postit-green-drag-handle: var(--base01);
+  --theme-postit-blue-drag-handle: var(--postit-white-bg);
+  --theme-postit-white-drag-handle: var(--base01);
+
+  /* Color overrides */
   --yellow: #754900;
   --orange: #a93a16;
 }
