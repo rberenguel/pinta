@@ -236,6 +236,10 @@ body.light-theme {
   --theme-postit-green-drag-handle: var(--base01);
   --theme-postit-blue-drag-handle: var(--postit-white-bg);
   --theme-postit-white-drag-handle: var(--base01);
+
+  /* Color overrides */
+  --yellow: #754900;
+  --orange: #a93a16;
 }
 
 body {
