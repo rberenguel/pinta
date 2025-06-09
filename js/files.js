@@ -963,6 +963,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
         let textContentHtml;
         let rawLineText = line.text || "...";
         let prefixSymbol = undefined;
+        let prefix = "";
         if (rawLineText.startsWith(":")) {
           const maybeIcon = rawLineText.slice(1).split(":");
           if (maybeIcon.length > 1) {
@@ -970,19 +971,48 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
             if (icon) {
               prefixSymbol = `<div class="iconoir-${icon}"></div>`;
               if (!line.linkUrl) {
-                const prefix = `<span class="link-icon-nonclickable">${prefixSymbol}</span>`;
-                rawLineText = rawLineText
-                  .slice(1)
-                  .split(":")
-                  .slice(1)
-                  .join(":")
-                  .trim();
-                rawLineText = prefix + rawLineText;
+                prefix = `<span class="link-icon-nonclickable">${prefixSymbol}</span>`;
               }
+              rawLineText = rawLineText
+                .slice(1)
+                .split(":")
+                .slice(1)
+                .join(":")
+                .trim();
             }
           }
         }
-        let lineText = `<div class="line-text-wrapper">${rawLineText}</div>`;
+        let appending = [];
+        if (rawLineText.startsWith("[")) {
+          const maybeYear = rawLineText.slice(1).split("]");
+          if (maybeYear.length > 1) {
+            const year = maybeYear[0];
+            const yearPattern = /^(19\d{2}|20\d{2}|2100)$/;
+            if (year && yearPattern.test(year)) {
+              console.info("Found year");
+              const yearSpan = `<span class="year">${year}</span>`;
+              appending.push(yearSpan);
+            }
+            rawLineText = rawLineText
+              .slice(1)
+              .split("]")
+              .slice(1)
+              .join("]")
+              .trim();
+          }
+        }
+        rawLineText = prefix + rawLineText;
+        let title = null;
+        if (
+          line.textRenderLength &&
+          rawLineText.length > line.textRenderLength
+        ) {
+          title = rawLineText;
+          rawLineText = rawLineText.substring(0, line.textRenderLength) + "…";
+        }
+        let lineText = `<div class="line-text-wrapper" title="${title}">${rawLineText}${appending.join(
+          " ",
+        )}</div>`;
 
         if (line.linkUrl) {
           prefixSymbol = prefixSymbol || getLinkPrefix(line.linkUrl);

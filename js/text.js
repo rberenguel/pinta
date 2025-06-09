@@ -43,6 +43,39 @@ function handleKeydown(event) {
 
   const lineId = state.hoveredLineIdForTextColorChange;
   const lineToUpdate = state.linesStore[lineId];
+  if (!lineToUpdate) return;
+  if (key === "/") {
+    console.log("updating text display length");
+    event.preventDefault();
+    event.stopPropagation();
+    const currentText = lineToUpdate.text || "";
+    console.log(currentText);
+    if (!lineToUpdate.textRenderLength) {
+      lineToUpdate.textRenderLength = currentText.length;
+    }
+    console.log(lineToUpdate.textRenderLength);
+    lineToUpdate.textRenderLength = Math.max(
+      1,
+      lineToUpdate.textRenderLength - 5,
+    );
+    console.log(lineToUpdate.textRenderLength);
+    renderLine(lineToUpdate, true);
+    return;
+  }
+
+  if (key === "*") {
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate.textRenderLength !== null) {
+      const currentText = lineToUpdate.text || "";
+      lineToUpdate.textRenderLength += 5;
+      if (lineToUpdate.textRenderLength >= currentText.length) {
+        lineToUpdate.textRenderLength = null;
+      }
+      renderLine(lineToUpdate, true);
+    }
+    return;
+  }
 
   if (
     SCHEMA_LINE_VISUAL_COLORS[key] &&

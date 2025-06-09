@@ -133,27 +133,32 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.6.6
+
+- Adjustable line length via `*` and `/` while hovering on labels.
+- Auto-year detection, `[YYYY]` at the beginning gets converted in superscripted text.
+
 ### 0.6.5
 
 - Overridable auto-icons (use a defined icon to override the default clickable icon)
 
 ### 0.6.4
 
-- Icon subsetting on export
+- Icon subsetting on export.
 
 ### 0.6.3
 
-- Add icons from [iconoir](https://iconoir.com/) by adding :icon-name: at the beginning of your label
+- Add icons from [iconoir](https://iconoir.com/) by adding :icon-name: at the beginning of your label.
 
 ### 0.6.2
 
-- CSS-only toggle on HTML export to switch light/dark modes
-- Minor tweaks, added icons
+- CSS-only toggle on HTML export to switch light/dark modes.
+- Minor tweaks, added icons.
 
 ### 0.6.1
 
-- Bug fix with pasting
-- Changed icons
+- Bug fix with pasting.
+- Changed icons.
 
 ### 0.6.0
 

@@ -62,6 +62,7 @@ function createLineObject(params) {
     isCentered: true,
     linkUrl: null,
     checkboxState: null,
+    textRenderLength: null,
   };
 
   let lineData = { ...defaultParams, ...(params || {}), id };
@@ -264,6 +265,23 @@ function renderLine(line, isUpdate = false) {
         }
       }
     }
+    let appending = [];
+    if (lineText.startsWith("[")) {
+      const maybeYear = lineText.slice(1).split("]");
+      if (maybeYear.length > 1) {
+        const year = maybeYear[0];
+        const yearPattern = /^(19\d{2}|20\d{2}|2100)$/;
+        if (year && yearPattern.test(year)) {
+          console.info("Found year");
+          const yearSpan = document.createElement("span");
+          yearSpan.className = "year";
+          yearSpan.innerHTML = year;
+          appending.push(yearSpan);
+        }
+        lineText = lineText.slice(1).split("]").slice(1).join("]").trim();
+      }
+    }
+
     if (line.linkUrl) {
       prefixSymbol = prefixSymbol || getLinkPrefix(line.linkUrl);
       const linkIconSpan = document.createElement("span");
@@ -281,11 +299,22 @@ function renderLine(line, isUpdate = false) {
     } else {
       textElement.classList.remove("checkbox-checked");
     }
-    const textNode = document.createTextNode(lineText);
+    let displayText = lineText;
+    if (line.textRenderLength && lineText.length > line.textRenderLength) {
+      displayText = lineText.substring(0, line.textRenderLength) + "…";
+      textElement.title = lineText;
+    } else {
+      textElement.removeAttribute("title");
+    }
+    const textNode = document.createTextNode(displayText);
     const textNodeWrapper = document.createElement("DIV");
     textNodeWrapper.classList.add("line-text-wrapper");
     textNodeWrapper.appendChild(textNode);
     textElement.appendChild(textNodeWrapper);
+    for (let el of appending) {
+      textElement.appendChild(el);
+    }
+
     const hasExplicitNewlines = line.text && line.text.includes("\n");
 
     if (hasExplicitNewlines) {

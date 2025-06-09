@@ -441,6 +441,13 @@ body {
   display: inline;
 }
 
+span.year {
+  vertical-align: super;
+  font-size: 70%;
+  filter: hue-rotate(-30deg);
+  margin-left: 0.2em;
+}
+
 .link-icon-clickable > div {
   font-size: 150%;
   display: inline-block;
