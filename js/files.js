@@ -997,13 +997,14 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           line.checkboxState === "checked" ||
           line.checkboxState === "unchecked"
         ) {
+          const isCheckboxChecked = line.checkboxState === "checked";
           const currentLineTextColorValue =
             line.textColor && line.textColor !== "default"
               ? `var(--${line.textColor})`
               : DEFAULT_SCHEMA_TEXT_COLOR_VAR;
-          const checkedAttr = line.isCheckboxChecked ? " checked" : "";
+          const checkedAttr = isCheckboxChecked ? " checked" : "";
           let checkboxInlineStyle = `border-color: ${currentLineTextColorValue};`;
-          if (line.isCheckboxChecked) {
+          if (isCheckboxChecked) {
             checkboxInlineStyle += ` background-color: ${currentLineTextColorValue};`;
           } else {
             checkboxInlineStyle += ` background-color: var(--theme-main-background);`;
@@ -1127,7 +1128,20 @@ ${toggleHTML}
   const blob = new Blob([finalHtml], { type: "text/html" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "pinta-diagram.html";
+
+  let title =
+    Object.values(state.linesStore).filter((l) => !l.parentId)[0].text || "...";
+  if (title.startsWith(":")) {
+    const maybeIcon = title.slice(1).split(":");
+    if (maybeIcon.length > 1) {
+      const icon = maybeIcon[0];
+      if (icon) {
+        title = title.slice(1).split(":").slice(1).join(":").trim();
+      }
+    }
+  }
+  title = title.replace(":", "-");
+  link.download = `${title}.html`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
