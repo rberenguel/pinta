@@ -860,8 +860,8 @@ async function exportToStaticHTML(loadedCSSText) {
   const toggleHTML = `
     <input type="checkbox" id="theme-toggle-export" class="theme-toggle-checkbox">
     <label for="theme-toggle-export" class="theme-toggle-label">
-      <i class="iconoir-sun-light"></i>
-      <i class="iconoir-half-moon"></i>
+      <i class="sun-light iconoir-sun-light"></i>
+      <i class="half-moon iconoir-sun-light"></i>
     </label>
   `;
   let diagramContentHTML = "";
@@ -926,10 +926,32 @@ async function exportToStaticHTML(loadedCSSText) {
         const textStyle = textElement.style.cssText + whiteSpaceStyle || "";
 
         let textContentHtml;
-        const rawLineText = line.text || "...";
-        const lineText = `<div class="line-text-wrapper">${escapeHtml(rawLineText)}</div>`;
+        let rawLineText = line.text || "...";
+        if (rawLineText.startsWith(":")) {
+          const maybeIcon = rawLineText.slice(1).split(":");
+          if (maybeIcon.length > 1) {
+            const icon = maybeIcon[0];
+            console.log(icon);
+            if (icon) {
+              const prefixSymbol = `<div class="iconoir-${icon}"></div>`;
+              // TODO this will be better if I use some sort of reduced set of icons instead
+              const prefix = `<span class="link-icon-nonclickable">${prefixSymbol}</span>`;
+              rawLineText = rawLineText
+                .slice(1)
+                .split(":")
+                .slice(1)
+                .join(":")
+                .trim();
+              rawLineText = prefix + rawLineText;
+            }
+          }
+        }
+        let lineText = `<div class="line-text-wrapper">${rawLineText}</div>`;
+
         if (line.linkUrl) {
-          const prefix = `<span class="link-icon-clickable">${getLinkPrefix(line.linkUrl)}</span>`;
+          const prefix = `<span class="link-icon-clickable">${getLinkPrefix(
+            line.linkUrl,
+          )}</span>`;
           textContentHtml = `<a href="${escapeHtml(
             line.linkUrl,
           )}" target="_blank" style="text-decoration:none; color:inherit;">${prefix}</a>${lineText}`;
@@ -1131,7 +1153,9 @@ function pintaJsonToMarkdown(jsonData) {
       lineTitleContent = `[${linkText}](${line.linkUrl})`;
     }
     const newLine = depth > 1 ? "\n" : "";
-    mdString += `${newLine}${"#".repeat(depth)} ${titlePrefix}${lineTitleContent}\n`;
+    mdString += `${newLine}${"#".repeat(
+      depth,
+    )} ${titlePrefix}${lineTitleContent}\n`;
     let formatParts = [];
     if (line.isBold === true) {
       // Default is false

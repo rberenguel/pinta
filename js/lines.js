@@ -255,13 +255,30 @@ function renderLine(line, isUpdate = false) {
       linkIconSpan.style.cursor = "pointer";
       textElement.appendChild(linkIconSpan);
     }
+    let lineText = line.text || "...";
+    if (lineText.startsWith(":")) {
+      const maybeIcon = lineText.slice(1).split(":");
+      if (maybeIcon.length > 1) {
+        const icon = maybeIcon[0];
+        console.log(icon);
+        if (icon) {
+          const prefixSymbol = `<div class="iconoir-${icon}"></div>`;
+          // TODO this will be better if I use some sort of reduced set of icons instead
+          const linkIconSpan = document.createElement("span");
+          linkIconSpan.className = "link-icon-nonclickable";
+          linkIconSpan.innerHTML = prefixSymbol + " ";
+          textElement.appendChild(linkIconSpan);
+          lineText = lineText.slice(1).split(":").slice(1).join(":").trim();
+        }
+      }
+    }
     if (line.checkboxState === "checked") {
       // Strikethrough logic
       textElement.classList.add("checkbox-checked");
     } else {
       textElement.classList.remove("checkbox-checked");
     }
-    const textNode = document.createTextNode(line.text || "...");
+    const textNode = document.createTextNode(lineText);
     const textNodeWrapper = document.createElement("DIV");
     textNodeWrapper.classList.add("line-text-wrapper");
     textNodeWrapper.appendChild(textNode);

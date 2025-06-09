@@ -133,6 +133,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.6.3
+
+- Add icons from [iconoir](https://iconoir.com/) by adding :icon-name: at the beginning of your label
+
 ### 0.6.2
 
 - CSS-only toggle on HTML export to switch light/dark modes

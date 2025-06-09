@@ -99,8 +99,8 @@
 }
 
 /* Base styles for both icons */
-.theme-toggle-label .iconoir-sun-light,
-.theme-toggle-label .iconoir-half-moon {
+.theme-toggle-label .sun-light,
+.theme-toggle-label .half-moon {
   font-size: 16px;
   line-height: 24px; /* Center vertically */
   color: var(--base01);
@@ -110,13 +110,13 @@
 }
 
 /* For DARK theme export (starts with Sun visible on the right) */
-body:not(.light-theme) .iconoir-sun-light {
+body:not(.light-theme) .sun-light {
   left: 5px;
   opacity: 1;
   transform: translateX(28px);
   color: white;
 }
-body:not(.light-theme) .iconoir-half-moon {
+body:not(.light-theme) .half-moon {
   right: 5px;
   opacity: 0;
   transform: translateX(0px);
@@ -125,44 +125,38 @@ body:not(.light-theme) .iconoir-half-moon {
 body:not(.light-theme)
   #theme-toggle-export:checked
   ~ .theme-toggle-label
-  .iconoir-sun-light {
+  .sun-light {
   opacity: 0;
   transform: translateX(0px);
 }
 body:not(.light-theme)
   #theme-toggle-export:checked
   ~ .theme-toggle-label
-  .iconoir-half-moon {
+  .half-moon {
   opacity: 1;
   transform: translateX(-30px);
   color: black;
 }
 
 /* For LIGHT theme export (starts with Moon visible on the left) */
-body.light-theme .iconoir-sun-light {
+body.light-theme .sun-light {
   left: 5px;
   opacity: 0;
   transform: translateX(0px);
 }
-body.light-theme .iconoir-half-moon {
+body.light-theme .half-moon {
   right: 5px;
   opacity: 1;
   transform: translateX(-2px);
   color: black;
 }
 
-body.light-theme
-  #theme-toggle-export:checked
-  ~ .theme-toggle-label
-  .iconoir-sun-light {
+body.light-theme #theme-toggle-export:checked ~ .theme-toggle-label .sun-light {
   opacity: 1;
   transform: translateX(0);
   color: white;
 }
-body.light-theme
-  #theme-toggle-export:checked
-  ~ .theme-toggle-label
-  .iconoir-half-moon {
+body.light-theme #theme-toggle-export:checked ~ .theme-toggle-label .half-moon {
   opacity: 0;
   transform: translateX(10px);
 }
@@ -452,6 +446,13 @@ body {
   display: inline-block;
   vertical-align: bottom;
   filter: hue-rotate(60deg);
+}
+
+.link-icon-nonclickable > div {
+  font-size: 150%;
+  display: inline-block;
+  vertical-align: bottom;
+  filter: hue-rotate(15deg);
 }
 
 /* For export */
