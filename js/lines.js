@@ -245,8 +245,27 @@ function renderLine(line, isUpdate = false) {
       });
       textElement.appendChild(checkbox);
     }
+    let prefixSymbol = undefined;
+    let lineText = line.text || "...";
+    if (lineText.startsWith(":")) {
+      const maybeIcon = lineText.slice(1).split(":");
+      if (maybeIcon.length > 1) {
+        const icon = maybeIcon[0];
+        if (icon) {
+          prefixSymbol = `<div class="iconoir-${icon}"></div>`;
+          // TODO this will be better if I use some sort of reduced set of icons instead
+          if (!line.linkUrl) {
+            const linkIconSpan = document.createElement("span");
+            linkIconSpan.className = "link-icon-nonclickable";
+            linkIconSpan.innerHTML = prefixSymbol + " ";
+            textElement.appendChild(linkIconSpan);
+          }
+          lineText = lineText.slice(1).split(":").slice(1).join(":").trim();
+        }
+      }
+    }
     if (line.linkUrl) {
-      const prefixSymbol = getLinkPrefix(line.linkUrl);
+      prefixSymbol = prefixSymbol || getLinkPrefix(line.linkUrl);
       const linkIconSpan = document.createElement("span");
       linkIconSpan.className = "link-icon-clickable";
       linkIconSpan.innerHTML = prefixSymbol + " ";
@@ -255,23 +274,7 @@ function renderLine(line, isUpdate = false) {
       linkIconSpan.style.cursor = "pointer";
       textElement.appendChild(linkIconSpan);
     }
-    let lineText = line.text || "...";
-    if (lineText.startsWith(":")) {
-      const maybeIcon = lineText.slice(1).split(":");
-      if (maybeIcon.length > 1) {
-        const icon = maybeIcon[0];
-        console.log(icon);
-        if (icon) {
-          const prefixSymbol = `<div class="iconoir-${icon}"></div>`;
-          // TODO this will be better if I use some sort of reduced set of icons instead
-          const linkIconSpan = document.createElement("span");
-          linkIconSpan.className = "link-icon-nonclickable";
-          linkIconSpan.innerHTML = prefixSymbol + " ";
-          textElement.appendChild(linkIconSpan);
-          lineText = lineText.slice(1).split(":").slice(1).join(":").trim();
-        }
-      }
-    }
+
     if (line.checkboxState === "checked") {
       // Strikethrough logic
       textElement.classList.add("checkbox-checked");

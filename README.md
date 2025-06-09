@@ -133,6 +133,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.6.5
+
+- Overridable auto-icons (use a defined icon to override the default clickable icon)
+
 ### 0.6.4
 
 - Icon subsetting on export

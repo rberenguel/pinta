@@ -962,30 +962,31 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
 
         let textContentHtml;
         let rawLineText = line.text || "...";
+        let prefixSymbol = undefined;
         if (rawLineText.startsWith(":")) {
           const maybeIcon = rawLineText.slice(1).split(":");
           if (maybeIcon.length > 1) {
             const icon = maybeIcon[0];
             if (icon) {
-              const prefixSymbol = `<div class="iconoir-${icon}"></div>`;
-              // TODO this will be better if I use some sort of reduced set of icons instead
-              const prefix = `<span class="link-icon-nonclickable">${prefixSymbol}</span>`;
-              rawLineText = rawLineText
-                .slice(1)
-                .split(":")
-                .slice(1)
-                .join(":")
-                .trim();
-              rawLineText = prefix + rawLineText;
+              prefixSymbol = `<div class="iconoir-${icon}"></div>`;
+              if (!line.linkUrl) {
+                const prefix = `<span class="link-icon-nonclickable">${prefixSymbol}</span>`;
+                rawLineText = rawLineText
+                  .slice(1)
+                  .split(":")
+                  .slice(1)
+                  .join(":")
+                  .trim();
+                rawLineText = prefix + rawLineText;
+              }
             }
           }
         }
         let lineText = `<div class="line-text-wrapper">${rawLineText}</div>`;
 
         if (line.linkUrl) {
-          const prefix = `<span class="link-icon-clickable">${getLinkPrefix(
-            line.linkUrl,
-          )}</span>`;
+          prefixSymbol = prefixSymbol || getLinkPrefix(line.linkUrl);
+          const prefix = `<span class="link-icon-clickable">${prefixSymbol}</span>`;
           textContentHtml = `<a href="${escapeHtml(
             line.linkUrl,
           )}" target="_blank" style="text-decoration:none; color:inherit;">${prefix}</a>${lineText}`;

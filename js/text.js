@@ -101,12 +101,12 @@ function handleTextMouseLeave(event) {
 
 function handleTextClick(e) {
   const textElementDiv = e.currentTarget;
-
+  console.log(e.target.closest("SPAN"));
   if (
-    e.target.classList &&
-    e.target.classList.contains("link-icon-clickable")
+    e.target.closest("SPAN")?.classList &&
+    e.target.closest("SPAN").classList.contains("link-icon-clickable")
   ) {
-    const urlToOpen = e.target.dataset.linkUrl;
+    const urlToOpen = e.target.closest("SPAN").dataset.linkUrl;
     if (urlToOpen) {
       window.open(urlToOpen, "_blank", "noopener,noreferrer");
       e.stopPropagation();
