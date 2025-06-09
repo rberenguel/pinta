@@ -1172,6 +1172,7 @@ ${toggleHTML}
     }
   }
   title = title.replace(":", "-");
+  title = title.replace(" ", "-");
   link.download = `${title}.html`;
   document.body.appendChild(link);
   link.click();
