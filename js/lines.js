@@ -249,7 +249,7 @@ function renderLine(line, isUpdate = false) {
       const prefixSymbol = getLinkPrefix(line.linkUrl);
       const linkIconSpan = document.createElement("span");
       linkIconSpan.className = "link-icon-clickable";
-      linkIconSpan.textContent = prefixSymbol + "\u00A0";
+      linkIconSpan.innerHTML = prefixSymbol + " ";
       linkIconSpan.dataset.linkUrl = line.linkUrl;
       linkIconSpan.title = line.linkUrl;
       linkIconSpan.style.cursor = "pointer";
@@ -262,7 +262,10 @@ function renderLine(line, isUpdate = false) {
       textElement.classList.remove("checkbox-checked");
     }
     const textNode = document.createTextNode(line.text || "...");
-    textElement.appendChild(textNode);
+    const textNodeWrapper = document.createElement("DIV");
+    textNodeWrapper.classList.add("line-text-wrapper");
+    textNodeWrapper.appendChild(textNode);
+    textElement.appendChild(textNodeWrapper);
     const hasExplicitNewlines = line.text && line.text.includes("\n");
 
     if (hasExplicitNewlines) {
@@ -844,6 +847,25 @@ function handleLineVisualColorKeydown(event) {
     if (lineToUpdate && lineToUpdate.parentId) {
       lineToUpdate.offsetRatioOnParent = key === "0" ? 0.05 : 0.95;
       updateChildrenPositions(lineToUpdate.parentId);
+    }
+  } else if (key === "=") {
+    if (!lineToUpdate.parentId) {
+      return;
+    }
+    console.info("Making the same");
+    event.preventDefault();
+    event.stopPropagation();
+    if (lineToUpdate) {
+      let siblings = state.linesStore[lineToUpdate.parentId].children.filter(
+        (c) => c != lineToUpdate.id,
+      );
+      console.log(lineToUpdate, siblings);
+      if (siblings.length < 1) {
+        return;
+      }
+      lineToUpdate.length = state.linesStore[siblings[0]].length;
+      lineToUpdate.thickness = state.linesStore[siblings[0]].thickness;
+      renderLine(lineToUpdate, true);
     }
   }
   const step = LINE_THICKNESS_STEP;

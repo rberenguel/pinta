@@ -214,9 +214,23 @@ async function loadFromStorageOrInitDefault() {
 
 async function fetchAppStyles() {
   try {
-    const response = await fetch("./style.css"); // Assumes style.css is in the same directory as index.html
+    const response = await fetch("./style.css");
     if (response.ok) {
       loadedCSSText = await response.text();
+      console.log("App styles fetched for export.");
+    } else {
+      console.warn(
+        "Failed to fetch style.css for export:",
+        response.statusText,
+      );
+    }
+  } catch (error) {
+    console.error("Error fetching style.css for export:", error);
+  }
+  try {
+    const response = await fetch("./fonts/iconoir/iconoir.css");
+    if (response.ok) {
+      loadedCSSText += "\n" + (await response.text());
       console.log("App styles fetched for export.");
     } else {
       console.warn(
@@ -306,6 +320,10 @@ function handleKeyDown(event) {
       activeEl.tagName === "INPUT" ||
       activeEl.tagName === "TEXTAREA");
 
+  const isModalActive =
+    deleteModal.style.display === "flex" ||
+    state.linkModal?.style.display === "flex";
+
   if (ctrlCmd && event.key.toLowerCase() === "s") {
     event.preventDefault();
     triggerSaveDiagram();
@@ -347,6 +365,12 @@ function handleKeyDown(event) {
     }
     return;
   } else if (ctrlCmd && event.key.toLowerCase() === "v") {
+    if (isModalActive) {
+      return;
+    }
+    if (isEditingText) {
+      return;
+    }
     event.preventDefault();
     if (state.clipboard && state.hoveredLineIdForVisualColorChange) {
       const pasteeId = state.hoveredLineIdForVisualColorChange;
@@ -376,10 +400,6 @@ function handleKeyDown(event) {
     }
     return;
   }
-
-  const isModalActive =
-    deleteModal.style.display === "flex" ||
-    state.linkModal?.style.display === "flex";
 
   if (deleteModal.style.display === "flex") {
     console.log(event.key);

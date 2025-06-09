@@ -920,15 +920,14 @@ async function exportToStaticHTML(loadedCSSText) {
 
         let textContentHtml;
         const rawLineText = line.text || "...";
+        const lineText = `<div class="line-text-wrapper">${escapeHtml(rawLineText)}</div>`;
         if (line.linkUrl) {
-          const prefix = getLinkPrefix(line.linkUrl);
+          const prefix = `<span class="link-icon-clickable">${getLinkPrefix(line.linkUrl)}</span>`;
           textContentHtml = `<a href="${escapeHtml(
             line.linkUrl,
-          )}" target="_blank" style="text-decoration:none; color:inherit;">${escapeHtml(
-            prefix,
-          )}${escapeHtml(rawLineText)}</a>`;
+          )}" target="_blank" style="text-decoration:none; color:inherit;">${prefix}</a>${lineText}`;
         } else {
-          textContentHtml = escapeHtml(rawLineText);
+          textContentHtml = lineText;
         }
 
         if (

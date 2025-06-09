@@ -86,10 +86,26 @@ export const SCHEMA_LINE_COLORS = {
 export const DEFAULT_LINE_VISUAL_COLOR = "var(--theme-schema-line-color)";
 
 export const LINK_SYMBOL_MAP = [
-  { regex: /.*docs\.google\..*/i, symbol: "📜 " },
-  { regex: /.*github\.com\..*/i, symbol: "📦 " },
+  {
+    regex: /.*docs\.google\..*/i,
+    symbol: `<div class="iconoir-multiple-pages-empty"></div>`,
+  },
+  {
+    regex: /.*slides\.google\..*/i,
+    symbol: `<div class="iconoir-presentation"></div>`,
+  },
+  {
+    regex: /.*sheets.google\.com.*/i,
+    symbol: `<div class="iconoir-calculator"></div>`,
+  },
+  {
+    regex: /.*github\.com.*/i,
+    symbol: `<div class="iconoir-github-circle"></div>`,
+  },
+  { regex: /.*youtube\.com.*/i, symbol: `<div class="iconoir-youtube"></div>` },
+  { regex: /.*arxiv\.org.*/i, symbol: `<div class="iconoir-flask"></div>` },
 ];
-export const DEFAULT_LINK_SYMBOL = "🔗 ";
+export const DEFAULT_LINK_SYMBOL = `<div class="iconoir-link"></div>`;
 
 // --- Stable DOM Element References --- (Moved from pinta.js)
 // These are fetched once when this module loads and their references don't change.
