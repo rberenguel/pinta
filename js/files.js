@@ -912,7 +912,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     overflow: hidden;
     border-radius: 0.5rem;
-    margin: 20px auto; /* Center it on the page */
+    margin: 15px;
   `;
 
   const pintaSaveData = getCurrentDiagramDataForSave();
