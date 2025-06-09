@@ -127,11 +127,15 @@ but I'm not your doctor or that kind of doctor).
   - This is harder than it looks…
 - [ ] Add the ellipse tool.
 - [ ] Hover on line is a bit annoying because it does not trigger properly when hovering on the delete button or handles. This is eventually annoying.
-- [ ] Subset iconoir icons
+- [x] Subset iconoir icons _on export_
 
 ---
 
 ## Changelog
+
+### 0.6.4
+
+- Icon subsetting on export
 
 ### 0.6.3
 

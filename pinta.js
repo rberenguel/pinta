@@ -43,6 +43,7 @@ let closeHelpModalButton;
 
 let version = "";
 let loadedCSSText = "";
+let loadedCSSIconoir = "";
 
 function getDeepCopyOfBranch(lineId, linesStore) {
   const line = linesStore[lineId];
@@ -230,7 +231,7 @@ async function fetchAppStyles() {
   try {
     const response = await fetch("./fonts/iconoir/iconoir.css");
     if (response.ok) {
-      loadedCSSText += "\n" + (await response.text());
+      loadedCSSIconoir = await response.text();
       console.log("App styles fetched for export.");
     } else {
       console.warn(
@@ -239,7 +240,7 @@ async function fetchAppStyles() {
       );
     }
   } catch (error) {
-    console.error("Error fetching style.css for export:", error);
+    console.error("Error fetching iconoir.css for export:", error);
   }
 }
 
@@ -424,7 +425,7 @@ function handleKeyDown(event) {
   }
   if (ctrlCmd && event.key.toLowerCase() === "e") {
     event.preventDefault();
-    exportToStaticHTML(loadedCSSText);
+    exportToStaticHTML(loadedCSSText, loadedCSSIconoir);
     return;
   }
   if (ctrlCmd && event.key.toLowerCase() === "n") {
@@ -1180,7 +1181,7 @@ const commands = [
   },
   {
     title: "Export to static HTML",
-    lambda: () => exportToStaticHTML(loadedCSSText),
+    lambda: () => exportToStaticHTML(loadedCSSText, loadedCSSIconoir),
   },
   {
     title: "Save as markdown",

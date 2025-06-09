@@ -853,7 +853,42 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
-async function exportToStaticHTML(loadedCSSText) {
+function iconoirSubsetter(iconoirCSS, usedClasses) {
+  console.log(usedClasses);
+  const lines = iconoirCSS.split("\n");
+  let output = [];
+  let header = true;
+  let klass = false;
+  for (let line of lines) {
+    if (!header) {
+    } else {
+      if (line.startsWith(".iconoir-")) {
+        header = false;
+      } else {
+        output.push(line);
+      }
+    }
+    if (header) {
+      continue;
+    } else {
+      if (line.startsWith(".")) {
+        const currentClass = line.slice(1).split("::")[0];
+        if (usedClasses.has(currentClass)) {
+          klass = true;
+        }
+      }
+      if (klass) {
+        output.push(line);
+      }
+      if (line.startsWith("}")) {
+        klass = false;
+      }
+    }
+  }
+  return output.join("\n");
+}
+
+async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
   const currentThemeClass = document.body.classList.contains("light-theme")
     ? "light-theme"
     : "";
@@ -861,7 +896,7 @@ async function exportToStaticHTML(loadedCSSText) {
     <input type="checkbox" id="theme-toggle-export" class="theme-toggle-checkbox">
     <label for="theme-toggle-export" class="theme-toggle-label">
       <i class="sun-light iconoir-sun-light"></i>
-      <i class="half-moon iconoir-sun-light"></i>
+      <i class="half-moon iconoir-half-moon"></i>
     </label>
   `;
   let diagramContentHTML = "";
@@ -931,7 +966,6 @@ async function exportToStaticHTML(loadedCSSText) {
           const maybeIcon = rawLineText.slice(1).split(":");
           if (maybeIcon.length > 1) {
             const icon = maybeIcon[0];
-            console.log(icon);
             if (icon) {
               const prefixSymbol = `<div class="iconoir-${icon}"></div>`;
               // TODO this will be better if I use some sort of reduced set of icons instead
@@ -1043,6 +1077,17 @@ async function exportToStaticHTML(loadedCSSText) {
     );
     diagramContentHTML += svgClone.outerHTML;
   }
+  const usedIconoirClasses = new Set(
+    Array.from(document.querySelectorAll('[class*="iconoir-"]'))
+      .map((e) => e.classList[0])
+      .concat(["iconoir-half-moon", "iconoir-sun-light"]),
+  );
+  const subsetIconoirCSS = iconoirSubsetter(
+    loadedCSSIconoir,
+    usedIconoirClasses,
+  );
+  console.info(subsetIconoirCSS);
+  const fullCSS = loadedCSSText + "\n" + subsetIconoirCSS;
 
   const finalHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -1052,7 +1097,7 @@ async function exportToStaticHTML(loadedCSSText) {
   <title>Pinta Diagram Export</title>
   <style>
     /* Embedded CSS from style.css */
-    ${loadedCSSText}
+    ${fullCSS}
     /* Additional styles for static export if needed */
     body {
         margin: 0;
