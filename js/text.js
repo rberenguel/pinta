@@ -4,7 +4,7 @@ export {
   initializelinkModal,
   handleTextClick,
 };
-export const MAX_TEXT_PERP_OFFSET = 30;
+export const MAX_TEXT_PERP_OFFSET = 60;
 export const DEFAULT_SCHEMA_TEXT_COLOR_VAR = "var(--theme-schema-text-color)";
 
 import {
