@@ -857,6 +857,13 @@ async function exportToStaticHTML(loadedCSSText) {
   const currentThemeClass = document.body.classList.contains("light-theme")
     ? "light-theme"
     : "";
+  const toggleHTML = `
+    <input type="checkbox" id="theme-toggle-export" class="theme-toggle-checkbox">
+    <label for="theme-toggle-export" class="theme-toggle-label">
+      <i class="iconoir-sun-light"></i>
+      <i class="iconoir-half-moon"></i>
+    </label>
+  `;
   let diagramContentHTML = "";
 
   const liveEditorRectForRelativePositioning =
@@ -964,7 +971,7 @@ async function exportToStaticHTML(loadedCSSText) {
         elemRect.left - liveEditorRectForRelativePositioning.left;
       const exportTop = elemRect.top - liveEditorRectForRelativePositioning.top;
 
-      let postItGeneratedStyle = `position:absolute; left:${exportLeft}px; top:${exportTop}px; width:${elemRect.width}px; height:${elemRect.height}px;`;
+      let postItGeneratedStyle = `position:absolute; left:${exportLeft}px; top:${exportTop}px; width:${elemRect.width}px;`;
 
       if (postItElement.style.transform) {
         postItGeneratedStyle += ` transform: ${postItElement.style.transform};`;
@@ -1040,8 +1047,11 @@ async function exportToStaticHTML(loadedCSSText) {
   </style>
 </head>
 <body class="${currentThemeClass}">
+${toggleHTML}
+  <div class="pinta-static-container">
   <div id="editor-container-export" style="${editorWrapperStyle}">
     ${diagramContentHTML}
+  </div>
   </div>
   ${jsonComment}
 </body>

@@ -102,6 +102,10 @@ export const LINK_SYMBOL_MAP = [
     regex: /.*github\.com.*/i,
     symbol: `<div class="iconoir-github-circle"></div>`,
   },
+  {
+    regex: /.*wikipedia\..*/i,
+    symbol: `<div class="iconoir-globe"></div>`,
+  },
   { regex: /.*youtube\.com.*/i, symbol: `<div class="iconoir-youtube"></div>` },
   { regex: /.*arxiv\.org.*/i, symbol: `<div class="iconoir-flask"></div>` },
 ];

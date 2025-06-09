@@ -28,7 +28,7 @@ It is based on a diagram I saw on the (otherwise pretty bad and not recommended 
 ## How it looks
 
 This is the main "example" which also serves as feature list. This is the state of the example
-as of version 0.4.0 (I need to update it since this is at 0.6.0, pressing `?` will give more current help).
+as of version 0.6.2..
 
 ![](https://raw.githubusercontent.com/rberenguel/pinta/gh-pages/media/pinta-example-dark.png)
 
@@ -40,7 +40,8 @@ It also has a light mode.
 
 You can see how the HTML export looks (for light mode) [here](http://mostlymaths.net/pinta/media/pinta-example-light.html).
 
-The HTML file can also be loaded and contains a valid diagram (embedded as a comment).
+The HTML file can also be loaded and contains a valid diagram (embedded as a comment). The HTML export has a CSS-only
+toggle between light and dark modes, you can export your preferred one but the reader can choose.
 
 ---
 
@@ -131,6 +132,11 @@ but I'm not your doctor or that kind of doctor).
 ---
 
 ## Changelog
+
+### 0.6.2
+
+- CSS-only toggle on HTML export to switch light/dark modes
+- Minor tweaks, added icons
 
 ### 0.6.1
 
