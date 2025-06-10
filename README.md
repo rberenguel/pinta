@@ -133,6 +133,11 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.6.8
+
+- Added month parsing.
+- I don't know why I skipped two patch versions. Maybe I added something and forgot to update this.
+
 ### 0.6.6
 
 - Adjustable line length via `*` and `/` while hovering on labels.

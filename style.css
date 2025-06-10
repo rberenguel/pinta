@@ -480,6 +480,13 @@ span.year {
   margin-left: 0.2em;
 }
 
+span.month {
+  vertical-align: super;
+  font-size: 70%;
+  filter: hue-rotate(-30deg) saturate(0.8);
+  margin-left: 0.1em;
+}
+
 .link-icon-clickable > div {
   font-size: 150%;
   display: inline-block;

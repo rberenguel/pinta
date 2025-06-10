@@ -984,21 +984,33 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
         }
         let appending = [];
         if (rawLineText.startsWith("[")) {
-          const maybeYear = rawLineText.slice(1).split("]");
-          if (maybeYear.length > 1) {
-            const year = maybeYear[0];
-            const yearPattern = /^(19\d{2}|20\d{2}|2100)$/;
-            if (year && yearPattern.test(year)) {
-              console.info("Found year");
-              const yearSpan = `<span class="year">${year}</span>`;
+          const maybeDate = rawLineText.slice(1).split("]");
+          if (maybeDate.length > 1) {
+            const content = maybeDate[0];
+            const yearMonthPattern = /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?$/;
+            const match = content.match(yearMonthPattern);
+
+            if (match) {
+              console.info("Found year and optional month");
+              const yearPart = match[1];
+              const monthPart = match[2];
+
+              const yearSpan = `<span class="year">${yearPart}</span>`;
               appending.push(yearSpan);
+
+              if (monthPart) {
+                console.info("Found month");
+                const monthSpan = `<span class="month">${monthPart}</span>`;
+                appending.push(monthSpan);
+              }
+
+              rawLineText = rawLineText
+                .slice(1)
+                .split("]")
+                .slice(1)
+                .join("]")
+                .trim();
             }
-            rawLineText = rawLineText
-              .slice(1)
-              .split("]")
-              .slice(1)
-              .join("]")
-              .trim();
           }
         }
         rawLineText = prefix + rawLineText;
