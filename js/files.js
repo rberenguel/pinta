@@ -1183,6 +1183,7 @@ ${toggleHTML}
       }
     }
   }
+  title = title.replace(/[: ]/g, "-");
   const suggestedName = `${title}.html`;
 
   try {
