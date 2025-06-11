@@ -133,6 +133,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.6.9
+
+- Choose export location for `HTML` export.
+
 ### 0.6.8
 
 - Added month parsing.

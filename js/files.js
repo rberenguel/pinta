@@ -1183,14 +1183,41 @@ ${toggleHTML}
       }
     }
   }
-  title = title.replace(":", "-");
-  title = title.replace(" ", "-");
-  link.download = `${title}.html`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-  console.log("Diagram exported to HTML.");
+  const suggestedName = `${title}.html`;
+
+  try {
+    if (window.showSaveFilePicker) {
+      const fileHandle = await window.showSaveFilePicker({
+        suggestedName: suggestedName,
+        types: [
+          {
+            description: "HTML Document",
+            accept: { "text/html": [".html", ".htm"] },
+          },
+        ],
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      console.log("Pinta: Diagram exported to HTML.");
+    } else {
+      // Fallback for browsers that don't support showSaveFilePicker
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = suggestedName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      console.log("Pinta: Diagram download initiated (fallback).");
+    }
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      console.error("Pinta: Error exporting to HTML:", err);
+    } else {
+      console.log("Pinta: HTML export aborted by user.");
+    }
+  }
 }
 
 // Add this to js/files.js
