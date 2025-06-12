@@ -6,6 +6,9 @@ export {
   getLineDisplayAngle,
   getLineDepth,
   highlightBranch,
+  increaseAllLinesFontSize,
+  decreaseAllLinesFontSize,
+  isEditingLineText,
 };
 
 export const MAIN_LINE_DEFAULT_THICKNESS = 4;
@@ -57,7 +60,8 @@ function createLineObject(params) {
     textColor: "default",
     children: [],
     offsetRatioOnParent: 0.5,
-    fontSize: 16,
+    // TODO this should match line-text
+    fontSize: 13,
     isBold: false,
     isCentered: true,
     linkUrl: null,
@@ -78,6 +82,25 @@ function createLineObject(params) {
 
   state.linesStore[id] = lineData;
   return lineData;
+}
+
+function changeAllLinesFontSize(delta) {
+  for (const lineId in state.linesStore) {
+    const line = state.linesStore[lineId];
+    if (!line.fontSize) {
+      line.fontSize = 16;
+    }
+    line.fontSize += delta;
+    renderLine(line, true);
+  }
+}
+
+function increaseAllLinesFontSize() {
+  changeAllLinesFontSize(1);
+}
+
+function decreaseAllLinesFontSize() {
+  changeAllLinesFontSize(-1);
 }
 
 function renderLine(line, isUpdate = false) {

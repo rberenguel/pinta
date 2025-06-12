@@ -28,7 +28,7 @@ It is based on a diagram I saw on the (otherwise pretty bad and not recommended 
 ## How it looks
 
 This is the main "example" which also serves as feature list. This is the state of the example
-as of version 0.6.2..
+as of version 0.6.2. (slightly outdated).
 
 ![](https://raw.githubusercontent.com/rberenguel/pinta/gh-pages/media/pinta-example-dark.png)
 
@@ -132,6 +132,10 @@ but I'm not your doctor or that kind of doctor).
 ---
 
 ## Changelog
+
+### 0.6.10
+
+- Resize font of all lines at once.
 
 ### 0.6.9
 

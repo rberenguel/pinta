@@ -32,6 +32,9 @@ import {
   updateChildrenPositions,
   deleteLineRecursive,
   getLineDisplayAngle,
+  isEditingLineText,
+  increaseAllLinesFontSize,
+  decreaseAllLinesFontSize,
 } from "./js/lines.js";
 
 import { handleDeleteItemClick } from "./js/delete.js";
@@ -1043,6 +1046,42 @@ document.addEventListener("mouseup", (event) => {
   state.isDrawingModeActive = false;
 });
 
+function handleCanvasKeydown(event) {
+  // Do not interfere if a line is hovered, as it has its own keybindings
+  if (state.hoveredLineIdForVisualColorChange || isEditingLineText()) {
+    return;
+  }
+
+  // Do not interfere when typing in an input/editable field
+  const activeElement = document.activeElement;
+  if (
+    activeElement.isContentEditable ||
+    activeElement.tagName === "INPUT" ||
+    activeElement.tagName === "TEXTAREA"
+  ) {
+    return;
+  }
+
+  // Do not interfere with OS-level shortcuts
+  if (event.metaKey || event.ctrlKey) {
+    return;
+  }
+
+  const key = event.key;
+
+  if (key === ",") {
+    event.preventDefault();
+    event.stopPropagation();
+    decreaseAllLinesFontSize();
+  } else if (key === ".") {
+    // Check for '>' on the same key
+    if (event.shiftKey) return;
+    event.preventDefault();
+    event.stopPropagation();
+    increaseAllLinesFontSize();
+  }
+}
+
 function init() {
   editorContainer.innerHTML = "";
   const newdrawingCanvas = document.createElementNS(SVG_NS, "svg");
@@ -1111,6 +1150,16 @@ function init() {
     color: "default",
   });
   renderLine(mainLine);
+
+  if (editorContainer) {
+    editorContainer.addEventListener("mouseenter", () => {
+      document.addEventListener("keydown", handleCanvasKeydown);
+    });
+
+    editorContainer.addEventListener("mouseleave", () => {
+      document.removeEventListener("keydown", handleCanvasKeydown);
+    });
+  }
 }
 
 async function createNewDiagram() {
