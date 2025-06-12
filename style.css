@@ -500,6 +500,7 @@ span.day {
   display: inline-block;
   vertical-align: bottom;
   filter: hue-rotate(60deg);
+  cursor: pointer;
 }
 
 .link-icon-nonclickable > div {
@@ -908,4 +909,110 @@ span.day {
   opacity: 0.9;
   text-decoration-line: line-through;
   text-decoration-thickness: 0.05em !important;
+}
+
+.iframe-preview-container {
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  width: 30vw;
+  height: 40vh;
+  background: var(--theme-editor-background);
+  border: 1px solid var(--theme-border-color);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  padding: 1.5em;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border-radius: 5px;
+  transition: border-color 0.2s;
+}
+
+.iframe-preview-container:hover {
+  border-color: var(--blue);
+}
+
+.iframe-preview-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--red);
+  color: white;
+  border: 2px solid var(--theme-editor-background);
+  cursor: pointer;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.8;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+
+  /* Hidden by default */
+  opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+}
+
+.iframe-preview-container:hover .iframe-preview-close {
+  opacity: 1 !important;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.iframe-preview-content {
+  margin: 0.25em;
+  flex-grow: 1;
+  border: none;
+  background: white;
+  border-radius: 2px;
+}
+
+.iframe-resize-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px dashed var(--theme-border-color);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--theme-editor-background),
+    var(--theme-editor-background) 10px,
+    var(--theme-main-background) 10px,
+    var(--theme-main-background) 20px
+  );
+  display: none;
+  border-radius: 5px;
+}
+
+.link-preview-iframe-wrapper {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 30vh;
+  height: 15vh;
+  border: 1px solid var(--theme-border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: var(--theme-main-background);
+  z-index: 2000;
+  border-radius: 4px;
+  overflow: hidden;
+  /* display:flex and centering properties removed */
+  display: none;
+}
+
+.link-preview-iframe {
+  background: white;
+  border: none;
+  /* transform-origin is key for scaling from the top-left corner */
+  transform-origin: 0 0;
 }

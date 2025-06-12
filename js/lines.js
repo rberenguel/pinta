@@ -9,6 +9,7 @@ export {
   increaseAllLinesFontSize,
   decreaseAllLinesFontSize,
   isEditingLineText,
+  showLinkInIframe,
 };
 
 export const MAIN_LINE_DEFAULT_THICKNESS = 4;
@@ -40,6 +41,7 @@ import { state, editorContainer } from "./state.js";
 import { deleteItem, handleDeleteItemClick } from "./delete.js";
 
 const DELETE_BUTTON_PERP_OFFSET = 0;
+let zIndexCounter = 1000;
 
 function createLineObject(params) {
   const id = `line-${state.lineIdCounter++}`;
@@ -994,4 +996,107 @@ function handleLineVisualColorKeydown(event) {
     state.itemTypeToDelete = "line";
     deleteItem(event);
   }
+}
+
+function showLinkInIframe(url) {
+  const container = document.createElement("div");
+  container.className = "iframe-preview-container";
+  container.style.zIndex = ++zIndexCounter;
+
+  const placeholder = document.createElement("div");
+  placeholder.className = "iframe-resize-placeholder";
+
+  const iframe = document.createElement("iframe");
+  iframe.src = url;
+  iframe.className = "iframe-preview-content";
+  iframe.sandbox = "allow-scripts allow-forms allow-popups allow-same-origin";
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "iframe-preview-close";
+  closeButton.innerHTML = "&times;";
+  closeButton.addEventListener("click", (e) => {
+    e.stopPropagation();
+    interact(container).unset();
+    container.remove();
+  });
+
+  container.appendChild(placeholder);
+  container.appendChild(iframe);
+  container.appendChild(closeButton);
+  editorContainer.appendChild(container);
+
+  interact(container)
+    .draggable({
+      allowFrom: container,
+      inertia: true,
+      modifiers: [
+        interact.modifiers.restrictRect({
+          restriction: "parent",
+          endOnly: true,
+        }),
+      ],
+      listeners: {
+        start(event) {
+          iframe.style.visibility = "hidden";
+          placeholder.style.display = "block";
+        },
+        move(event) {
+          const target = event.target;
+          const x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
+          const y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
+          target.style.transform = `translate(${x}px, ${y}px)`;
+          target.setAttribute("data-x", x);
+          target.setAttribute("data-y", y);
+        },
+        end(event) {
+          placeholder.style.display = "none";
+          iframe.style.visibility = "visible";
+        },
+      },
+    })
+    .resizable({
+      edges: { top: true, left: true, bottom: true, right: true },
+      listeners: {
+        start(event) {
+          iframe.style.visibility = "hidden";
+          placeholder.style.display = "block";
+        },
+        move(event) {
+          const target = event.target;
+
+          // Get the current position from the data attributes
+          let x = parseFloat(target.getAttribute("data-x")) || 0;
+          let y = parseFloat(target.getAttribute("data-y")) || 0;
+
+          // Update the element's width and height style
+          target.style.width = `${event.rect.width}px`;
+          target.style.height = `${event.rect.height}px`;
+
+          // This is the crucial part: apply the change in position.
+          // event.deltaRect contains the difference in position since the last event.
+          x += event.deltaRect.left;
+          y += event.deltaRect.top;
+
+          // Apply the new position via transform
+          target.style.transform = `translate(${x}px, ${y}px)`;
+
+          // And finally, update the data attributes for the next move event
+          target.setAttribute("data-x", x);
+          target.setAttribute("data-y", y);
+        },
+        end(event) {
+          placeholder.style.display = "none";
+          iframe.style.visibility = "visible";
+          iframe.src = iframe.src; // Reload
+        },
+      },
+      modifiers: [
+        interact.modifiers.restrictSize({
+          min: { width: 200, height: 150 },
+        }),
+      ],
+    })
+    .on("down", (event) => {
+      event.currentTarget.style.zIndex = ++zIndexCounter;
+    });
 }

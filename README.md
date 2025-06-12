@@ -133,6 +133,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.7.0
+
+- Hover + shift on links to preview, shift + click to open resizable/draggable iframe of the destination
+
 ### 0.6.11
 
 - Add day parser for [YYYYMMDD] prefixes.

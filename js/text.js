@@ -18,7 +18,13 @@ import {
   renderLine,
   getLineDisplayAngle,
   SCHEMA_LINE_VISUAL_COLORS,
+  showLinkInIframe,
 } from "./lines.js";
+
+let previewIframe = null,
+  previewWrapper = null;
+let PREVIEW_IFRAME_WIDTH;
+let PREVIEW_IFRAME_HEIGHT;
 
 function getLinkPrefix(url) {
   if (!url) return "";
@@ -134,16 +140,28 @@ function handleTextMouseLeave(event) {
 
 function handleTextClick(e) {
   const textElementDiv = e.currentTarget;
-  console.log(e.target.closest("SPAN"));
   if (
     e.target.closest("SPAN")?.classList &&
     e.target.closest("SPAN").classList.contains("link-icon-clickable")
   ) {
     const urlToOpen = e.target.closest("SPAN").dataset.linkUrl;
-    if (urlToOpen) {
+    if (urlToOpen && !e.shiftKey) {
       window.open(urlToOpen, "_blank", "noopener,noreferrer");
+
       e.stopPropagation();
       e.preventDefault();
+      return;
+    }
+    if (urlToOpen && e.shiftKey) {
+      e.stopPropagation();
+      e.preventDefault();
+      textElementDiv.style.cursor = textElementDiv.classList.contains(
+        "line-text",
+      )
+        ? "grab"
+        : "auto";
+      showLinkInIframe(urlToOpen);
+
       return;
     }
   }
@@ -251,6 +269,9 @@ function setupTextDraggable(textElement, lineObject) {
 }
 
 function makeEditable(textEl) {
+  if (textEl.classList && textEl.classList[0].startsWith("iconoir")) {
+    return;
+  }
   if (textEl.isContentEditable || textEl.classList.contains("dragging")) return;
   state.activeTextEditElement = textEl;
 
@@ -266,6 +287,7 @@ function makeEditable(textEl) {
   }
 
   textEl.contentEditable = "true";
+  console.log(textEl);
   textEl.style.cursor = "auto";
   textEl.focus();
 
@@ -289,7 +311,7 @@ function makeEditable(textEl) {
     textEl.contentEditable = "false";
     textEl.style.cursor = textEl.classList.contains("line-text")
       ? "grab"
-      : "text";
+      : "auto";
     if (itemId && itemType === "line" && state.linesStore[itemId]) {
       state.linesStore[itemId].text = textEl.textContent;
 
@@ -366,6 +388,8 @@ function makeEditable(textEl) {
 }
 
 function initializelinkModal() {
+  PREVIEW_IFRAME_WIDTH = 1000;
+  PREVIEW_IFRAME_HEIGHT = 800;
   state.linkModal = document.getElementById("linkModal");
   state.linkUrlInput = document.getElementById("linkUrlInput");
   state.saveLinkButton = document.getElementById("saveLinkButton");
@@ -410,6 +434,25 @@ function initializelinkModal() {
       hidelinkModal();
     }
   });
+
+  let currentHoveredLink = null;
+  editorContainer.addEventListener("mouseover", (event) => {
+    const linkIcon = event.target.closest(".link-icon-clickable");
+    if (linkIcon) {
+      currentHoveredLink = linkIcon;
+      if (event.shiftKey) {
+        showPreview(linkIcon.dataset.linkUrl);
+      }
+    }
+  });
+
+  editorContainer.addEventListener("mouseout", (event) => {
+    const linkIcon = event.target.closest(".link-icon-clickable");
+    if (linkIcon && !linkIcon.contains(event.relatedTarget)) {
+      currentHoveredLink = null;
+      hidePreview();
+    }
+  });
 }
 
 function showlinkModal(lineId) {
@@ -429,4 +472,46 @@ function showlinkModal(lineId) {
 function hidelinkModal() {
   state.linkModal.style.display = "none";
   state.currentLineEditIdForModal = null;
+}
+
+function createPreviewIframe() {
+  if (previewWrapper) return;
+
+  previewWrapper = document.createElement("div");
+  previewWrapper.className = "link-preview-iframe-wrapper";
+
+  previewIframe = document.createElement("iframe");
+  previewIframe.className = "link-preview-iframe";
+  previewIframe.sandbox =
+    "allow-scripts allow-forms allow-popups allow-same-origin";
+
+  // Set the iframe to a fixed, large resolution
+  console.log(PREVIEW_IFRAME_WIDTH);
+  previewIframe.width = PREVIEW_IFRAME_WIDTH;
+  previewIframe.height = PREVIEW_IFRAME_HEIGHT;
+
+  previewWrapper.appendChild(previewIframe);
+  editorContainer.appendChild(previewWrapper);
+}
+
+function showPreview(url) {
+  createPreviewIframe();
+  const vh = window.outerHeight / 100;
+  const scale = Math.max(
+    (vh * 30) / PREVIEW_IFRAME_WIDTH,
+    (vh * 15) / PREVIEW_IFRAME_HEIGHT,
+  );
+
+  // Apply the scale transformation to the iframe
+  previewIframe.style.transform = `scale(${scale})`;
+
+  previewIframe.src = url;
+  previewWrapper.style.display = "block"; // Use flex to show and center
+}
+
+function hidePreview() {
+  if (previewWrapper) {
+    previewWrapper.style.display = "none";
+    previewIframe.src = "about:blank";
+  }
 }
