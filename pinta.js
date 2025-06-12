@@ -353,6 +353,9 @@ function handleKeyDown(event) {
     }
     return;
   } else if (ctrlCmd && event.key.toLowerCase() === "x") {
+    if (isEditingText) {
+      return;
+    }
     event.preventDefault();
     if (state.selectedLines.size > 0) {
       state.clipboard = [];
@@ -1048,7 +1051,11 @@ document.addEventListener("mouseup", (event) => {
 
 function handleCanvasKeydown(event) {
   // Do not interfere if a line is hovered, as it has its own keybindings
-  if (state.hoveredLineIdForVisualColorChange || isEditingLineText()) {
+  if (
+    state.hoveredLineIdForVisualColorChange ||
+    isEditingLineText() ||
+    state.hoveredLineIdForTextColorChange
+  ) {
     return;
   }
 

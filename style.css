@@ -484,7 +484,14 @@ span.year {
 span.month {
   vertical-align: super;
   font-size: 70%;
-  filter: hue-rotate(-30deg) saturate(0.8);
+  filter: hue-rotate(-35deg) saturate(0.8);
+  margin-left: 0.1em;
+}
+
+span.day {
+  vertical-align: super;
+  font-size: 70%;
+  filter: hue-rotate(-40deg) saturate(0.8);
   margin-left: 0.1em;
 }
 

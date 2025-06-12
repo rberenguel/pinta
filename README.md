@@ -133,6 +133,11 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.6.11
+
+- Add day parser for [YYYYMMDD] prefixes.
+- Fix hover-resize-thingy that I did in .10 and had an annoying edge case.
+
 ### 0.6.10
 
 - Resize font of all lines at once.

@@ -987,13 +987,15 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           const maybeDate = rawLineText.slice(1).split("]");
           if (maybeDate.length > 1) {
             const content = maybeDate[0];
-            const yearMonthPattern = /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?$/;
+            const yearMonthPattern =
+              /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?(0[1-9]|1[0-9]|2[0-9]|3[0-1])$/;
             const match = content.match(yearMonthPattern);
 
             if (match) {
               console.info("Found year and optional month");
               const yearPart = match[1];
               const monthPart = match[2];
+              const dayPart = match[3];
 
               const yearSpan = `<span class="year">${yearPart}</span>`;
               appending.push(yearSpan);
@@ -1002,6 +1004,11 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
                 console.info("Found month");
                 const monthSpan = `<span class="month">${monthPart}</span>`;
                 appending.push(monthSpan);
+              }
+              if (dayPart) {
+                console.info("Found day");
+                const daySpan = `<span class="day">${dayPart}</span>`;
+                appending.push(daySpan);
               }
 
               rawLineText = rawLineText

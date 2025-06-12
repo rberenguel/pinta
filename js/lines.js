@@ -293,13 +293,15 @@ function renderLine(line, isUpdate = false) {
       const maybeYear = lineText.slice(1).split("]");
       if (maybeYear.length > 1) {
         const year = maybeYear[0];
-        const yearMonthPattern = /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?$/;
+        const yearMonthPattern =
+          /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?(0[1-9]|1[0-9]|2[0-9]|3[0-1])$/;
         const match = year.match(yearMonthPattern);
 
         if (match) {
           console.info("Found year and optional month");
           const yearPart = match[1];
           const monthPart = match[2];
+          const dayPart = match[3];
 
           const yearSpan = document.createElement("span");
           yearSpan.className = "year";
@@ -312,6 +314,13 @@ function renderLine(line, isUpdate = false) {
             monthSpan.className = "month";
             monthSpan.innerHTML = monthPart;
             appending.push(monthSpan);
+          }
+          if (dayPart) {
+            console.info("Found month");
+            const daySpan = document.createElement("span");
+            daySpan.className = "day";
+            daySpan.innerHTML = dayPart;
+            appending.push(daySpan);
           }
         }
         lineText = lineText.slice(1).split("]").slice(1).join("]").trim();
