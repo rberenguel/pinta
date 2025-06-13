@@ -892,12 +892,28 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
   const currentThemeClass = document.body.classList.contains("light-theme")
     ? "light-theme"
     : "";
-  const toggleHTML = `
+  const ldToggleHTML = `
     <input type="checkbox" id="theme-toggle-export" class="theme-toggle-checkbox">
     <label for="theme-toggle-export" class="theme-toggle-label">
       <i class="sun-light iconoir-sun-light"></i>
       <i class="half-moon iconoir-half-moon"></i>
     </label>
+  `;
+  let info = `Created with <a href="https://github.com/rberenguel/pinta">Pinta v${state.version}</a><br/>Pinta created by Ruben Berenguel, 2025`;
+  const infoToggleHTML = `
+<input type="checkbox" id="info-modal-toggle" class="info-modal-toggle-checkbox" />
+<label for="info-modal-toggle" class="info-button" title="About Pinta">
+  <span class="iconoir-info-circle-solid"></span>
+</label>
+
+<div class="info-modal-overlay">
+    <label for="info-modal-toggle" class="info-modal-close-overlay"></label>
+    <div class="info-modal-content">
+        <div id="info-modal-text">${info}
+            </div>
+        <label for="info-modal-toggle" class="info-modal-close-button">&times;</label>
+    </div>
+</div>
   `;
   let diagramContentHTML = "";
 
@@ -1131,7 +1147,11 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
   const usedIconoirClasses = new Set(
     Array.from(document.querySelectorAll('[class*="iconoir-"]'))
       .map((e) => e.classList[0])
-      .concat(["iconoir-half-moon", "iconoir-sun-light"]),
+      .concat([
+        "iconoir-half-moon",
+        "iconoir-sun-light",
+        "iconoir-info-circle-solid",
+      ]),
   );
   const subsetIconoirCSS = iconoirSubsetter(
     loadedCSSIconoir,
@@ -1165,7 +1185,8 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
   </style>
 </head>
 <body class="${currentThemeClass}">
-${toggleHTML}
+${infoToggleHTML}
+${ldToggleHTML}
   <div class="pinta-static-container">
   <div id="editor-container-export" style="${editorWrapperStyle}">
     ${diagramContentHTML}

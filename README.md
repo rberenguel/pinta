@@ -133,6 +133,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.7.1
+
+- Add version to e
+
 ### 0.7.0
 
 - Hover + shift on links to preview, shift + click to open resizable/draggable iframe of the destination

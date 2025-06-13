@@ -253,6 +253,7 @@ async function fetchSelfManifest() {
     if (response.ok) {
       let loadedManifest = await response.text();
       version = JSON.parse(loadedManifest).version;
+      state.version = version;
       helpModal.querySelector("h3").innerHTML = helpModal
         .querySelector("h3")
         .innerHTML.replace("{{version}}", version);

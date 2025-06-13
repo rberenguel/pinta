@@ -1016,3 +1016,120 @@ span.day {
   /* transform-origin is key for scaling from the top-left corner */
   transform-origin: 0 0;
 }
+
+/* --- Info Button & Modal --- */
+.info-modal-toggle-checkbox {
+  display: none;
+}
+
+.info-button {
+  font-size: 32px;
+  cursor: pointer;
+  position: fixed;
+  top: 1.4em;
+  right: 3.5em; /* Positioned left of the theme-toggle */
+  z-index: 10001;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--base01);
+  border-radius: 50%;
+  transition: all 0.3s ease-in-out;
+  color: var(--base01);
+  background-color: transparent;
+}
+
+.info-button:hover {
+  background-color: var(--base02);
+  color: var(--base1);
+  border-color: var(--base0);
+}
+
+.info-button > i {
+  font-size: 16px;
+}
+
+.info-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(
+    0,
+    0,
+    0,
+    0.6
+  ); /* Fallback for browsers without var support */
+  background-color: var(--theme-modal-overlay-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10002;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.info-modal-close-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
+
+.info-modal-content {
+  background-color: var(--theme-modal-background);
+  color: var(--theme-modal-text-secondary);
+  padding: 25px;
+  border-radius: 8px;
+  border: 1px solid var(--theme-border-color);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 320px;
+  text-align: center;
+  position: relative;
+  transform: scale(0.95);
+  transition: transform 0.3s ease-in-out;
+  z-index: 10003;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+#info-modal-text a {
+  color: var(--yellow);
+  text-decoration: none;
+}
+
+#info-modal-text a:hover {
+  text-decoration: underline;
+}
+
+.info-modal-close-button {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--theme-secondary-text);
+  cursor: pointer;
+  padding: 5px;
+  line-height: 1;
+}
+
+.info-modal-close-button:hover {
+  color: var(--theme-primary-text);
+}
+
+/* Modal visibility logic */
+#info-modal-toggle:checked ~ .info-modal-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#info-modal-toggle:checked ~ .info-modal-overlay .info-modal-content {
+  transform: scale(1);
+}
