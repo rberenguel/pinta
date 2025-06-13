@@ -28,7 +28,7 @@ It is based on a diagram I saw on the (otherwise pretty bad and not recommended 
 ## How it looks
 
 This is the main "example" which also serves as feature list. This is the state of the example
-as of version 0.6.2. (slightly outdated).
+as of version 0.6.2. (quite outdated).
 
 ![](https://raw.githubusercontent.com/rberenguel/pinta/gh-pages/media/pinta-example-dark.png)
 
@@ -74,7 +74,7 @@ but I'm not your doctor or that kind of doctor).
 
 ### Lines (Schema)
 
-- **Create Main Line**: This is fixed and comes for free.
+- **Create Main Line**: This is fixed and comes built in.
 - **Create Child Line**: Click on an existing line's visual bar. The new child line will sprout perpendicularly.
   - The orientation (90-degree turn) and initial direction (positive/negative length) of new child lines attempt to follow the characteristics of their preceding sibling.
 - **Select Line**: Hover over a line's visual bar or text.
@@ -133,9 +133,20 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.8.0
+
+- _Markdown-ish_
+  - Wrap in underscores for italics.
+  - Wrap in asterisks for bold.
+  - Wrap in backticks for code.
+- As many icons as you want: wrap an iconoir icon name with colons to show it inline.
+- Even web icons (works so-so): wrap an image URL in exclamation marks and it will be inlined, icon-sized.
+- Select + `=` to adjust size of several sibling (or not, but that's a bit weird) lines. Only useful for leaves.
+- `=` also works on text now, on hover. It will equalise most properties (centeredness, %, distance) across text siblings.
+
 ### 0.7.1
 
-- Add version to e
+- Add version to export
 
 ### 0.7.0
 

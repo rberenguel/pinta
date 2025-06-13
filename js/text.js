@@ -38,7 +38,8 @@ function getLinkPrefix(url) {
 
 function handleKeydown(event) {
   const key = event.key.toLowerCase();
-  const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const isCtrlOrCmd = isMac ? event.metaKey : event.ctrlKey;
   if (
     !state.hoveredLineIdForTextColorChange ||
     state.activeTextEditElement ||
@@ -55,17 +56,14 @@ function handleKeydown(event) {
     event.preventDefault();
     event.stopPropagation();
     const currentText = lineToUpdate.text || "";
-    console.log(currentText);
     if (!lineToUpdate.textRenderLength) {
       lineToUpdate.textRenderLength = currentText.length;
     }
-    console.log(lineToUpdate.textRenderLength);
     lineToUpdate.textRenderLength = Math.max(
       1,
       lineToUpdate.textRenderLength - 5,
     );
-    console.log(lineToUpdate.textRenderLength);
-    renderLine(lineToUpdate, true);
+    renderLine(lineToUpdate, { updating: true });
     return;
   }
 
@@ -78,7 +76,7 @@ function handleKeydown(event) {
       if (lineToUpdate.textRenderLength >= currentText.length) {
         lineToUpdate.textRenderLength = null;
       }
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
     return;
   }
@@ -95,7 +93,7 @@ function handleKeydown(event) {
     if (lineToUpdate) {
       const newColorName = SCHEMA_LINE_VISUAL_COLORS[key];
       lineToUpdate.textColor = newColorName;
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
   }
 
@@ -104,24 +102,39 @@ function handleKeydown(event) {
     let newSize = (lineToUpdate.fontSize || 16) - 2;
     if (newSize < 4) newSize = 4;
     lineToUpdate.fontSize = newSize;
-    renderLine(lineToUpdate, true);
+    renderLine(lineToUpdate, { updating: true });
   } else if (key === "." || key === ">") {
     event.preventDefault();
     let newSize = (lineToUpdate.fontSize || 16) + 2;
     lineToUpdate.fontSize = newSize;
-    renderLine(lineToUpdate, true);
+    renderLine(lineToUpdate, { updating: true });
   } else if (key.toLowerCase() === "b" && event.shiftKey) {
     event.preventDefault();
     lineToUpdate.isBold = !lineToUpdate.isBold;
-    renderLine(lineToUpdate, true);
+    renderLine(lineToUpdate, { updating: true });
   } else if (key.toLowerCase() === "c" && event.shiftKey) {
     event.preventDefault();
     lineToUpdate.isCentered = !lineToUpdate.isCentered;
-    renderLine(lineToUpdate, true);
+    renderLine(lineToUpdate, { updating: true });
   } else if (key.toLowerCase() === "k" && isCtrlOrCmd) {
     event.preventDefault();
     showlinkModal(lineId);
     return;
+  } else if (key.toLowerCase() === "=") {
+    event.preventDefault();
+    const siblings = state.linesStore[lineToUpdate.parentId].children.filter(
+      (c) => c !== lineToUpdate.id,
+    );
+    if (siblings.length > 0) {
+      const siblingToCopyFrom = state.linesStore[siblings[0]];
+      if (siblingToCopyFrom) {
+        lineToUpdate.fontSize = siblingToCopyFrom.fontSize;
+        lineToUpdate.textPosRatio = siblingToCopyFrom.textPosRatio;
+        lineToUpdate.textPerpOffset = siblingToCopyFrom.textPerpOffset;
+        lineToUpdate.isCentered = siblingToCopyFrom.isCentered;
+        renderLine(lineToUpdate, { updating: true });
+      }
+    }
   }
 }
 
@@ -233,10 +246,22 @@ function setupTextDraggable(textElement, lineObject) {
             -MAX_TEXT_PERP_OFFSET,
             Math.min(MAX_TEXT_PERP_OFFSET, currentLine.textPerpOffset),
           );
-          renderLine(currentLine, true);
+          renderLine(currentLine, {
+            updating: true,
+            moving: true,
+            fromText: true,
+          });
         },
         end(event) {
           event.target.classList.remove("dragging");
+          const target = event.target;
+          const lineId = target.dataset.lineId;
+          const currentLine = state.linesStore[lineId];
+          renderLine(currentLine, {
+            updating: true,
+            moving: false,
+            fromText: true,
+          });
         },
       },
       autoScroll: { container: editorContainer },
@@ -269,7 +294,7 @@ function setupTextDraggable(textElement, lineObject) {
 }
 
 function makeEditable(textEl) {
-  if (textEl.classList && textEl.classList[0].startsWith("iconoir")) {
+  if (textEl.classList && textEl.classList[0]?.startsWith("iconoir")) {
     return;
   }
   if (textEl.isContentEditable || textEl.classList.contains("dragging")) return;
@@ -287,7 +312,6 @@ function makeEditable(textEl) {
   }
 
   textEl.contentEditable = "true";
-  console.log(textEl);
   textEl.style.cursor = "auto";
   textEl.focus();
 
@@ -314,8 +338,7 @@ function makeEditable(textEl) {
       : "auto";
     if (itemId && itemType === "line" && state.linesStore[itemId]) {
       state.linesStore[itemId].text = textEl.textContent;
-
-      renderLine(state.linesStore[itemId], true);
+      renderLine(state.linesStore[itemId], { updating: true });
     } else if (itemId && itemType === "postit" && state.postItsStore[itemId]) {
       state.postItsStore[itemId].content = textEl.innerHTML;
     }
@@ -325,7 +348,8 @@ function makeEditable(textEl) {
   };
 
   const onKeydown = (e) => {
-    const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    const isCtrlOrCmd = isMac ? event.metaKey : event.ctrlKey;
     if (itemType === "line") {
       const lineId = itemId;
       const currentLine = state.linesStore[lineId];
@@ -407,7 +431,9 @@ function initializelinkModal() {
       state.linesStore[state.currentLineEditIdForModal].linkUrl = newUrl
         ? newUrl
         : null;
-      renderLine(state.linesStore[state.currentLineEditIdForModal], true);
+      renderLine(state.linesStore[state.currentLineEditIdForModal], {
+        updating: true,
+      });
     }
     hidelinkModal();
   };
@@ -418,7 +444,9 @@ function initializelinkModal() {
       state.linesStore[state.currentLineEditIdForModal]
     ) {
       state.linesStore[state.currentLineEditIdForModal].linkUrl = null;
-      renderLine(state.linesStore[state.currentLineEditIdForModal], true);
+      renderLine(state.linesStore[state.currentLineEditIdForModal], {
+        updating: true,
+      });
     }
     hidelinkModal();
   };
@@ -486,7 +514,6 @@ function createPreviewIframe() {
     "allow-scripts allow-forms allow-popups allow-same-origin";
 
   // Set the iframe to a fixed, large resolution
-  console.log(PREVIEW_IFRAME_WIDTH);
   previewIframe.width = PREVIEW_IFRAME_WIDTH;
   previewIframe.height = PREVIEW_IFRAME_HEIGHT;
 

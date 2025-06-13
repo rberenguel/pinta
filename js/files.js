@@ -588,6 +588,7 @@ function _processLoadedDiagramData(fileContentString, isMarkdown = false) {
 
     if (state.linesStore[mainLineCurrentId]) {
       renderLine(state.linesStore[mainLineCurrentId]);
+      console.log("hello");
       updateChildrenPositions(mainLineCurrentId);
     } else {
       console.warn(
@@ -1045,6 +1046,29 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           title = rawLineText;
           rawLineText = rawLineText.substring(0, line.textRenderLength) + "…";
         }
+
+        // Handle markdown-like formatting for the static export
+        rawLineText = rawLineText.replace(
+          /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,
+          "<code>$1</code>",
+        );
+        rawLineText = rawLineText.replace(
+          /_([a-zA-Z][^_]*[a-zA-Z]|[a-zA-Z])_/g,
+          "<em>$1</em>",
+        );
+        rawLineText = rawLineText.replace(
+          /\*([a-zA-Z][^*]*[a-zA-Z]|[a-zA-Z])\*/g,
+          "<strong>$1</strong>",
+        );
+        rawLineText = rawLineText.replace(
+          /:([\w-]+):/g,
+          '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
+        );
+        rawLineText = rawLineText.replace(
+          /!([^!]+)!/g,
+          '<img class="inlined-image" src="$1" style="height: 1em; vertical-align: middle;">',
+        );
+
         let lineText = `<div class="line-text-wrapper" title="${title}">${rawLineText}${appending.join(
           " ",
         )}</div>`;

@@ -40,6 +40,23 @@ import { DEFAULT_SCHEMA_TEXT_COLOR_VAR } from "./text.js";
 import { state, editorContainer } from "./state.js";
 import { deleteItem, handleDeleteItemClick } from "./delete.js";
 
+export const placeholderStyle = `
+          display: inline-block;
+          width: 1em;
+          height: 1em;
+          vertical-align: middle;
+          border-radius: 2px;
+          background-color: var(--theme-main-background);
+          background-image: repeating-linear-gradient(
+              -45deg,
+              transparent,
+              transparent 4px,
+              var(--theme-border-color) 4px,
+              var(--theme-border-color) 5px
+          );
+      `
+  .replace(/\s\s+/g, " ")
+  .trim(); // Minify for style attribute
 const DELETE_BUTTON_PERP_OFFSET = 0;
 let zIndexCounter = 1000;
 
@@ -93,7 +110,7 @@ function changeAllLinesFontSize(delta) {
       line.fontSize = 16;
     }
     line.fontSize += delta;
-    renderLine(line, true);
+    renderLine(line, { updating: true });
   }
 }
 
@@ -105,7 +122,11 @@ function decreaseAllLinesFontSize() {
   changeAllLinesFontSize(-1);
 }
 
-function renderLine(line, isUpdate = false) {
+function renderLine(line, opts = {}) {
+  console.info(`Rendering ${line.id} with ${JSON.stringify(opts)}`);
+  const isUpdate = opts.updating;
+  const isMoving = opts.moving;
+  const fromText = opts.fromText; // Text move should not affect children
   let group = document.getElementById(line.id);
   let textElement, visual, resizeHandle, rootDragHandle, deleteHandleInstance;
 
@@ -353,10 +374,43 @@ function renderLine(line, isUpdate = false) {
     } else {
       textElement.removeAttribute("title");
     }
-    const textNode = document.createTextNode(displayText);
+    // Markdown-ish italicizer
+    displayText = displayText.replace(
+      /_([a-zA-Z][^_]*[a-zA-Z]|[a-zA-Z])_/g,
+      "<em>$1</em>",
+    );
+    // Markdown-ish strongifier
+    displayText = displayText.replace(
+      /\*([a-zA-Z][^*]*[a-zA-Z]|[a-zA-Z])\*/g,
+      "<strong>$1</strong>",
+    );
+    // Markdown-ish code
+    displayText = displayText.replace(
+      /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,
+      "<code>$1</code>",
+    );
+    // Handle inline icons: :icon-name: -> <icon>
+    displayText = displayText.replace(
+      /:([\w-]+):/g,
+      '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
+    );
+    // Handle inline images: !url! -> <img ...>
+
+    const imageUrlRegex = /!([^!]+)!/g;
+    if (!isMoving) {
+      displayText = displayText.replace(
+        imageUrlRegex,
+        '<img class="inlined-image" src="$1" style="height: 1em; vertical-align: middle;">',
+      );
+    } else {
+      displayText = displayText.replace(
+        imageUrlRegex,
+        `<span style="${placeholderStyle}"></span>`,
+      );
+    }
     const textNodeWrapper = document.createElement("DIV");
     textNodeWrapper.classList.add("line-text-wrapper");
-    textNodeWrapper.appendChild(textNode);
+    textNodeWrapper.innerHTML = displayText;
     textElement.appendChild(textNodeWrapper);
     for (let el of appending) {
       textElement.appendChild(el);
@@ -406,10 +460,11 @@ function renderLine(line, isUpdate = false) {
     deleteHandleInstance.style.transform = `translateX(-50%) translateY(-50%) scaleX(${textScaleX}) rotate(${textInternalRotation}deg)`;
   }
 
-  if (isUpdate) updateChildrenPositions(line.id);
+  if (!fromText) updateChildrenPositions(line.id, opts);
 }
 
-function updateChildrenPositions(parentId) {
+function updateChildrenPositions(parentId, opts = {}) {
+  console.log(`Updating children of ${parentId} with ${JSON.stringify(opts)}`);
   const parentLine = state.linesStore[parentId];
   if (!parentLine || !parentLine.children) return;
 
@@ -425,7 +480,8 @@ function updateChildrenPositions(parentId) {
         parentLine.startX + offsetAlongParentAxis * Math.cos(parentAngleRad);
       childLine.startY =
         parentLine.startY + offsetAlongParentAxis * Math.sin(parentAngleRad);
-      renderLine(childLine, true);
+
+      renderLine(childLine, opts);
     }
   });
 }
@@ -557,11 +613,12 @@ function setupLineResizable(handle, line) {
           let newProjectedLength =
             mouseVecX * Math.cos(angleRad) + mouseVecY * Math.sin(angleRad);
           currentLine.length = newProjectedLength;
-          renderLine(currentLine, true);
+          renderLine(currentLine, { updating: true, moving: true });
         },
         end(event) {
           event.target.classList.remove("dragging");
           updateChildrenPositions(line.id);
+          renderLine(line, { updating: true, moving: false });
         },
       },
       autoScroll: { container: editorContainer },
@@ -612,11 +669,15 @@ function setupRootDraggable(handle, childLine) {
           childLine.startY =
             parentLine.startY +
             actualOffsetAlongParent * Math.sin(parentAngleRad);
-          renderLine(childLine, true);
-          updateChildrenPositions(childLine.id);
+          renderLine(childLine, { updating: true, moving: true });
+          updateChildrenPositions(childLine.id, {
+            updating: true,
+            moving: true,
+          });
         },
         end(event) {
           event.target.classList.remove("dragging");
+          renderLine(childLine, { updating: true, moving: false });
         },
       },
       autoScroll: { container: editorContainer },
@@ -873,7 +934,7 @@ function handleLineVisualColorKeydown(event) {
     if (lineToUpdate) {
       const newColorName = SCHEMA_LINE_VISUAL_COLORS[key];
       lineToUpdate.color = newColorName;
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
     return;
   } else if (key === "t") {
@@ -888,14 +949,14 @@ function handleLineVisualColorKeydown(event) {
       } else {
         lineToUpdate.checkboxState = "unchecked"; // Add checkbox, default to unchecked
       }
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
   } else if (key === "i") {
     event.preventDefault();
     event.stopPropagation();
     if (lineToUpdate) {
       lineToUpdate.length *= -1;
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
   } else if (key === "/") {
     if (!lineToUpdate.parentId) {
@@ -905,7 +966,7 @@ function handleLineVisualColorKeydown(event) {
     event.stopPropagation();
     if (lineToUpdate) {
       lineToUpdate.length /= 2;
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
   } else if (key === "*") {
     if (!lineToUpdate.parentId) {
@@ -915,7 +976,7 @@ function handleLineVisualColorKeydown(event) {
     event.stopPropagation();
     if (lineToUpdate) {
       lineToUpdate.length *= 2;
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
   } else if (key === "]" || key === "}") {
     if (!lineToUpdate.parentId) {
@@ -925,7 +986,7 @@ function handleLineVisualColorKeydown(event) {
     event.stopPropagation();
     if (lineToUpdate) {
       lineToUpdate.length += 20;
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
   } else if (key === "[" || key === "{") {
     if (!lineToUpdate.parentId) {
@@ -935,7 +996,7 @@ function handleLineVisualColorKeydown(event) {
     event.stopPropagation();
     if (lineToUpdate) {
       lineToUpdate.length -= 20;
-      renderLine(lineToUpdate, true);
+      renderLine(lineToUpdate, { updating: true });
     }
   } else if (key === "0" || key === "9") {
     event.preventDefault();
@@ -945,23 +1006,24 @@ function handleLineVisualColorKeydown(event) {
       updateChildrenPositions(lineToUpdate.parentId);
     }
   } else if (key === "=") {
-    if (!lineToUpdate.parentId) {
-      return;
-    }
-    console.info("Making the same");
     event.preventDefault();
     event.stopPropagation();
-    if (lineToUpdate) {
-      let siblings = state.linesStore[lineToUpdate.parentId].children.filter(
-        (c) => c != lineToUpdate.id,
-      );
-      console.log(lineToUpdate, siblings);
-      if (siblings.length < 1) {
-        return;
+
+    if (!lineToUpdate || !lineToUpdate.parentId) {
+      return;
+    }
+
+    const siblings = state.linesStore[lineToUpdate.parentId].children.filter(
+      (c) => c !== lineToUpdate.id,
+    );
+
+    if (siblings.length > 0) {
+      const siblingToCopyFrom = state.linesStore[siblings[0]];
+      if (siblingToCopyFrom) {
+        lineToUpdate.length = siblingToCopyFrom.length;
+        lineToUpdate.thickness = siblingToCopyFrom.thickness;
+        renderLine(lineToUpdate, { updating: true });
       }
-      lineToUpdate.length = state.linesStore[siblings[0]].length;
-      lineToUpdate.thickness = state.linesStore[siblings[0]].thickness;
-      renderLine(lineToUpdate, true);
     }
   }
   const step = LINE_THICKNESS_STEP;
@@ -977,7 +1039,7 @@ function handleLineVisualColorKeydown(event) {
       maxThickness,
       Math.max(minThickness, newThickness),
     );
-    renderLine(lineToUpdate, true);
+    renderLine(lineToUpdate, { updating: true });
   } else if (key === "," || key === "<") {
     event.preventDefault();
     event.stopPropagation();
@@ -987,7 +1049,7 @@ function handleLineVisualColorKeydown(event) {
       maxThickness,
       Math.max(minThickness, newThickness),
     );
-    renderLine(lineToUpdate, true);
+    renderLine(lineToUpdate, { updating: true });
   }
   if (key === "backspace") {
     event.preventDefault();

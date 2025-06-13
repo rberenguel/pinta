@@ -111,7 +111,7 @@ function restoreClipboard() {
     }
 
     // Re-render the restored branch
-    renderLine(state.linesStore[branchRoot.id], true);
+    renderLine(state.linesStore[branchRoot.id], { updating: true });
   });
 
   // Clear the clipboard
@@ -337,7 +337,7 @@ function handleKeyDown(event) {
     event.preventDefault();
     triggerLoadDiagram();
     return;
-  } else if (ctrlCmd && event.key.toLowerCase() === "c") {
+  } else if (ctrlCmd && event.key.toLowerCase() === "c" && !isEditingText) {
     event.preventDefault();
     if (state.selectedLines.size > 0) {
       state.clipboard = [];
@@ -1087,6 +1087,24 @@ function handleCanvasKeydown(event) {
     event.preventDefault();
     event.stopPropagation();
     increaseAllLinesFontSize();
+  } else if (key === "=") {
+    if (state.selectedLines && state.selectedLines.size > 0) {
+      const selectedLineIds = Array.from(state.selectedLines);
+      const sourceLineId = selectedLineIds[0];
+      const sourceLine = state.linesStore[sourceLineId];
+
+      if (sourceLine) {
+        const { length, thickness } = sourceLine;
+        selectedLineIds.forEach((id) => {
+          const lineToUpdate = state.linesStore[id];
+          if (lineToUpdate) {
+            lineToUpdate.length = length;
+            lineToUpdate.thickness = thickness;
+            renderLine(lineToUpdate, { updating: true });
+          }
+        });
+      }
+    }
   }
 }
 

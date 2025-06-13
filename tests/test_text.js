@@ -71,7 +71,7 @@ describe("Pinta Text Functionality", function () {
   it("should select all text if text length is less than 4 characters on click", function (done) {
     state.linesStore[mainLineId].text = "...";
     state.linesStore[mainLineId].linkUrl = null;
-    renderLine(state.linesStore[mainLineId], true);
+    renderLine(state.linesStore[mainLineId], { updating: true });
 
     const textElement = document
       .getElementById(mainLineId)
@@ -91,7 +91,7 @@ describe("Pinta Text Functionality", function () {
   it("should NOT select all text if text length is 4 or more characters on click", function (done) {
     state.linesStore[mainLineId].text = "Longer Text";
     state.linesStore[mainLineId].linkUrl = null;
-    renderLine(state.linesStore[mainLineId], true);
+    renderLine(state.linesStore[mainLineId], { updating: true });
 
     const textElement = document
       .getElementById(mainLineId)

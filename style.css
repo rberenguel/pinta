@@ -515,6 +515,18 @@ span.day {
   margin: 0.2em;
 }
 
+.line-text em {
+  filter: hue-rotate(60deg);
+}
+
+.line-text strong {
+  filter: hue-rotate(60deg);
+}
+
+.line-text code {
+  filter: hue-rotate(-90deg);
+}
+
 .post-it {
   position: absolute;
   z-index: 500;
@@ -1132,4 +1144,8 @@ span.day {
 
 #info-modal-toggle:checked ~ .info-modal-overlay .info-modal-content {
   transform: scale(1);
+}
+
+.inlined-image {
+  border-radius: 8%;
 }
