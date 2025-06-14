@@ -246,6 +246,8 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
         }
 
         // Handle markdown-like formatting for the static export
+        rawLineText = replaceImageMacros(rawLineText);
+        // Image URLs can have underscores
         rawLineText = rawLineText.replace(
           /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,
           "<code>$1</code>",
@@ -262,7 +264,6 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           /:([\w-]+):/g,
           '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
         );
-        rawLineText = replaceImageMacros(rawLineText);
 
         let lineText = `${prefix}<div class="line-text-wrapper" title="${title}">${rawLineText}</div>${appending.join(
           " ",

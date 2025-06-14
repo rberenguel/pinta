@@ -132,6 +132,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.9.1
+
+- Change order of rendering images and others.
+
 ### 0.9.0
 
 - Bumping minor because I made a large refactor and things might stop working.

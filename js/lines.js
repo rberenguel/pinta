@@ -373,28 +373,8 @@ function renderLine(line, opts = {}) {
     } else {
       textElement.removeAttribute("title");
     }
-    // Markdown-ish italicizer
-    displayText = displayText.replace(
-      /_([a-zA-Z][^_]*[a-zA-Z]|[a-zA-Z])_/g,
-      "<em>$1</em>",
-    );
-    // Markdown-ish strongifier
-    displayText = displayText.replace(
-      /\*([a-zA-Z][^*]*[a-zA-Z]|[a-zA-Z])\*/g,
-      "<strong>$1</strong>",
-    );
-    // Markdown-ish code
-    displayText = displayText.replace(
-      /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,
-      "<code>$1</code>",
-    );
-    // Handle inline icons: :icon-name: -> <icon>
-    displayText = displayText.replace(
-      /:([\w-]+):/g,
-      '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
-    );
     // Handle inline images: !url! -> <img ...>
-
+    // URLs can have underscores
     const imageUrlRegex = /!([^!]+)!/g;
     if (!isMoving) {
       // Use a replacer function to handle data keys and regular URLs
@@ -418,6 +398,27 @@ function renderLine(line, opts = {}) {
         `<span style="${placeholderStyle}"></span>`,
       );
     }
+    // Markdown-ish italicizer
+    displayText = displayText.replace(
+      /_([a-zA-Z][^_]*[a-zA-Z]|[a-zA-Z])_/g,
+      "<em>$1</em>",
+    );
+    // Markdown-ish strongifier
+    displayText = displayText.replace(
+      /\*([a-zA-Z][^*]*[a-zA-Z]|[a-zA-Z])\*/g,
+      "<strong>$1</strong>",
+    );
+    // Markdown-ish code
+    displayText = displayText.replace(
+      /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,
+      "<code>$1</code>",
+    );
+    // Handle inline icons: :icon-name: -> <icon>
+    displayText = displayText.replace(
+      /:([\w-]+):/g,
+      '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
+    );
+
     const textNodeWrapper = document.createElement("DIV");
     textNodeWrapper.classList.add("line-text-wrapper");
     textNodeWrapper.innerHTML = displayText;
