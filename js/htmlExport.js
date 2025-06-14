@@ -19,7 +19,6 @@ function escapeHtml(unsafe) {
 }
 
 function iconoirSubsetter(iconoirCSS, usedClasses) {
-  console.log(usedClasses);
   const lines = iconoirCSS.split("\n");
   let output = [];
   let header = true;
@@ -103,11 +102,8 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
 
   const replaceImageMacros = (text) => {
     if (!text) return "";
-    console.log(text);
     const imageRegex = /!([^!]+)!/g;
-    console.log(state.dataUrls);
     return text.replace(imageRegex, (match, content) => {
-      console.log(content);
       let src = content; // Default to the content itself (e.g., a URL)
 
       // Check if the content is a data-key and resolve it from our store
@@ -132,7 +128,6 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           src = `pinta-resources/${fileName}`;
         }
       }
-      console.log(src);
       return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${src}" style="height: 1.2em; vertical-align: middle;"></span>`;
     });
   };
@@ -255,7 +250,6 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
             return placeholder;
           },
         );
-        console.log(placeholders);
         // 2. Now, safely perform all Markdown-style replacements on the text.
         processedText = processedText.replace(
           /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,

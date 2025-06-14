@@ -311,17 +311,13 @@ function renderLine(line, opts = {}) {
       }
     }
     let appending = [];
-    console.log(lineText);
     if (lineText.startsWith("[")) {
-      console.log("Lining the year");
       const maybeYear = lineText.slice(1).split("]");
-      console.log(maybeYear);
       if (maybeYear.length > 1) {
         const year = maybeYear[0];
         const yearMonthPattern =
           /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?(0[1-9]|1[0-9]|2[0-9]|3[0-1])?$/;
         const match = year.match(yearMonthPattern);
-        console.log(match);
         if (match) {
           console.info("Found year and optional month");
           const yearPart = match[1];
@@ -351,7 +347,6 @@ function renderLine(line, opts = {}) {
         lineText = lineText.slice(1).split("]").slice(1).join("]").trim();
       }
     }
-    console.log(appending);
 
     if (line.linkUrl) {
       prefixSymbol = prefixSymbol || getLinkPrefix(line.linkUrl);
@@ -386,7 +381,6 @@ function renderLine(line, opts = {}) {
       placeholders.push(content);
       return placeholder;
     });
-    console.log(placeholders);
 
     // Markdown-ish italicizer
     displayText = displayText.replace(
