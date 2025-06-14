@@ -193,6 +193,21 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
             }
           }
         }
+        if (rawLineText.startsWith("!")) {
+          const maybeIcon = rawLineText.slice(1).split("!");
+          if (maybeIcon.length > 1) {
+            let imageUrl = maybeIcon[0];
+            if (imageUrl) {
+              prefixSymbol = replaceImageMacros(`!${imageUrl}!`);
+              rawLineText = rawLineText
+                .slice(1)
+                .split("!")
+                .slice(1)
+                .join("!")
+                .trim();
+            }
+          }
+        }
         let appending = [];
         if (rawLineText.startsWith("[")) {
           const maybeDate = rawLineText.slice(1).split("]");

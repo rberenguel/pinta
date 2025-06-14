@@ -310,6 +310,27 @@ function renderLine(line, opts = {}) {
         }
       }
     }
+
+    if (lineText.startsWith("!")) {
+      const maybeIcon = lineText.slice(1).split("!");
+      if (maybeIcon.length > 1) {
+        let imageUrl = maybeIcon[0];
+        if (imageUrl) {
+          // If the content is a data key, look up the base64 string from our store
+          if (
+            imageUrl.startsWith("data-") &&
+            state.dataUrls &&
+            state.dataUrls[imageUrl]
+          ) {
+            imageUrl = state.dataUrls[imageUrl].base64;
+          }
+
+          prefixSymbol = `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1.2em; vertical-align: middle;"></span>`;
+
+          lineText = lineText.slice(1).split("!").slice(1).join("!").trim();
+        }
+      }
+    }
     let appending = [];
     if (lineText.startsWith("[")) {
       const maybeYear = lineText.slice(1).split("]");

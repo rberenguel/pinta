@@ -153,11 +153,23 @@ function handleTextMouseLeave(event) {
 
 function handleTextClick(e) {
   const textElementDiv = e.currentTarget;
+  console.log(
+    e.target.closest("SPAN")?.parentElement?.classList &&
+      e.target
+        .closest("SPAN")
+        ?.parentElement?.classList?.contains("link-icon-clickable"),
+  );
   if (
-    e.target.closest("SPAN")?.classList &&
-    e.target.closest("SPAN").classList.contains("link-icon-clickable")
+    (e.target.closest("SPAN")?.classList &&
+      e.target.closest("SPAN").classList.contains("link-icon-clickable")) ||
+    (e.target.closest("SPAN")?.parentElement?.classList &&
+      e.target
+        .closest("SPAN")
+        ?.parentElement?.classList?.contains("link-icon-clickable"))
   ) {
-    const urlToOpen = e.target.closest("SPAN").dataset.linkUrl;
+    const urlToOpen =
+      e.target.closest("SPAN").dataset.linkUrl ||
+      e.target.closest("SPAN").parentElement.dataset.linkUrl;
     if (urlToOpen && !e.shiftKey) {
       window.open(urlToOpen, "_blank", "noopener,noreferrer");
 

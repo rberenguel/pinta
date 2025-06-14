@@ -132,6 +132,11 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.9.2
+
+- Inlined image icons can replace default link icons. Place them first.
+
+
 ### 0.9.1
 
 - Change order of rendering images and others.
