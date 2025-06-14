@@ -24,6 +24,7 @@ import {
 } from "./lines.js";
 
 import { DEFAULT_SCHEMA_TEXT_COLOR_VAR, getLinkPrefix } from "./text.js";
+import { interFont } from "./inlined.js";
 const EXPORT_START_MARKER = "<!-- PINTA_DIAGRAM_DATA_START ";
 const EXPORT_END_MARKER = "PINTA_DIAGRAM_DATA_END -->";
 
@@ -1190,6 +1191,10 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pinta Diagram Export</title>
+  <style>
+    /* Fonts */
+    ${interFont}
+  </style>
   <style>
     /* Embedded CSS from style.css */
     ${fullCSS}
