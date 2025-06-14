@@ -938,6 +938,25 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
 
   const jsonComment = `\n${EXPORT_START_MARKER}\n${pintaJsonString}\n${EXPORT_END_MARKER}\n`;
 
+  const imageRegex = /!([^!]+)!/g;
+  const replaceImageMacros = (text) => {
+    if (!text) return "";
+    return text.replace(imageRegex, (match, url) => {
+      // Derive filename from URL
+      const fileName =
+        url.substring(url.lastIndexOf("/") + 1).split("?")[0] || "image.png";
+      let src;
+      // If the user marked the URL as downloaded, create a relative path.
+      // Otherwise, use the original URL as a fallback.
+      if (state.manuallyDownloadedUrls.has(url)) {
+        src = `pinta-resources/${fileName}`;
+      } else {
+        src = url;
+      }
+      return `<img class="inlined-image" src="${src}" style="height: 1em; vertical-align: middle;">`;
+    });
+  };
+
   const linesHtml = Object.values(state.linesStore)
     .map((line) => {
       const lineElementGroup = document.getElementById(line.id);
@@ -1065,10 +1084,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           /:([\w-]+):/g,
           '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
         );
-        rawLineText = rawLineText.replace(
-          /!([^!]+)!/g,
-          '<img class="inlined-image" src="$1" style="height: 1em; vertical-align: middle;">',
-        );
+        rawLineText = replaceImageMacros(rawLineText);
 
         let lineText = `<div class="line-text-wrapper" title="${title}">${rawLineText}${appending.join(
           " ",

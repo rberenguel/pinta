@@ -931,6 +931,28 @@ editorContainer.addEventListener("mouseup", (e) => {
 editorContainer.addEventListener("mouseleave", (e) => {
   state.isSelecting = false;
 });
+editorContainer.addEventListener("contextmenu", (event) => {
+  const target = event.target;
+
+  // Check if the right-clicked element is an image within our diagram
+  if (target.tagName === "IMG" && target.classList.contains("inlined-image")) {
+    // Prevent the default right-click menu
+    //event.preventDefault();
+    const wrapper = target.parentElement; // Get the wrapper
+    const imageUrl = target.src;
+    if (state.manuallyDownloadedUrls.has(imageUrl)) {
+      // It's already marked, so un-mark it
+      state.manuallyDownloadedUrls.delete(imageUrl);
+      wrapper.classList.remove("pinta-image-downloaded");
+      console.log(`Pinta: Marked ${imageUrl} as NOT downloaded.`);
+    } else {
+      // Mark it as downloaded
+      state.manuallyDownloadedUrls.add(imageUrl);
+      wrapper.classList.add("pinta-image-downloaded");
+      console.log(`Pinta: Marked ${imageUrl} as downloaded.`);
+    }
+  }
+});
 document.addEventListener("mousedown", (event) => {
   if (
     state.drawingCanvas.style.pointerEvents !== "auto" &&

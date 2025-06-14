@@ -11,6 +11,7 @@ export const state = {
   selectedDrawings: new Set(),
   clipboard: null,
   isCutOperation: false,
+  manuallyDownloadedUrls: new Set(),
 
   // Counters
   lineIdCounter: 0,

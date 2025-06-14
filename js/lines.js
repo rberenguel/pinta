@@ -400,7 +400,7 @@ function renderLine(line, opts = {}) {
     if (!isMoving) {
       displayText = displayText.replace(
         imageUrlRegex,
-        '<img class="inlined-image" src="$1" style="height: 1em; vertical-align: middle;">',
+        '<span class="inlined-image-wrapper"><img class="inlined-image" src="$1" style="height: 1em; vertical-align: middle;"></span>',
       );
     } else {
       displayText = displayText.replace(

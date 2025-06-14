@@ -132,6 +132,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.8.2
+
+- HTML export won't inline images now, but expect the user to have saved the icon to a folder `pinta-resources/` by right clicking on it.
+
 ### 0.8.1
 
 - Import Inter instead of relying on sysem, and inline it in the exported HTML

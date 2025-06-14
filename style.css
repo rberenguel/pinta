@@ -1147,5 +1147,39 @@ span.day {
 }
 
 .inlined-image {
+  /* This is necessary for the absolute positioning of the pseudo-element */
+  position: relative;
+  /* Ensures proper positioning context */
+  display: inline-block;
+  vertical-align: middle;
   border-radius: 8%;
+}
+
+/* The wrapper now establishes the positioning context */
+.inlined-image-wrapper {
+  display: inline-block;
+  position: relative;
+  /* Match the image's vertical alignment */
+  vertical-align: middle;
+  line-height: 1; /* Helps contain the image cleanly */
+}
+
+/* The indicator dot is now attached to the wrapper */
+.inlined-image-wrapper.pinta-image-downloaded::after {
+  content: "";
+  display: block;
+  position: absolute;
+
+  /* Positioning */
+  left: 1px;
+  bottom: 1px;
+  z-index: 10;
+
+  /* Appearance */
+  width: 5px;
+  height: 5px;
+  background-color: #c60;
+  border-radius: 50%;
+  border: 1px solid white;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
 }
