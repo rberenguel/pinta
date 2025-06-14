@@ -135,3 +135,33 @@ const resetDrawing = (st) => {
   st.drawingCanvas.style.cursor = "default";
   st.colorChangeModeActive = false;
 };
+
+export function cleanupUnusedDataUrls() {
+  if (!state.dataUrls || Object.keys(state.dataUrls).length === 0) {
+    return; // Nothing to clean up.
+  }
+
+  // 1. Find all data-N keys that are actually used in the lines.
+  const allLineTexts = Object.values(state.linesStore)
+    .map((line) => line.text || "")
+    .join(" ");
+  const usedKeys = new Set();
+  const dataUrlRegex = /!(data-\d+)!/g;
+  let match;
+  while ((match = dataUrlRegex.exec(allLineTexts)) !== null) {
+    usedKeys.add(match[1]);
+  }
+
+  // 2. Iterate over the stored keys and delete any that are not in the 'used' set.
+  let removedCount = 0;
+  for (const storedKey in state.dataUrls) {
+    if (!usedKeys.has(storedKey)) {
+      delete state.dataUrls[storedKey];
+      removedCount++;
+    }
+  }
+
+  if (removedCount > 0) {
+    console.log(`Pinta: Cleaned up ${removedCount} unused data URLs.`);
+  }
+}

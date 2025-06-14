@@ -272,15 +272,7 @@ body.light-theme {
 
 body {
   margin: 0;
-  font-family:
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  font-family: "Inter";
   background-color: var(--theme-main-background);
   color: var(--theme-primary-text);
   display: flex;
@@ -510,9 +502,14 @@ span.day {
   filter: hue-rotate(15deg);
 }
 
-/* For export */
-.line-text > a {
-  margin: 0.2em;
+/* Special for export */
+
+.pinta-static-container .link-icon-nonclickable {
+  margin-right: 0.25em;
+}
+
+.pinta-static-container .link-icon-clickable {
+  margin-right: 0.25em;
 }
 
 .line-text em {

@@ -132,6 +132,15 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.9.0
+
+- Bumping minor because I made a large refactor and things might stop working.
+
+### 0.8.4
+
+- The base64 encoded files are now saved to all possible storage formats.
+- Unused data blobs are purged on load.
+
 ### 0.8.3
 
 - Chrome extension (to install unpacked) that can base64 encode the icons, so they can be inlined on export. A bit annoying having to do it every time, so I will likely store them on the save data before 1.0

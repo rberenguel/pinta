@@ -20,10 +20,10 @@ import {
   triggerSaveDiagram,
   triggerLoadDiagram,
   loadDataFromFile,
-  exportToStaticHTML,
   verifyPermission,
   clearLastFileHandle,
 } from "./js/files.js";
+
 import {
   createLineObject,
   renderLine,
@@ -36,6 +36,8 @@ import {
   increaseAllLinesFontSize,
   decreaseAllLinesFontSize,
 } from "./js/lines.js";
+
+import { exportToStaticHTML } from "./js/htmlExport.js";
 
 import { handleDeleteItemClick } from "./js/delete.js";
 
@@ -1306,6 +1308,18 @@ window.addEventListener("pintaReceiveBase64", (event) => {
 
   console.log(`Received Base64 data for: ${originalUrl}`);
 
+  if (!state.dataUrls) state.dataUrls = {};
+  if (!state.dataUrlCounter) state.dataUrlCounter = 0;
+
+  // Generate a new, unique key for the data URL
+  const dataKey = `data-${++state.dataUrlCounter}`;
+
+  // Store the base64 data and original URL for future reference
+  state.dataUrls[dataKey] = {
+    base64: dataUrl,
+    originalUrl: originalUrl,
+  };
+
   // Now you have the dataUrl! You can do whatever you want with it.
   // For example, find the image on the page and update its 'src' attribute directly.
   const imagesOnPage = document.querySelectorAll("img.inlined-image");
@@ -1323,7 +1337,21 @@ window.addEventListener("pintaReceiveBase64", (event) => {
     wrapper.title = "Status: Converted to Base64 by extension";
   });
 
-  // You could also store it in a map for your static HTML export
-  // state.base64ImageCache.set(originalUrl, dataUrl);
+  if (!originalUrl || !dataUrl) {
+    console.warn("Received incomplete Base64 event from extension.");
+    return;
+  }
+
+  // Iterate through all lines to find and replace the URL in the source text.
+  for (const lineId in state.linesStore) {
+    const line = state.linesStore[lineId];
+    if (line.text && line.text.includes(`!${originalUrl}!`)) {
+      // Replace the URL with the new placeholder !data-N!
+      line.text = line.text.replaceAll(`!${originalUrl}!`, `!${dataKey}!`);
+
+      // Re-render the line to reflect the change
+      renderLine(line, { updating: true });
+    }
+  }
   state.base64ImageCache.set(originalUrl, dataUrl);
 });

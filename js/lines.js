@@ -123,7 +123,6 @@ function decreaseAllLinesFontSize() {
 }
 
 function renderLine(line, opts = {}) {
-  console.info(`Rendering ${line.id} with ${JSON.stringify(opts)}`);
   const isUpdate = opts.updating;
   const isMoving = opts.moving;
   const fromText = opts.fromText; // Text move should not affect children
@@ -398,10 +397,21 @@ function renderLine(line, opts = {}) {
 
     const imageUrlRegex = /!([^!]+)!/g;
     if (!isMoving) {
-      displayText = displayText.replace(
-        imageUrlRegex,
-        '<span class="inlined-image-wrapper"><img class="inlined-image" src="$1" style="height: 1em; vertical-align: middle;"></span>',
-      );
+      // Use a replacer function to handle data keys and regular URLs
+      displayText = displayText.replace(imageUrlRegex, (match, content) => {
+        let imageUrl = content; // Default to the content itself (e.g., an unconverted URL)
+
+        // If the content is a data key, look up the base64 string from our new store
+        if (
+          content.startsWith("data-") &&
+          state.dataUrls &&
+          state.dataUrls[content]
+        ) {
+          imageUrl = state.dataUrls[content].base64;
+        }
+
+        return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1em; vertical-align: middle;"></span>`;
+      });
     } else {
       displayText = displayText.replace(
         imageUrlRegex,
@@ -464,7 +474,6 @@ function renderLine(line, opts = {}) {
 }
 
 function updateChildrenPositions(parentId, opts = {}) {
-  console.log(`Updating children of ${parentId} with ${JSON.stringify(opts)}`);
   const parentLine = state.linesStore[parentId];
   if (!parentLine || !parentLine.children) return;
 
