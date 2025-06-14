@@ -427,7 +427,7 @@ function renderLine(line, opts = {}) {
 
       const proportionalityFactor = 0.85;
       const minPixelWidth = 50;
-      const maxPixelWidthConsideration = 400;
+      const maxPixelWidthConsideration = 1000; // What was this for?
 
       let calculatedMaxWidth = absLength * proportionalityFactor;
       calculatedMaxWidth = Math.max(minPixelWidth, calculatedMaxWidth);
