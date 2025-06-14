@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Pinta Image to Base64",
+  "version": "0.1",
+  "description": "Right-click an image on the Pinta PWA and convert it to a Base64 string.",
+  "permissions": ["contextMenus", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "512": "icon.png"
+  }
+}

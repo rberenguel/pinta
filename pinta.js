@@ -1298,3 +1298,32 @@ const commands = [
 
 metaP.maxCommands = 10;
 metaP.bind(commands);
+
+/* Weird stuff with the extension */
+
+window.addEventListener("pintaReceiveBase64", (event) => {
+  const { originalUrl, dataUrl } = event.detail;
+
+  console.log(`Received Base64 data for: ${originalUrl}`);
+
+  // Now you have the dataUrl! You can do whatever you want with it.
+  // For example, find the image on the page and update its 'src' attribute directly.
+  const imagesOnPage = document.querySelectorAll("img.inlined-image");
+  imagesOnPage.forEach((img) => {
+    const wrapper = img.parentElement;
+
+    // Update the visual indicator class
+    wrapper.classList.remove("pinta-image-downloaded"); // Remove manual status
+    wrapper.classList.add("pinta-image-base64"); // Add new extension status
+
+    // Update the image source to use the new Base64 data
+    img.src = dataUrl;
+
+    // Update the hover title to reflect the new state
+    wrapper.title = "Status: Converted to Base64 by extension";
+  });
+
+  // You could also store it in a map for your static HTML export
+  // state.base64ImageCache.set(originalUrl, dataUrl);
+  state.base64ImageCache.set(originalUrl, dataUrl);
+});

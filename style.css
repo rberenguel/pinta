@@ -1164,22 +1164,27 @@ span.day {
   line-height: 1; /* Helps contain the image cleanly */
 }
 
-/* The indicator dot is now attached to the wrapper */
-.inlined-image-wrapper.pinta-image-downloaded::after {
+.inlined-image-wrapper.pinta-image-downloaded::after,
+.inlined-image-wrapper.pinta-image-base64::after {
   content: "";
   display: block;
   position: absolute;
-
-  /* Positioning */
   left: 1px;
   bottom: 1px;
   z-index: 10;
-
-  /* Appearance */
   width: 5px;
   height: 5px;
-  background-color: #c60;
   border-radius: 50%;
   border: 1px solid white;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
+}
+
+/* --- Indicator for MANUAL download (Orange dot) --- */
+.inlined-image-wrapper.pinta-image-downloaded::after {
+  background-color: #c60;
+}
+
+/* --- Indicator for EXTENSION converted (Blue dot) --- */
+.inlined-image-wrapper.pinta-image-base64::after {
+  background-color: #06c;
 }

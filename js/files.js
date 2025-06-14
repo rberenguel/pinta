@@ -938,22 +938,31 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
 
   const jsonComment = `\n${EXPORT_START_MARKER}\n${pintaJsonString}\n${EXPORT_END_MARKER}\n`;
 
-  const imageRegex = /!([^!]+)!/g;
   const replaceImageMacros = (text) => {
     if (!text) return "";
+
+    // The 'imageRegex' should be defined in the same scope, usually at the top of exportToStaticHTML
+    const imageRegex = /!([^!]+)!/g;
+
     return text.replace(imageRegex, (match, url) => {
-      // Derive filename from URL
-      const fileName =
-        url.substring(url.lastIndexOf("/") + 1).split("?")[0] || "image.png";
       let src;
-      // If the user marked the URL as downloaded, create a relative path.
-      // Otherwise, use the original URL as a fallback.
-      if (state.manuallyDownloadedUrls.has(url)) {
+      const cachedDataUrl = state.base64ImageCache.get(url);
+
+      if (cachedDataUrl) {
+        // Priority 1: Use the Base64 data if it exists in the cache.
+        src = cachedDataUrl;
+      } else if (state.manuallyDownloadedUrls.has(url)) {
+        // Priority 2: Use the relative path for manually downloaded files.
+        const fileName =
+          url.substring(url.lastIndexOf("/") + 1).split("?")[0] || "image.png";
         src = `pinta-resources/${fileName}`;
       } else {
+        // Priority 3: Fall back to the original online URL.
         src = url;
       }
-      return `<img class="inlined-image" src="${src}" style="height: 1em; vertical-align: middle;">`;
+
+      // Return the image tag inside the wrapper for consistency with the live editor's CSS.
+      return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${src}" style="height: 1em; vertical-align: middle;"></span>`;
     });
   };
 

@@ -132,6 +132,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.8.3
+
+- Chrome extension (to install unpacked) that can base64 encode the icons, so they can be inlined on export. A bit annoying having to do it every time, so I will likely store them on the save data before 1.0
+
 ### 0.8.2
 
 - HTML export won't inline images now, but expect the user to have saved the icon to a folder `pinta-resources/` by right clicking on it.
