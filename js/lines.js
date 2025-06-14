@@ -410,7 +410,7 @@ function renderLine(line, opts = {}) {
           imageUrl = state.dataUrls[content].base64;
         }
 
-        return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1em; vertical-align: middle;"></span>`;
+        return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1.4em; vertical-align: middle;"></span>`;
       });
     } else {
       displayText = displayText.replace(

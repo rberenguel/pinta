@@ -132,7 +132,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
         }
       }
 
-      return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${src}" style="height: 1em; vertical-align: middle;"></span>`;
+      return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${src}" style="height: 1.4em; vertical-align: middle;"></span>`;
     });
   };
 
