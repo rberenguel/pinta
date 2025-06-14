@@ -311,14 +311,17 @@ function renderLine(line, opts = {}) {
       }
     }
     let appending = [];
+    console.log(lineText);
     if (lineText.startsWith("[")) {
+      console.log("Lining the year");
       const maybeYear = lineText.slice(1).split("]");
+      console.log(maybeYear);
       if (maybeYear.length > 1) {
         const year = maybeYear[0];
         const yearMonthPattern =
-          /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?(0[1-9]|1[0-9]|2[0-9]|3[0-1])$/;
+          /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?(0[1-9]|1[0-9]|2[0-9]|3[0-1])?$/;
         const match = year.match(yearMonthPattern);
-
+        console.log(match);
         if (match) {
           console.info("Found year and optional month");
           const yearPart = match[1];
@@ -348,6 +351,7 @@ function renderLine(line, opts = {}) {
         lineText = lineText.slice(1).split("]").slice(1).join("]").trim();
       }
     }
+    console.log(appending);
 
     if (line.linkUrl) {
       prefixSymbol = prefixSymbol || getLinkPrefix(line.linkUrl);
@@ -376,29 +380,14 @@ function renderLine(line, opts = {}) {
     // Handle inline images: !url! -> <img ...>
     // URLs can have underscores
     const imageUrlRegex = /!([^!]+)!/g;
-    if (!isMoving) {
-      // Use a replacer function to handle data keys and regular URLs
-      displayText = displayText.replace(imageUrlRegex, (match, content) => {
-        let imageUrl = content; // Default to the content itself (e.g., an unconverted URL)
-        console.log("Rendering images");
-        console.log(content);
-        // If the content is a data key, look up the base64 string from our new store
-        if (
-          content.startsWith("data-") &&
-          state.dataUrls &&
-          state.dataUrls[content]
-        ) {
-          imageUrl = state.dataUrls[content].base64;
-        }
+    const placeholders = [];
+    displayText = displayText.replace(imageUrlRegex, (match, content) => {
+      const placeholder = `PINTA.IMAGE.PLACEHOLDER.${placeholders.length}`;
+      placeholders.push(content);
+      return placeholder;
+    });
+    console.log(placeholders);
 
-        return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1.4em; vertical-align: middle;"></span>`;
-      });
-    } else {
-      displayText = displayText.replace(
-        imageUrlRegex,
-        `<span style="${placeholderStyle}"></span>`,
-      );
-    }
     // Markdown-ish italicizer
     displayText = displayText.replace(
       /_([a-zA-Z][^_]*[a-zA-Z]|[a-zA-Z])_/g,
@@ -419,7 +408,32 @@ function renderLine(line, opts = {}) {
       /:([\w-]+):/g,
       '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
     );
+    if (!isMoving) {
+      displayText = displayText.replace(
+        /PINTA\.IMAGE\.PLACEHOLDER\.(\d+)/g,
+        (match, index) => {
+          const originalContent = placeholders[parseInt(index)];
+          let imageUrl = originalContent;
 
+          // If the content is a data key, look up the base64 string from our store
+          if (
+            originalContent.startsWith("data-") &&
+            state.dataUrls &&
+            state.dataUrls[originalContent]
+          ) {
+            imageUrl = state.dataUrls[originalContent].base64;
+          }
+
+          return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1.2em; vertical-align: middle;"></span>`;
+        },
+      );
+    } else {
+      // If moving, just replace the tokens with a simple placeholder style
+      displayText = displayText.replace(
+        /__PINTA_IMAGE_PLACEHOLDER_(\d+)__/g,
+        `<span style="${placeholderStyle}"></span>`,
+      );
+    }
     const textNodeWrapper = document.createElement("DIV");
     textNodeWrapper.classList.add("line-text-wrapper");
     textNodeWrapper.innerHTML = displayText;

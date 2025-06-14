@@ -103,10 +103,11 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
 
   const replaceImageMacros = (text) => {
     if (!text) return "";
-
+    console.log(text);
     const imageRegex = /!([^!]+)!/g;
-
+    console.log(state.dataUrls);
     return text.replace(imageRegex, (match, content) => {
+      console.log(content);
       let src = content; // Default to the content itself (e.g., a URL)
 
       // Check if the content is a data-key and resolve it from our store
@@ -131,8 +132,8 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           src = `pinta-resources/${fileName}`;
         }
       }
-
-      return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${src}" style="height: 1.4em; vertical-align: middle;"></span>`;
+      console.log(src);
+      return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${src}" style="height: 1.2em; vertical-align: middle;"></span>`;
     });
   };
 
@@ -203,7 +204,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           if (maybeDate.length > 1) {
             const content = maybeDate[0];
             const yearMonthPattern =
-              /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?(0[1-9]|1[0-9]|2[0-9]|3[0-1])$/;
+              /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?(0[1-9]|1[0-9]|2[0-9]|3[0-1])?$/; // TODO: this is repeated in 2 places, as is a lot of the markdownish/icon logic
             const match = content.match(yearMonthPattern);
 
             if (match) {
@@ -244,28 +245,47 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           title = rawLineText;
           rawLineText = rawLineText.substring(0, line.textRenderLength) + "…";
         }
-
-        // Handle markdown-like formatting for the static export
-        rawLineText = replaceImageMacros(rawLineText);
-        // Image URLs can have underscores
-        rawLineText = rawLineText.replace(
+        const placeholders = [];
+        const imageRegex = /!([^!]+)!/g;
+        let processedText = rawLineText.replace(
+          imageRegex,
+          (match, content) => {
+            const placeholder = `PINTA.EXPORT.PLACEHOLDER.${placeholders.length}`;
+            placeholders.push(content);
+            return placeholder;
+          },
+        );
+        console.log(placeholders);
+        // 2. Now, safely perform all Markdown-style replacements on the text.
+        processedText = processedText.replace(
           /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,
           "<code>$1</code>",
         );
-        rawLineText = rawLineText.replace(
+        processedText = processedText.replace(
           /_([a-zA-Z][^_]*[a-zA-Z]|[a-zA-Z])_/g,
           "<em>$1</em>",
         );
-        rawLineText = rawLineText.replace(
+        processedText = processedText.replace(
           /\*([a-zA-Z][^*]*[a-zA-Z]|[a-zA-Z])\*/g,
           "<strong>$1</strong>",
         );
-        rawLineText = rawLineText.replace(
+        processedText = processedText.replace(
           /:([\w-]+):/g,
           '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
         );
 
-        let lineText = `${prefix}<div class="line-text-wrapper" title="${title}">${rawLineText}</div>${appending.join(
+        // 3. Finally, unprotect placeholders, replacing them with the final <img> tags
+        // by calling your existing `replaceImageMacros` function on the restored content.
+        // Note: We are replacing the *token* with the result of processing the *original content*.
+        processedText = processedText.replace(
+          /PINTA\.EXPORT\.PLACEHOLDER\.(\d+)/g,
+          (match, index) => {
+            const originalContent = `!${placeholders[parseInt(index)]}!`;
+            return replaceImageMacros(originalContent);
+          },
+        );
+
+        let lineText = `${prefix}<div class="line-text-wrapper" title="${title}">${processedText}</div>${appending.join(
           " ",
         )}`;
 
