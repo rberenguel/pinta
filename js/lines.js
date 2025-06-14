@@ -380,7 +380,8 @@ function renderLine(line, opts = {}) {
       // Use a replacer function to handle data keys and regular URLs
       displayText = displayText.replace(imageUrlRegex, (match, content) => {
         let imageUrl = content; // Default to the content itself (e.g., an unconverted URL)
-
+        console.log("Rendering images");
+        console.log(content);
         // If the content is a data key, look up the base64 string from our new store
         if (
           content.startsWith("data-") &&

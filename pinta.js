@@ -1314,42 +1314,25 @@ window.addEventListener("pintaReceiveBase64", (event) => {
   // Generate a new, unique key for the data URL
   const dataKey = `data-${++state.dataUrlCounter}`;
 
+  console.log(JSON.stringify(state.dataUrls));
+
   // Store the base64 data and original URL for future reference
   state.dataUrls[dataKey] = {
     base64: dataUrl,
     originalUrl: originalUrl,
   };
 
-  // Now you have the dataUrl! You can do whatever you want with it.
-  // For example, find the image on the page and update its 'src' attribute directly.
-  const imagesOnPage = document.querySelectorAll("img.inlined-image");
-  imagesOnPage.forEach((img) => {
-    const wrapper = img.parentElement;
-
-    // Update the visual indicator class
-    wrapper.classList.remove("pinta-image-downloaded"); // Remove manual status
-    wrapper.classList.add("pinta-image-base64"); // Add new extension status
-
-    // Update the image source to use the new Base64 data
-    img.src = dataUrl;
-
-    // Update the hover title to reflect the new state
-    wrapper.title = "Status: Converted to Base64 by extension";
-  });
-
-  if (!originalUrl || !dataUrl) {
-    console.warn("Received incomplete Base64 event from extension.");
-    return;
-  }
-
   // Iterate through all lines to find and replace the URL in the source text.
   for (const lineId in state.linesStore) {
     const line = state.linesStore[lineId];
+    console.log(originalUrl);
+    console.log(line.text);
     if (line.text && line.text.includes(`!${originalUrl}!`)) {
       // Replace the URL with the new placeholder !data-N!
       line.text = line.text.replaceAll(`!${originalUrl}!`, `!${dataKey}!`);
 
       // Re-render the line to reflect the change
+      console.log(line.text);
       renderLine(line, { updating: true });
     }
   }
