@@ -418,6 +418,11 @@ function renderLine(line, opts = {}) {
       /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,
       "<code>$1</code>",
     );
+    // Markdown-ish highlight
+    displayText = displayText.replace(
+      /\$([a-zA-Z][^\$]*[a-zA-Z]|[a-zA-Z])\$/g,
+      `<span class="highlight">$1</span>`,
+    );
     // Handle inline icons: :icon-name: -> <icon>
     displayText = displayText.replace(
       /:([\w-]+):/g,

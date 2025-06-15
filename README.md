@@ -132,6 +132,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.9.4
+
+- Wrap in dollars to highlight. I don't plan on adding Mathtex, so this should be fine. Famous last words I guess.
+
 ### 0.9.3
 
 - Make sure all Inter fonts are added and inlined on export.

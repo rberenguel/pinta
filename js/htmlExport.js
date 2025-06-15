@@ -279,6 +279,10 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           "<strong>$1</strong>",
         );
         processedText = processedText.replace(
+          /\$([a-zA-Z][^$]*[a-zA-Z]|[a-zA-Z])\$/g,
+          `<span class="highlight">$1</span>`,
+        );
+        processedText = processedText.replace(
           /:([\w-]+):/g,
           '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
         );

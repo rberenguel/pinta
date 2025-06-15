@@ -524,6 +524,10 @@ span.day {
   filter: hue-rotate(-90deg);
 }
 
+.line-text .highlight {
+  filter: hue-rotate(180deg);
+}
+
 .post-it {
   position: absolute;
   z-index: 500;
