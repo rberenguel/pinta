@@ -279,7 +279,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           "<strong>$1</strong>",
         );
         processedText = processedText.replace(
-          /\$([a-zA-Z][^$]*[a-zA-Z]|[a-zA-Z])\$/g,
+          /=([a-zA-Z][^=]*[a-zA-Z]|[a-zA-Z])=/g,
           `<span class="highlight">$1</span>`,
         );
         processedText = processedText.replace(

@@ -420,7 +420,7 @@ function renderLine(line, opts = {}) {
     );
     // Markdown-ish highlight
     displayText = displayText.replace(
-      /\$([a-zA-Z][^\$]*[a-zA-Z]|[a-zA-Z])\$/g,
+      /=([a-zA-Z][^=]*[a-zA-Z]|[a-zA-Z])=/g,
       `<span class="highlight">$1</span>`,
     );
     // Handle inline icons: :icon-name: -> <icon>

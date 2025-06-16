@@ -134,7 +134,7 @@ but I'm not your doctor or that kind of doctor).
 
 ### 0.9.4
 
-- Wrap in dollars to highlight. I don't plan on adding Mathtex, so this should be fine. Famous last words I guess.
+- Wrap in ~dollars~ single equal signs to highlight. I don't plan on adding Mathtex (used dollar initially) but Obsidian uses double =. Equal is fine. I liked colon, but I don't remember what app used colon (I thought it was Bear but it uses equal… now?)
 
 ### 0.9.3
 
