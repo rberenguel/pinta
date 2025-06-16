@@ -387,7 +387,7 @@ function makeEditable(textEl) {
           e.preventDefault();
           currentLine.isBold = !currentLine.isBold;
           textEl.style.fontWeight = currentLine.isBold ? "bold" : "normal";
-        } else if (e.key.toLowerCase() === "c" && e.shiftKey) {
+        } else if (e.key.toLowerCase() === "c") {
           e.preventDefault();
           currentLine.isCentered = !currentLine.isCentered;
           textEl.style.textAlign = currentLine.isCentered ? "center" : "left";

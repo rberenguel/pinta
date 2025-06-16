@@ -740,6 +740,7 @@ span.day {
     background-color: black !important;
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
+    filter: drop-shadow(2px 2px 2px #00000077);
   }
   .line-text {
     color: black !important;
