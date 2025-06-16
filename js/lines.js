@@ -324,7 +324,7 @@ function renderLine(line, opts = {}) {
         if (imageUrl) {
           // If the content is a data key, look up the base64 string from our store
           if (
-            imageUrl.startsWith("data-") &&
+            !imageUrl.startsWith("http") &&
             state.dataUrls &&
             state.dataUrls[imageUrl]
           ) {
@@ -443,7 +443,7 @@ function renderLine(line, opts = {}) {
 
           // If the content is a data key, look up the base64 string from our store
           if (
-            originalContent.startsWith("data-") &&
+            !originalContent.startsWith("http") &&
             state.dataUrls &&
             state.dataUrls[originalContent]
           ) {

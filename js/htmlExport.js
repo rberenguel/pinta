@@ -108,7 +108,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
 
       // Check if the content is a data-key and resolve it from our store
       if (
-        content.startsWith("data-") &&
+        !content.startsWith("http") &&
         state.dataUrls &&
         state.dataUrls[content]
       ) {
