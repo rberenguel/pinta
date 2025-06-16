@@ -141,27 +141,22 @@ export function cleanupUnusedDataUrls() {
     return; // Nothing to clean up.
   }
 
-  // 1. Find all data-N keys that are actually used in the lines.
+  // 1. Get a single string containing all line text for efficient searching.
   const allLineTexts = Object.values(state.linesStore)
     .map((line) => line.text || "")
     .join(" ");
-  const usedKeys = new Set();
-  const dataUrlRegex = /!(data-\d+)!/g;
-  let match;
-  while ((match = dataUrlRegex.exec(allLineTexts)) !== null) {
-    usedKeys.add(match[1]);
+
+  // 2. Find all keys from state.dataUrls that are NOT used in any line.
+  const unusedKeys = Object.keys(state.dataUrls).filter(
+    (key) => !allLineTexts.includes(`!${key}!`),
+  );
+
+  // 3. Delete the unused keys.
+  for (const key of unusedKeys) {
+    delete state.dataUrls[key];
   }
 
-  // 2. Iterate over the stored keys and delete any that are not in the 'used' set.
-  let removedCount = 0;
-  for (const storedKey in state.dataUrls) {
-    if (!usedKeys.has(storedKey)) {
-      delete state.dataUrls[storedKey];
-      removedCount++;
-    }
-  }
-
-  if (removedCount > 0) {
-    console.log(`Pinta: Cleaned up ${removedCount} unused data URLs.`);
+  if (unusedKeys.length > 0) {
+    console.log(`Pinta: Cleaned up ${unusedKeys.length} unused data URLs.`);
   }
 }
