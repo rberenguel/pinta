@@ -77,7 +77,7 @@ function createLineObject(params) {
         : MAIN_LINE_DEFAULT_THICKNESS,
     color: "default",
     textColor: "default",
-    textShadow: false,
+    noTextShadow: false,
     children: [],
     offsetRatioOnParent: 0.5,
     // TODO this should match line-text
@@ -292,10 +292,10 @@ function renderLine(line, opts = {}) {
       });
       textElement.appendChild(checkbox);
     }
-    if (line.textShadow) {
-      textElement.classList.add("shadow");
-    } else {
+    if (line.noTextShadow) {
       textElement.classList.remove("shadow");
+    } else {
+      textElement.classList.add("shadow");
     }
     let prefixSymbol = undefined;
     let lineText = line.text || "...";

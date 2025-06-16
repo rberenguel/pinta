@@ -71,7 +71,7 @@ function handleKeydown(event) {
     console.log("shad");
     event.preventDefault();
     event.stopPropagation();
-    lineToUpdate.textShadow = !lineToUpdate.textShadow;
+    lineToUpdate.noTextShadow = !lineToUpdate.noTextShadow;
     renderLine(lineToUpdate, { updating: true });
     return;
   }

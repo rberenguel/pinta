@@ -383,7 +383,7 @@ body {
 }
 
 .shadow {
-  filter: drop-shadow(2px 2px 2px #00000077);
+  filter: drop-shadow(0.15em 0.15em 0.15em #00000077);
 }
 
 .handle {
