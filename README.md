@@ -132,6 +132,10 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.9.5
+
+- `s` on hovered text to add a small drop shadow on it. I also broke and changed several other things. I'm glad I'm the only user.
+
 ### 0.9.4
 
 - Wrap in ~dollars~ single equal signs to highlight. I don't plan on adding Mathtex (used dollar initially) but Obsidian uses double =. Equal is fine. I liked colon, but I don't remember what app used colon (I thought it was Bear but it uses equal… now?)

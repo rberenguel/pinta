@@ -67,6 +67,14 @@ function handleKeydown(event) {
     return;
   }
 
+  if (key === "s") {
+    console.log("shad");
+    event.preventDefault();
+    event.stopPropagation();
+    lineToUpdate.textShadow = !lineToUpdate.textShadow;
+    renderLine(lineToUpdate, { updating: true });
+    return;
+  }
   if (key === "*") {
     event.preventDefault();
     event.stopPropagation();

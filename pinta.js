@@ -512,7 +512,7 @@ function handleKeyDown(event) {
     } else if (event.key.toLowerCase() === "a") {
       state.currentDrawingTool = "arrow";
       toolSelected = true;
-    } else if (event.key.toLowerCase() === "s") {
+    } else if (event.key.toLowerCase() === "x") {
       state.currentDrawingTool = null;
       toolSelected = true;
 
