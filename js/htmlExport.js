@@ -51,8 +51,16 @@ function iconoirSubsetter(iconoirCSS, usedClasses) {
   }
   return output.join("\n");
 }
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
+  if (window.getViewportState().scale !== 1.0) {
+    window.resetViewport();
+    await sleep(500);
+  }
+
   const currentThemeClass = document.body.classList.contains("light-theme")
     ? "light-theme"
     : "";

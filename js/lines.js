@@ -347,7 +347,6 @@ function renderLine(line, opts = {}) {
           /^(19\d{2}|20\d{2}|2100)(0[1-9]|1[0-2])?(0[1-9]|1[0-9]|2[0-9]|3[0-1])?$/;
         const match = year.match(yearMonthPattern);
         if (match) {
-          console.info("Found year and optional month");
           const yearPart = match[1];
           const monthPart = match[2];
           const dayPart = match[3];
@@ -358,14 +357,12 @@ function renderLine(line, opts = {}) {
           appending.push(yearSpan);
 
           if (monthPart) {
-            console.info("Found month");
             const monthSpan = document.createElement("span");
             monthSpan.className = "month";
             monthSpan.innerHTML = monthPart;
             appending.push(monthSpan);
           }
           if (dayPart) {
-            console.info("Found month");
             const daySpan = document.createElement("span");
             daySpan.className = "day";
             daySpan.innerHTML = dayPart;
@@ -435,32 +432,30 @@ function renderLine(line, opts = {}) {
       /:([\w-]+):/g,
       '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
     );
-    if (!isMoving) {
-      displayText = displayText.replace(
-        /PINTA\.IMAGE\.PLACEHOLDER\.(\d+)/g,
-        (match, index) => {
-          const originalContent = placeholders[parseInt(index)];
-          let imageUrl = originalContent;
 
-          // If the content is a data key, look up the base64 string from our store
-          if (
-            !originalContent.startsWith("http") &&
-            state.dataUrls &&
-            state.dataUrls[originalContent]
-          ) {
-            imageUrl = state.dataUrls[originalContent].base64;
-          }
+    displayText = displayText.replace(
+      /PINTA\.IMAGE\.PLACEHOLDER\.(\d+)/g,
+      (match, index) => {
+        const originalContent = placeholders[parseInt(index)];
+        const isHttpUrl = originalContent.startsWith("http");
 
-          return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1.2em; vertical-align: middle;"></span>`;
-        },
-      );
-    } else {
-      // If moving, just replace the tokens with a simple placeholder style
-      displayText = displayText.replace(
-        /__PINTA_IMAGE_PLACEHOLDER_(\d+)__/g,
-        `<span style="${placeholderStyle}"></span>`,
-      );
-    }
+        // If we are dragging AND the image is an external HTTP URL,
+        // use the simple placeholder for better performance.
+        if (isMoving && isHttpUrl) {
+          return `<span style="${placeholderStyle}"></span>`;
+        }
+
+        // Otherwise (if not moving, or if it's a local/data URL),
+        // render the full image tag.
+        let imageUrl = originalContent;
+        if (!isHttpUrl && state.dataUrls && state.dataUrls[originalContent]) {
+          imageUrl = state.dataUrls[originalContent].base64;
+        }
+
+        return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1.2em; vertical-align: middle;"></span>`;
+      },
+    );
+
     const textNodeWrapper = document.createElement("DIV");
     textNodeWrapper.classList.add("line-text-wrapper");
     textNodeWrapper.innerHTML = displayText;
@@ -580,6 +575,9 @@ function getLineDisplayAngle(lineId, lines) {
 }
 
 function handleVisualClick(event) {
+  if (window.getViewportState().scale !== 1.0) {
+    return; // Don't do anything if zoomed
+  }
   event.stopPropagation();
   if (state.activeTextEditElement) state.activeTextEditElement.blur();
 
@@ -650,10 +648,16 @@ function setupLineResizable(handle, line) {
     .draggable({
       listeners: {
         start(event) {
+          if (window.getViewportState().scale !== 1.0) {
+            return; // Don't do anything if zoomed
+          }
           event.target.classList.add("dragging");
           if (state.activeTextEditElement) state.activeTextEditElement.blur();
         },
         move(event) {
+          if (window.getViewportState().scale !== 1.0) {
+            return; // Don't do anything if zoomed
+          }
           const currentLine = state.linesStore[line.id];
           if (!currentLine) return;
           const displayAngle = getLineDisplayAngle(line.id, state.linesStore);
@@ -684,10 +688,16 @@ function setupRootDraggable(handle, childLine) {
     .draggable({
       listeners: {
         start(event) {
+          if (window.getViewportState().scale !== 1.0) {
+            return; // Don't do anything if zoomed
+          }
           event.target.classList.add("dragging");
           if (state.activeTextEditElement) state.activeTextEditElement.blur();
         },
         move(event) {
+          if (window.getViewportState().scale !== 1.0) {
+            return; // Don't do anything if zoomed
+          }
           const parentLine = state.linesStore[childLine.parentId];
           if (!parentLine) return;
           //const parentAngleRad = (parentLine.angle * Math.PI) / 180;

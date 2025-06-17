@@ -132,6 +132,15 @@ but I'm not your doctor or that kind of doctor).
 
 ## Changelog
 
+### 0.9.6
+
+- Still have not updated the tutorial.
+- `shift+scrollwheel` to zoom in. Only text can be edited while in this state
+- `shift+drag` to pan while zoomed in _only_.
+- Export to HTML resets scale. It's better if you export only at scale 1
+- Font size and thickness hover-toggles now show a hover-info modal of the size, making it easier to adjust lines to be the same.
+- Minor tweaks to the shadow CSS for light mode. CSS still needs a bit more tweaking of the colors I think.
+
 ### 0.9.5
 
 - `s` on hovered text to add a small drop shadow on it. I also broke and changed several other things. I'm glad I'm the only user.

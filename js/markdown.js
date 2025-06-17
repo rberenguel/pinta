@@ -393,7 +393,6 @@ function pintaMarkdownToJson(markdownString) {
         const prop = parsePropLine(line);
         if (prop && currentObject && currentSection === "lines") {
           if (prop.key === "format") {
-            console.log(prop.value);
             const formatString = `${prop.value}` || "";
             const parts = formatString
               .split(",")

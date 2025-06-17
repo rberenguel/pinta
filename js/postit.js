@@ -95,6 +95,9 @@ function createPostIt(noteData = {}) {
       ],
       listeners: {
         move: (event) => {
+          if (window.getViewportState().scale !== 1.0) {
+            return; // Don't do anything if zoomed
+          }
           const target = event.target;
           const x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
           const y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;

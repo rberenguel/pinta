@@ -326,6 +326,8 @@ body {
   position: relative;
   overflow: hidden;
   border-radius: 0.5rem;
+  transform-origin: 0 0;
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 #drawingCanvas {
   position: absolute;

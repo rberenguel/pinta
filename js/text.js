@@ -53,7 +53,6 @@ function handleKeydown(event) {
   const lineToUpdate = state.linesStore[lineId];
   if (!lineToUpdate) return;
   if (key === "/") {
-    console.log("updating text display length");
     event.preventDefault();
     event.stopPropagation();
     const currentText = lineToUpdate.text || "";
@@ -69,7 +68,6 @@ function handleKeydown(event) {
   }
 
   if (key === "s") {
-    console.log("shad");
     event.preventDefault();
     event.stopPropagation();
     lineToUpdate.noTextShadow = !lineToUpdate.noTextShadow;
@@ -165,12 +163,6 @@ function handleTextMouseLeave(event) {
 
 function handleTextClick(e) {
   const textElementDiv = e.currentTarget;
-  console.log(
-    e.target.closest("SPAN")?.parentElement?.classList &&
-      e.target
-        .closest("SPAN")
-        ?.parentElement?.classList?.contains("link-icon-clickable"),
-  );
   if (
     (e.target.closest("SPAN")?.classList &&
       e.target.closest("SPAN").classList.contains("link-icon-clickable")) ||
@@ -239,10 +231,16 @@ function setupTextDraggable(textElement, lineObject) {
     .draggable({
       listeners: {
         start(event) {
+          if (window.getViewportState().scale !== 1.0) {
+            return; // Don't do anything if zoomed
+          }
           event.target.classList.add("dragging");
           if (state.activeTextEditElement === event.target) event.target.blur();
         },
         move(event) {
+          if (window.getViewportState().scale !== 1.0) {
+            return; // Don't do anything if zoomed
+          }
           const target = event.target;
           const lineId = target.dataset.lineId;
           const currentLine = state.linesStore[lineId];
