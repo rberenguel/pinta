@@ -394,7 +394,7 @@ body {
 }
 
 .light-theme .shadow {
-  filter: drop-shadow(0.07em 0.07em 0.001em #00000088);
+  filter: drop-shadow(0.07em 0.07em 0.02em #00000088);
 }
 
 .handle {
