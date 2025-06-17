@@ -859,6 +859,14 @@ window.addEventListener("resize", () => {
 
 let drawingStartX, drawingStartY;
 
+document.addEventListener(
+  "mousemove",
+  (e) => {
+    state.lastMousePosition = { x: e.clientX, y: e.clientY };
+  },
+  { passive: true },
+);
+
 editorContainer.addEventListener("mousedown", (e) => {
   if (e.target !== editorContainer) return;
   if (state.activeTextEditElement) {

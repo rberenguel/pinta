@@ -31,6 +31,7 @@ export const state = {
   currentLineEditIdForModal: null,
   drawingStartX: 0,
   drawingStartY: 0,
+  lastMousePosition: { x: 0, y: 0 },
 
   // DOM references that are assigned/reassigned by pinta.js logic
   // These will be initialized to null here and populated by pinta.js

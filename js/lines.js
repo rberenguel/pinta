@@ -39,6 +39,7 @@ import { getLinkPrefix, setupTextDraggable, handleTextClick } from "./text.js";
 import { DEFAULT_SCHEMA_TEXT_COLOR_VAR } from "./text.js";
 import { state, editorContainer } from "./state.js";
 import { deleteItem, handleDeleteItemClick } from "./delete.js";
+import { hideInfoHover, showInfoHover } from "./infohover.js";
 
 export const placeholderStyle = `
           display: inline-block;
@@ -958,6 +959,7 @@ function handleLineVisualMouseEnter(event) {
 function handleLineVisualMouseLeave(event) {
   state.hoveredLineIdForVisualColorChange = null;
   document.removeEventListener("keydown", handleLineVisualColorKeydown);
+  hideInfoHover();
 }
 
 const isEditingLineText = () => {
@@ -1091,6 +1093,7 @@ function handleLineVisualColorKeydown(event) {
       Math.max(minThickness, newThickness),
     );
     renderLine(lineToUpdate, { updating: true });
+    showInfoHover(`Thickness: ${lineToUpdate.thickness.toFixed(1)}`);
   } else if (key === "," || key === "<") {
     event.preventDefault();
     event.stopPropagation();
@@ -1101,6 +1104,7 @@ function handleLineVisualColorKeydown(event) {
       Math.max(minThickness, newThickness),
     );
     renderLine(lineToUpdate, { updating: true });
+    showInfoHover(`Thickness: ${lineToUpdate.thickness.toFixed(1)}`);
   }
   if (key === "backspace") {
     event.preventDefault();

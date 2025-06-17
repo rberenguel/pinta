@@ -20,6 +20,7 @@ import {
   SCHEMA_LINE_VISUAL_COLORS,
   showLinkInIframe,
 } from "./lines.js";
+import { hideInfoHover, showInfoHover } from "./infohover.js";
 
 let previewIframe = null,
   previewWrapper = null;
@@ -110,11 +111,13 @@ function handleKeydown(event) {
     let newSize = (lineToUpdate.fontSize || 16) - 2;
     if (newSize < 4) newSize = 4;
     lineToUpdate.fontSize = newSize;
+    showInfoHover(`Font Size: ${newSize}px`);
     renderLine(lineToUpdate, { updating: true });
   } else if (key === "." || key === ">") {
     event.preventDefault();
     let newSize = (lineToUpdate.fontSize || 16) + 2;
     lineToUpdate.fontSize = newSize;
+    showInfoHover(`Font Size: ${newSize}px`);
     renderLine(lineToUpdate, { updating: true });
   } else if (key.toLowerCase() === "b" && event.shiftKey) {
     event.preventDefault();
@@ -157,6 +160,7 @@ function handleTextMouseEnter(event) {
 function handleTextMouseLeave(event) {
   state.hoveredLineIdForTextColorChange = null;
   document.removeEventListener("keydown", handleKeydown);
+  hideInfoHover();
 }
 
 function handleTextClick(e) {
@@ -386,11 +390,13 @@ function makeEditable(textEl) {
           if (newSize < 4) newSize = 4;
           currentLine.fontSize = newSize;
           textEl.style.fontSize = `${newSize}px`;
+          showInfoHover(`Font Size: ${newSize}px`);
         } else if (e.key === "." || e.key === ">") {
           e.preventDefault();
           let newSize = (currentLine.fontSize || 16) + 2;
           currentLine.fontSize = newSize;
           textEl.style.fontSize = `${newSize}px`;
+          showInfoHover(`Font Size: ${newSize}px`);
         } else if (e.key.toLowerCase() === "b" && e.shiftKey) {
           e.preventDefault();
           currentLine.isBold = !currentLine.isBold;

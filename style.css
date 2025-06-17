@@ -359,6 +359,11 @@ body {
   border-bottom: 0.5em solid transparent;
   filter: drop-shadow(2px 2px 2px #00000077);
 }
+
+.light-theme .line-visual {
+  filter: drop-shadow(1px 1px 2px #00000099);
+}
+
 .line-text {
   position: absolute;
   white-space: pre-wrap;
@@ -384,6 +389,10 @@ body {
 
 .shadow {
   filter: drop-shadow(0.15em 0.15em 0.15em #00000077);
+}
+
+.light-theme .shadow {
+  filter: drop-shadow(0.07em 0.07em 0.001em #00000088);
 }
 
 .handle {
@@ -1193,4 +1202,26 @@ span.day {
 /* --- Indicator for EXTENSION converted (Blue dot) --- */
 .inlined-image-wrapper.pinta-image-base64::after {
   background-color: #06c;
+}
+
+#info-hover {
+  background-color: var(--theme-modal-background);
+  color: var(--theme-modal-text-primary);
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--theme-border-color);
+  font-family: monospace;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.5s ease-in-out,
+    visibility 0s 0.5s;
+}
+
+#info-hover.visible {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
 }
