@@ -138,6 +138,8 @@ but I'm not your doctor or that kind of doctor).
 - `?` on hover on line or text shows its properties (the ones useful to a human)
 - Images can no longer be URLs. If you want to add an icon, paste it in the main canvas. It will be base64 encoded, and your clipboard will change to the data identifier you can paste in a line text.
 - You can rename the data identifiers for pasted images by pressing `i` on the main canvas.
+- Copy and cut now can copy and cut across sessions/windows.
+- Opening now prompts for reopen or new. This should allow multi-window.
 
 ### 0.9.6
 

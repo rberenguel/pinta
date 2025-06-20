@@ -10,6 +10,7 @@ export const state = {
   selectedLines: new Set(),
   selectedDrawings: new Set(),
   clipboard: null,
+  currentFileHandle: null,
 
   // Counters
   lineIdCounter: 0,

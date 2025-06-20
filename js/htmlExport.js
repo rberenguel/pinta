@@ -172,9 +172,9 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
             const icon = maybeIcon[0];
             if (icon) {
               prefixSymbol = `<div class="iconoir-${icon}"></div>`;
-              if (!line.linkUrl) {
+              /*if (!line.linkUrl) {
                 prefix = `<span class="link-icon-nonclickable">${prefixSymbol}</span>`;
-              }
+              }*/
               rawLineText = rawLineText
                 .slice(1)
                 .split(":")

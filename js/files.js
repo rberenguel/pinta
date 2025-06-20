@@ -189,57 +189,45 @@ async function triggerSaveDiagram(asMarkdown = false) {
   let fileHandle = null;
 
   try {
-    const existingHandle = await get("pintaLastFileHandle");
+    // --- MODIFICATION START ---
+    // 1. Prioritize the window-specific handle for "Save" operations.
+    //    We only do this for .pnt files, not for Markdown exports.
     if (
-      existingHandle &&
-      existingHandle.name.endsWith(fileExtension) &&
-      (await verifyPermission(existingHandle))
+      !asMarkdown &&
+      state.currentFileHandle &&
+      (await verifyPermission(state.currentFileHandle))
     ) {
-      fileHandle = existingHandle;
+      console.log("Pinta: Using current window's file handle for saving.");
+      fileHandle = state.currentFileHandle;
     } else {
-      if (existingHandle) await clearLastFileHandle(); // Clear if extension mismatch or no permission
+      // 2. If no window-specific handle, trigger "Save As" using the file picker.
+      console.log("Pinta: No valid window handle. Triggering 'Save As'...");
       if (window.showSaveFilePicker) {
         fileHandle = await window.showSaveFilePicker({
           suggestedName: suggestedName,
           types: [
             {
-              description: `Pinta ${
-                asMarkdown ? "Markdown" : "JSON"
-              } Diagram Files (${fileExtension})`,
+              description: `Pinta ${asMarkdown ? "Markdown" : "JSON"} Diagram Files (${fileExtension})`,
               accept: { [mimeType]: [fileExtension] },
-            },
-            // Optionally offer the other type as well
-            {
-              description: `Pinta ${
-                asMarkdown ? "JSON" : "Markdown"
-              } Diagram Files (${asMarkdown ? ".pnt" : ".md"})`,
-              accept: {
-                [asMarkdown ? "application/json" : "text/markdown"]: [
-                  asMarkdown ? ".pnt" : ".md",
-                ],
-              },
             },
           ],
         });
-        // Update extension and mimetype if user changed it in the picker
+        // This part handles if the user changes the file type in the picker. It's complex but correct.
         if (fileHandle.name.endsWith(".md")) {
           fileExtension = ".md";
           mimeType = "text/markdown";
           if (!asMarkdown) {
-            // User switched to MD in picker
             fileContent = pintaJsonToMarkdown(dataToSave);
           }
         } else if (fileHandle.name.endsWith(".pnt")) {
           fileExtension = ".pnt";
           mimeType = "application/json";
           if (asMarkdown) {
-            // User switched to PNT in picker
             fileContent = JSON.stringify(dataToSave, null, 2);
           }
         }
       }
     }
-
     if (fileHandle) {
       const writable = await fileHandle.createWritable();
       // Re-create blob if content type changed due to picker interaction
@@ -284,7 +272,7 @@ async function triggerLoadDiagram() {
       const [fileHandle] = await window.showOpenFilePicker({
         types: [
           {
-            description: "Pinta JSON Diagram Files (.pnt)",
+            description: "Pinta Diagram Files",
             accept: {
               "application/json": [".pnt"],
               "text/markdown": [".md"],
@@ -294,23 +282,31 @@ async function triggerLoadDiagram() {
         ],
         multiple: false,
       });
-      const file = await fileHandle.getFile();
+
       if (await verifyPermission(fileHandle)) {
-        if (
-          !file.name.toLowerCase().endsWith(".html") &&
-          !file.name.toLowerCase().endsWith(".htm") &&
-          !file.name.toLowerCase().endsWith(".md")
-        ) {
+        // --- MODIFICATION START ---
+        const file = await fileHandle.getFile();
+
+        // Only treat .pnt files as primary project files to remember.
+        if (file.name.toLowerCase().endsWith(".pnt")) {
+          // 1. Set the handle for the current window for future saves.
+          state.currentFileHandle = fileHandle;
+          // 2. Set the global handle for the next session's "open last" feature.
           await set("pintaLastFileHandle", fileHandle);
-          console.log("Pinta: .pnt diagram loaded and handle stored.");
-        } else {
           console.log(
-            "Pinta: Diagram loaded from HTML file. Handle NOT stored; will prompt for .pnt on next save.",
+            "Pinta: .pnt diagram loaded. Window and global handles stored.",
           );
+        } else {
+          // If loading from MD or HTML, don't set a handle. Next save should be "Save As".
+          state.currentFileHandle = null;
           await clearLastFileHandle();
+          console.log(
+            "Pinta: Diagram loaded from non-pnt file. Handles cleared.",
+          );
         }
+
         loadDataFromFile(file);
-        console.log("Pinta: Diagram loaded and handle stored.");
+        // --- MODIFICATION END ---
       } else {
         console.error("Pinta: Permission denied for the selected file.");
         alert("Pinta: Permission was not granted to open the file.");
@@ -323,6 +319,7 @@ async function triggerLoadDiagram() {
       }
     }
   } else {
+    // Fallback for older browsers
     filePicker.click();
   }
 }
