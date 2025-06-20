@@ -6,7 +6,7 @@ function showInfoHover(text) {
   if (infoHover) {
     const editorContainer = document.getElementById("editor-container");
     const editorRect = editorContainer.getBoundingClientRect();
-    infoHover.textContent = text;
+    infoHover.innerHTML = text;
     infoHover.classList.add("visible");
     infoHover.style.left = `${state.lastMousePosition.x - editorRect.left + 15}px`;
     infoHover.style.top = `${state.lastMousePosition.y - editorRect.top - 30}px`;

@@ -10,9 +10,6 @@ export const state = {
   selectedLines: new Set(),
   selectedDrawings: new Set(),
   clipboard: null,
-  isCutOperation: false,
-  manuallyDownloadedUrls: new Set(),
-  base64ImageCache: new Map(),
 
   // Counters
   lineIdCounter: 0,

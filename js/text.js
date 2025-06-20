@@ -19,6 +19,7 @@ import {
   getLineDisplayAngle,
   SCHEMA_LINE_VISUAL_COLORS,
   showLinkInIframe,
+  lineInfo,
 } from "./lines.js";
 import { hideInfoHover, showInfoHover } from "./infohover.js";
 
@@ -144,6 +145,9 @@ function handleKeydown(event) {
         renderLine(lineToUpdate, { updating: true });
       }
     }
+  } else if (key === "?") {
+    event.preventDefault();
+    showInfoHover(lineInfo(lineToUpdate));
   }
 }
 

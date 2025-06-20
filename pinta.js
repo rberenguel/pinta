@@ -46,6 +46,11 @@ let launchHandledByQueue = false;
 let helpModal;
 let closeHelpModalButton;
 
+let iconNamerModal;
+let iconNamerList;
+let saveIconNamerButton;
+let cancelIconNamerButton;
+
 let version = "";
 let loadedCSSText = "";
 let loadedCSSIconoir = "";
@@ -331,6 +336,18 @@ function handleKeyDown(event) {
     deleteModal.style.display === "flex" ||
     state.linkModal?.style.display === "flex";
 
+  const isIconModalActive =
+    iconNamerModal && iconNamerModal.style.display === "flex";
+  if (
+    event.key.toLowerCase() === "i" &&
+    !isEditingText &&
+    !isModalActive &&
+    !isIconModalActive
+  ) {
+    event.preventDefault();
+    showIconNamerModal();
+    return;
+  }
   if (ctrlCmd && event.key.toLowerCase() === "s") {
     event.preventDefault();
     triggerSaveDiagram();
@@ -374,43 +391,7 @@ function handleKeyDown(event) {
       state.selectedLines.clear();
     }
     return;
-  } else if (ctrlCmd && event.key.toLowerCase() === "v") {
-    if (isModalActive) {
-      return;
-    }
-    if (isEditingText) {
-      return;
-    }
-    event.preventDefault();
-    if (state.clipboard && state.hoveredLineIdForVisualColorChange) {
-      const pasteeId = state.hoveredLineIdForVisualColorChange;
-      const pasteeLine = state.linesStore[pasteeId];
-
-      state.clipboard.forEach((branchRoot) => {
-        const newBranchRoot = pasteBranch(
-          branchRoot,
-          pasteeId,
-          state.linesStore,
-        );
-        pasteeLine.children.push(newBranchRoot.id);
-      });
-
-      const childCount = pasteeLine.children.length;
-      pasteeLine.children.forEach((childId, index) => {
-        const childLine = state.linesStore[childId];
-        if (childLine) {
-          childLine.offsetRatioOnParent = (index + 1) / (childCount + 1);
-        }
-      });
-
-      updateChildrenPositions(pasteeId);
-      if (state.isCutOperation) {
-        state.clipboard = null;
-      }
-    }
-    return;
   }
-
   if (deleteModal.style.display === "flex") {
     console.log(event.key);
     if (event.key === "Enter") {
@@ -421,6 +402,9 @@ function handleKeyDown(event) {
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      if (isIconModalActive) {
+        hideIconNamerModal();
+      }
       document.getElementById("cancelDeleteButton").click();
       return;
     }
@@ -469,7 +453,9 @@ function handleKeyDown(event) {
   if (
     event.key.toLowerCase() === "?" &&
     !isEditingText &&
-    !isModalAlreadyOpen
+    !isModalAlreadyOpen &&
+    !state.hoveredLineIdForVisualColorChange &&
+    !state.hoveredLineIdForTextColorChange
   ) {
     event.preventDefault();
     showHelpModal();
@@ -500,7 +486,8 @@ function handleKeyDown(event) {
   if (
     !isEditingText &&
     !isModalActive &&
-    !state.hoveredLineIdForVisualColorChange
+    !state.hoveredLineIdForVisualColorChange &&
+    !state.hoveredLineIdForTextColorChange
   ) {
     let toolSelected = false;
     if (event.key.toLowerCase() === "r") {
@@ -595,6 +582,111 @@ function handleKeyDown(event) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  //TODO move the following (modal and paste)
+
+  iconNamerModal = document.getElementById("iconNamerModal");
+  iconNamerList = document.getElementById("iconNamerList");
+  saveIconNamerButton = document.getElementById("saveIconNamerButton");
+  cancelIconNamerButton = document.getElementById("cancelIconNamerButton");
+
+  saveIconNamerButton.addEventListener("click", saveIconRenames);
+  cancelIconNamerButton.addEventListener("click", hideIconNamerModal);
+
+  // Close modal if user clicks on the overlay
+  iconNamerModal.addEventListener("click", (event) => {
+    if (event.target === iconNamerModal) {
+      hideIconNamerModal();
+    }
+  });
+
+  document.addEventListener("paste", async (event) => {
+    const activeEl = document.activeElement;
+    const isEditingText =
+      activeEl &&
+      (activeEl.isContentEditable ||
+        activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA");
+    const isModalActive =
+      deleteModal.style.display === "flex" ||
+      state.linkModal?.style.display === "flex";
+
+    // Allow default paste behavior in text fields and modals
+    if (isEditingText || isModalActive) {
+      return;
+    }
+
+    // --- 1. Check for Image Paste ---
+    const items = event.clipboardData.items;
+    let imageFile = null;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        imageFile = item.getAsFile();
+        break;
+      }
+    }
+
+    if (imageFile) {
+      event.preventDefault();
+      console.log("Pinta: Pasted image detected. Processing...");
+      try {
+        // The resizeAndEncodeImage function from the previous answer is required here
+        const dataUrl = await resizeAndEncodeImage(imageFile, 200);
+
+        if (!state.dataUrls) state.dataUrls = {};
+        if (!state.dataUrlCounter) state.dataUrlCounter = 0;
+
+        const dataKey = `data-${++state.dataUrlCounter}`;
+        state.dataUrls[dataKey] = {
+          base64: dataUrl,
+          originalUrl: "pasted-image",
+        };
+
+        const iconText = `!${dataKey}!`;
+        await navigator.clipboard.writeText(iconText);
+
+        const info = document.getElementById("info");
+        if (info) {
+          info.innerHTML = "Image icon copied to clipboard!";
+          info.classList.add("fades");
+          setTimeout(() => info.classList.remove("fades"), 2500);
+        }
+      } catch (error) {
+        console.error("Pinta: Failed to process pasted image.", error);
+      }
+      return; // Stop after handling image paste
+    }
+
+    // --- 2. If not an image, check for Pinta Internal Branch Paste ---
+    if (state.clipboard && state.hoveredLineIdForVisualColorChange) {
+      event.preventDefault();
+      console.log("Pinta: Pasting internal clipboard content.");
+      const pasteeId = state.hoveredLineIdForVisualColorChange;
+      const pasteeLine = state.linesStore[pasteeId];
+
+      state.clipboard.forEach((branchRoot) => {
+        const newBranchRoot = pasteBranch(
+          branchRoot,
+          pasteeId,
+          state.linesStore,
+        );
+        pasteeLine.children.push(newBranchRoot.id);
+      });
+
+      const childCount = pasteeLine.children.length;
+      pasteeLine.children.forEach((childId, index) => {
+        const childLine = state.linesStore[childId];
+        if (childLine) {
+          childLine.offsetRatioOnParent = (index + 1) / (childCount + 1);
+        }
+      });
+
+      updateChildrenPositions(pasteeId);
+      if (state.isCutOperation) {
+        state.clipboard = null;
+      }
+    }
+  });
+
   try {
     fetchAppStyles();
     try {
@@ -941,28 +1033,7 @@ editorContainer.addEventListener("mouseup", (e) => {
 editorContainer.addEventListener("mouseleave", (e) => {
   state.isSelecting = false;
 });
-editorContainer.addEventListener("contextmenu", (event) => {
-  const target = event.target;
 
-  // Check if the right-clicked element is an image within our diagram
-  if (target.tagName === "IMG" && target.classList.contains("inlined-image")) {
-    // Prevent the default right-click menu
-    //event.preventDefault();
-    const wrapper = target.parentElement; // Get the wrapper
-    const imageUrl = target.src;
-    if (state.manuallyDownloadedUrls.has(imageUrl)) {
-      // It's already marked, so un-mark it
-      state.manuallyDownloadedUrls.delete(imageUrl);
-      wrapper.classList.remove("pinta-image-downloaded");
-      console.log(`Pinta: Marked ${imageUrl} as NOT downloaded.`);
-    } else {
-      // Mark it as downloaded
-      state.manuallyDownloadedUrls.add(imageUrl);
-      wrapper.classList.add("pinta-image-downloaded");
-      console.log(`Pinta: Marked ${imageUrl} as downloaded.`);
-    }
-  }
-});
 document.addEventListener("mousedown", (event) => {
   if (
     state.drawingCanvas.style.pointerEvents !== "auto" &&
@@ -1220,6 +1291,150 @@ function init() {
   }
 }
 
+function resizeAndEncodeImage(file, maxSize) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showIconNamerModal() {
+  if (
+    !iconNamerModal ||
+    !state.dataUrls ||
+    Object.keys(state.dataUrls).length === 0
+  ) {
+    console.log("Pinta: No icons to rename.");
+    // Optional: show a message to the user
+    return;
+  }
+
+  // Clear previous entries
+  iconNamerList.innerHTML = "";
+
+  // Populate with current icons from state.dataUrls
+  for (const key in state.dataUrls) {
+    const value = state.dataUrls[key];
+
+    const entryDiv = document.createElement("div");
+    entryDiv.className = "icon-entry";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "icon-input";
+    input.value = key;
+    input.dataset.originalKey = key; // Store the original key to track renames
+
+    const img = document.createElement("img");
+    img.className = "icon-preview";
+    img.src = value.base64;
+    img.alt = key;
+
+    entryDiv.appendChild(input);
+    entryDiv.appendChild(img);
+    iconNamerList.appendChild(entryDiv);
+  }
+
+  iconNamerModal.style.display = "flex";
+}
+
+function hideIconNamerModal() {
+  if (iconNamerModal) {
+    iconNamerModal.style.display = "none";
+  }
+}
+
+function saveIconRenames() {
+  const inputs = Array.from(iconNamerList.querySelectorAll(".icon-input"));
+  const renames = new Map();
+  const newKeys = new Set();
+
+  // First, validate new names to prevent duplicates
+  for (const input of inputs) {
+    const newKey = input.value.trim();
+    if (newKeys.has(newKey)) {
+      alert(
+        `Error: Duplicate name "${newKey}" found. Icon names must be unique.`,
+      );
+      return; // Abort save
+    }
+    if (newKey) {
+      newKeys.add(newKey);
+    }
+  }
+
+  // Collect all rename operations
+  inputs.forEach((input) => {
+    const oldKey = input.dataset.originalKey;
+    const newKey = input.value.trim();
+    // Add to renames if it's a valid and different name
+    if (newKey && oldKey !== newKey) {
+      renames.set(oldKey, newKey);
+    }
+  });
+
+  if (renames.size === 0) {
+    hideIconNamerModal();
+    return; // Nothing to save
+  }
+
+  // Update the keys in state.dataUrls
+  renames.forEach((newKey, oldKey) => {
+    if (state.dataUrls[oldKey]) {
+      state.dataUrls[newKey] = state.dataUrls[oldKey];
+      delete state.dataUrls[oldKey];
+    }
+  });
+
+  // Find and replace all occurrences in the line texts
+  for (const line of Object.values(state.linesStore)) {
+    if (line.text) {
+      let updatedText = line.text;
+      renames.forEach((newKey, oldKey) => {
+        const searchRegex = new RegExp(`!${oldKey}!`, "g");
+        updatedText = updatedText.replace(searchRegex, `!${newKey}!`);
+      });
+      line.text = updatedText;
+    }
+  }
+
+  // Re-render all lines to reflect the changes immediately
+  Object.values(state.linesStore).forEach((line) =>
+    renderLine(line, { updating: true }),
+  );
+
+  console.log("Pinta: Icons renamed successfully.");
+  hideIconNamerModal();
+}
+
 async function createNewDiagram() {
   // Made exportable if called from elsewhere
   init(); // Re-initializes the Pinta diagram to a blank state
@@ -1308,41 +1523,3 @@ const commands = [
 
 metaP.maxCommands = 10;
 metaP.bind(commands);
-
-/* Weird stuff with the extension */
-
-window.addEventListener("pintaReceiveBase64", (event) => {
-  const { originalUrl, dataUrl } = event.detail;
-
-  console.log(`Received Base64 data for: ${originalUrl}`);
-
-  if (!state.dataUrls) state.dataUrls = {};
-  if (!state.dataUrlCounter) state.dataUrlCounter = 0;
-
-  // Generate a new, unique key for the data URL
-  const dataKey = `data-${++state.dataUrlCounter}`;
-
-  console.log(JSON.stringify(state.dataUrls));
-
-  // Store the base64 data and original URL for future reference
-  state.dataUrls[dataKey] = {
-    base64: dataUrl,
-    originalUrl: originalUrl,
-  };
-
-  // Iterate through all lines to find and replace the URL in the source text.
-  for (const lineId in state.linesStore) {
-    const line = state.linesStore[lineId];
-    console.log(originalUrl);
-    console.log(line.text);
-    if (line.text && line.text.includes(`!${originalUrl}!`)) {
-      // Replace the URL with the new placeholder !data-N!
-      line.text = line.text.replaceAll(`!${originalUrl}!`, `!${dataKey}!`);
-
-      // Re-render the line to reflect the change
-      console.log(line.text);
-      renderLine(line, { updating: true });
-    }
-  }
-  state.base64ImageCache.set(originalUrl, dataUrl);
-});

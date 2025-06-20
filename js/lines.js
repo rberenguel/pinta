@@ -10,6 +10,7 @@ export {
   decreaseAllLinesFontSize,
   isEditingLineText,
   showLinkInIframe,
+  lineInfo,
 };
 
 export const MAIN_LINE_DEFAULT_THICKNESS = 4;
@@ -60,6 +61,52 @@ export const placeholderStyle = `
   .trim(); // Minify for style attribute
 const DELETE_BUTTON_PERP_OFFSET = 0;
 let zIndexCounter = 1000;
+
+/*
+parentId: line-26
+startX: 790.2283280615295
+startY: 300.55445654349444
+length: 256.3168330338287
+relativeDirection: 1
+text: !arxiv! [2025] !google! Communication-Efficient Language Model Training Scales Reliably and Robustly: Scaling Laws for DiLoCo
+textPosRatio: 0.4554765271773544
+textPerpOffset: -28.826113081034666
+thickness: 1.3838319983834857
+color: default
+textColor: yellow
+children: 
+offsetRatioOnParent: 0.6893575909814963
+fontSize: 16
+isBold: false
+isCentered: true
+linkUrl: https://arxiv.org/pdf/2503.09799v1
+checkboxState: unchecked
+textRenderLength: null
+id: line-27
+*/
+
+function lineInfo(line) {
+  const skips = [
+    "parentId",
+    "startX",
+    "startY",
+    "length",
+    "relativeDirection",
+    "text",
+    "textPosRatio",
+    "textPerpOffset",
+    "children",
+    "offsetRatioOnParent",
+  ];
+  let text = [];
+  for (let p of Object.keys(line)) {
+    if (skips.includes(p)) {
+      continue;
+    }
+    text.push(`<p><code>${p}</code>: ${line[p]}</p>`);
+  }
+  return text.join("\n");
+}
 
 function createLineObject(params) {
   const id = `line-${state.lineIdCounter++}`;
@@ -324,11 +371,7 @@ function renderLine(line, opts = {}) {
         let imageUrl = maybeIcon[0];
         if (imageUrl) {
           // If the content is a data key, look up the base64 string from our store
-          if (
-            !imageUrl.startsWith("http") &&
-            state.dataUrls &&
-            state.dataUrls[imageUrl]
-          ) {
+          if (state.dataUrls && state.dataUrls[imageUrl]) {
             imageUrl = state.dataUrls[imageUrl].base64;
           }
 
@@ -338,6 +381,7 @@ function renderLine(line, opts = {}) {
         }
       }
     }
+
     let appending = [];
     if (lineText.startsWith("[")) {
       const maybeYear = lineText.slice(1).split("]");
@@ -398,13 +442,15 @@ function renderLine(line, opts = {}) {
       textElement.removeAttribute("title");
     }
     // Handle inline images: !url! -> <img ...>
-    // URLs can have underscores
-    const imageUrlRegex = /!([^!]+)!/g;
-    const placeholders = [];
-    displayText = displayText.replace(imageUrlRegex, (match, content) => {
-      const placeholder = `PINTA.IMAGE.PLACEHOLDER.${placeholders.length}`;
-      placeholders.push(content);
-      return placeholder;
+    displayText = displayText.replace(/!([^!]+)!/g, (match, content) => {
+      let imageUrl = "";
+      if (state.dataUrls && state.dataUrls[content]) {
+        imageUrl = state.dataUrls[content].base64;
+      } else {
+        // Return a broken image placeholder if the key is not found
+        return `<span title="Image not found: <span class="math-inline">\{content\}" style\="</span>{placeholderStyle}"></span>`;
+      }
+      return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${imageUrl}" style="height: 1.2em; vertical-align: middle;"></span>`;
     });
 
     // Markdown-ish italicizer
@@ -1115,6 +1161,9 @@ function handleLineVisualColorKeydown(event) {
     );
     renderLine(lineToUpdate, { updating: true });
     showInfoHover(`Thickness: ${lineToUpdate.thickness.toFixed(1)}`);
+  } else if (key === "?") {
+    event.preventDefault();
+    showInfoHover(lineInfo(lineToUpdate));
   }
   if (key === "backspace") {
     event.preventDefault();

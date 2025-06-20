@@ -108,33 +108,16 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
 
   const jsonComment = `\n${EXPORT_START_MARKER}\n${pintaJsonString}\n${EXPORT_END_MARKER}\n`;
 
-  const replaceImageMacros = (text) => {
+  const replaceImageMacros = (text, from) => {
     if (!text) return "";
     const imageRegex = /!([^!]+)!/g;
     return text.replace(imageRegex, (match, content) => {
-      let src = content; // Default to the content itself (e.g., a URL)
-
+      let src = "";
       // Check if the content is a data-key and resolve it from our store
-      if (
-        !content.startsWith("http") &&
-        state.dataUrls &&
-        state.dataUrls[content]
-      ) {
+      if (state.dataUrls && state.dataUrls[content]) {
         src = state.dataUrls[content].base64;
-      }
-      // The rest of this function's logic for other cases (like base64ImageCache) can remain
-      // or be merged depending on your final desired priority. For this task,
-      // the key is adding the dataUrls check. The below is from your existing code.
-      else {
-        const cachedDataUrl = state.base64ImageCache.get(content);
-        if (cachedDataUrl) {
-          src = cachedDataUrl;
-        } else if (state.manuallyDownloadedUrls.has(content)) {
-          const fileName =
-            content.substring(content.lastIndexOf("/") + 1).split("?")[0] ||
-            "image.png";
-          src = `pinta-resources/${fileName}`;
-        }
+      } else {
+        return ""; // Don't render anything if data is missing on export
       }
       return `<span class="inlined-image-wrapper"><img class="inlined-image" src="${src}" style="height: 1.2em; vertical-align: middle;"></span>`;
     });
@@ -206,7 +189,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           if (maybeIcon.length > 1) {
             let imageUrl = maybeIcon[0];
             if (imageUrl) {
-              prefixSymbol = replaceImageMacros(`!${imageUrl}!`);
+              prefixSymbol = replaceImageMacros(`!${imageUrl}!`, "prefix");
               rawLineText = rawLineText
                 .slice(1)
                 .split("!")
@@ -263,16 +246,8 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           title = rawLineText;
           rawLineText = rawLineText.substring(0, line.textRenderLength) + "…";
         }
-        const placeholders = [];
-        const imageRegex = /!([^!]+)!/g;
-        let processedText = rawLineText.replace(
-          imageRegex,
-          (match, content) => {
-            const placeholder = `PINTA.EXPORT.PLACEHOLDER.${placeholders.length}`;
-            placeholders.push(content);
-            return placeholder;
-          },
-        );
+        let processedText = rawLineText;
+
         // 2. Now, safely perform all Markdown-style replacements on the text.
         processedText = processedText.replace(
           /`([a-zA-Z][^`]*[a-zA-Z]|[a-zA-Z])`/g,
@@ -295,16 +270,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
           '<span class="link-icon-nonclickable"><div class="iconoir-$1"></div> </span>',
         );
 
-        // 3. Finally, unprotect placeholders, replacing them with the final <img> tags
-        // by calling your existing `replaceImageMacros` function on the restored content.
-        // Note: We are replacing the *token* with the result of processing the *original content*.
-        processedText = processedText.replace(
-          /PINTA\.EXPORT\.PLACEHOLDER\.(\d+)/g,
-          (match, index) => {
-            const originalContent = `!${placeholders[parseInt(index)]}!`;
-            return replaceImageMacros(originalContent);
-          },
-        );
+        processedText = replaceImageMacros(processedText);
 
         let lineText = `${prefix}<div class="line-text-wrapper" title="${title}">${processedText}</div>${appending.join(
           " ",
@@ -317,7 +283,7 @@ async function exportToStaticHTML(loadedCSSText, loadedCSSIconoir) {
             line.linkUrl,
           )}" target="_blank" style="text-decoration:none; color:inherit;">${prefix}</a>${lineText}`;
         } else {
-          textContentHtml = lineText;
+          textContentHtml = (prefixSymbol || "") + lineText;
         }
 
         if (

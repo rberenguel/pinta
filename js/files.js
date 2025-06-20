@@ -594,7 +594,6 @@ function _processLoadedDiagramData(fileContentString, isMarkdown = false) {
 
     if (state.linesStore[mainLineCurrentId]) {
       renderLine(state.linesStore[mainLineCurrentId]);
-      console.log("hello");
       updateChildrenPositions(mainLineCurrentId);
     } else {
       console.warn(
